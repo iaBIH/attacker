@@ -26,18 +26,45 @@ class bucketHandler:
         df2 = pd.DataFrame([s], columns=self.dfCols)
         self.df = self.df.append(df2,ignore_index=True)
 
-    def getAllKeys(self):
-        return self._getKeys(self.df)
+    def isSubBucket(self,bkt1,bkt2):
+        ''' Returns True if bkt1 is a sub-bucket of bkt2. This means that bkt1 has one
+            more column dimension than bkt2, and all of the bucket names of bkt2 are
+            also in bkt1.
+            example: Ci1V1_Ci2V1 is a sub-bucket of Ci1V1
+        '''
+        bkts1 = bkt1.split('_')
+        bkts2 = bkt2.split('_')
+        if len(bkts1) != len(bkts2) + 1:
+            # bkt1 does not have one more dimenstion, so cannot be sub-bucket of bkt2.
+            return False
+        for bkt in bkts2:
+            if bkt not in bkts1:
+                return False
+        return True
 
-    def getOneColKeys(self,col):
+    def getAllCounts(self):
+        return self._getCounts(self.df)
+
+    def getColCounts(self,cols):
+        ''' Get all buckets comprised only of the given columns `cols`
+        '''
         df1 = self.df.copy()
-        for i, s in self.df.iterrows():
-            if s.isna().sum() != len(self.dfCols) - 2:
-                # This is a row with only one column bucket
-                df1 = df1.drop([i])
-        return self._getKeys(df1)
+        for rowi, s in self.df.iterrows():
+            keep = True
+            for j in range(len(self.dfCols) - 1):
+                if self.dfCols[j] in cols and type(s[j]) is not str:
+                    # we want this column but the entry is null
+                    keep = False
+                    break
+                elif self.dfCols[j] not in cols and type(s[j]) is str:
+                    # we don't want this column, but the entry exists
+                    keep = False
+                    break
+            if keep is False:
+                df1 = df1.drop([rowi])
+        return self._getCounts(df1)
 
-    def _getKeys(self,df):
+    def _getCounts(self,df):
         ''' Returns a dict where key is bucket expression and val is count
         '''
         keys = {}

@@ -16,42 +16,69 @@ Constraints:
 
 # Import PuLP modeler functions
 from pulp import *
+import pandas as pd
 import pprint
-import whereParser
-import rowFiller
 import bucketHandler
 import itertools
+import random
 pp = pprint.PrettyPrinter(indent=4)
+doprint = False
 
 # Build a table to attack
+# complete has one user for every possible column/value combination
+# random has same number of users, but ranomly assigned values. The result
+# should be that many users are random, some are not
+tabTypes = ['random','complete']
+tabType = tabTypes[0]
+numValsPerColumn = [5,5,5]
+numCols = len(numValsPerColumn)
+numAids = 1
+for numVals in numValsPerColumn:
+    numAids *= numVals
+print(f"Make '{tabType}' table with {numCols} columns and {numAids} aids")
+colVals = {}
+for i in range(numCols):
+    col = f"i{i}"
+    colVals[col] = list(range((10*i),(10*i+numValsPerColumn[i])))
+pp.pprint(colVals)
+data = {}
+if tabType == 'random':
+    for col in colVals:
+        data[col] = []
+        for _ in range(numAids):
+            data[col].append(random.choice(colVals[col]))
+df = pd.DataFrame.from_dict(data)
+print(df)
+quit()
+# old way:
+'''
 # This makes two columns with two values per column
 tableSql = "select count(*) from tab where i1=1 or i2=5"
-#tableSql = "select count(*) from tab where i1=1 or i2=5 or i3=11"
+tableSql = "select count(*) from tab where i1=1 or i2=5 or i3=11"
+#tableSql = "select count(*) from tab where i1=1 or i2=11 or i3=21 or i4=31"
 sw = whereParser.simpleWhere(tableSql)
 rf = rowFiller.rowFiller(sw,printIntermediateTables=False)
 rf.makeBaseTables()
 df = rf.baseDf['tab']
-# Ok, df now is a table (data frame) with no unique users, actually, but ok for now
-
 numAids = df.groupby('aid1').count()
 numAids = df['aid1'].nunique()
-print(f"Number of distinct users: {numAids}")
-
+if doprint: print(f"Number of distinct users: {numAids}")
 # We don't need the AID column after this, so slice it off
 df.drop('aid1', inplace=True, axis=1)
+'''
 
 # I want a variable for every user / column / bucket combination.
-print("Here are the users")
+if doprint: print("Here are the users")
 aids = [f"a{i}" for i in range(numAids)]
-print(aids)
+if doprint: print(aids)
 
 # I'm going to make a dict that has all the column/bucket combinations and associated counts
 buckets = {}
 cols = list(df.columns)
-print(cols)
+if doprint: print(cols)
 for col in cols:
     buckets[col] = list(df[col].unique())
-pp.pprint(buckets)
+if doprint: pp.pprint(buckets)
 
 # This probably not the most efficient, but I'm going to determine the count of every combination
 # of columns and values individually
@@ -81,7 +108,7 @@ for i in range(len(cols)):
             varName = varName[:-1]
             # shape[0] gives the number of rows, which is also the count
             bh.addBucket(combCols,combVals,count=df.query(query).shape[0])
-print(bh.df)
+if doprint: print(bh.df)
 
 # At this point, `aids` contains a list of all "users", and bh.df contains
 # all the buckets and associated counts
@@ -90,27 +117,58 @@ print(bh.df)
 prob = LpProblem("Attack-Problem")
 
 print("The decision variables are created")
-allKeys = bh.getAllKeys()
-pp.pprint(allKeys)
-choices = LpVariable.dicts("Choice", (aids, allKeys.keys()), cat='Binary')
-pp.pprint(prob)
-pp.pprint(choices)
+allCounts = bh.getAllCounts()
+if doprint: pp.pprint(allCounts)
+choices = LpVariable.dicts("Choice", (aids, allCounts.keys()), cat='Binary')
+if doprint: pp.pprint(prob)
+if doprint: pp.pprint(choices)
 
 print("We do not define an objective function since none is needed")
 
 print("Constraints ensuring that each bucket has sum equal to number of its users")
-for bkt in allKeys:
-    prob += lpSum([choices[aid][bkt] for aid in aids]) == allKeys[bkt]
-pp.pprint(prob)
+for bkt in allCounts:
+    prob += lpSum([choices[aid][bkt] for aid in aids]) == allCounts[bkt]
+if doprint: pp.pprint(prob)
 
 print("Constraints ensuring that each user is in one bucket per column")
+# scales as cols * aids
+oneColCounts = {}
 for col in cols:
     # Get all the buckets that are only for a single column
-    oneColKeys = bh.getOneColKeys(col).keys()
+    oneColCounts[col] = bh.getColCounts([col])
     for aid in aids:
-        prob += lpSum([choices[aid][bkt] for bkt in oneColKeys]) == 1
+        prob += lpSum([choices[aid][bkt] for bkt in oneColCounts[col].keys()]) == 1
 
-pp.pprint(prob)
+if doprint: pp.pprint(prob)
+
+print("Constraints ensuring that each user in c1b1 is in one of c1b1_c2bX")
+print("    or users in c1b1_c2b1 are in one of c1b1_c2b1_c3bX")
+# TO do this, we want to loop through every combination of columns, and for each
+# combination, find one additional column and get all the sub-buckets
+# Note this constraint scales poorly and we might need to think of a work-around
+for i in range(len(cols)-1):
+    # Get all combinations with i columns
+    for colComb in itertools.combinations(cols,i+1):
+        # Get all single columns not in the combination
+        combCounts = bh.getColCounts(colComb)
+        #pp.pprint(combCounts)
+        for col in cols:
+            if col in colComb:
+                continue
+            # Now, for every bucket of colComb, we want to find all buckets
+            # in colComb+col that are sub-buckets of colComb.
+            allCols = list(colComb)
+            allCols.append(col)
+            allCounts = bh.getColCounts(allCols)
+            #pp.pprint(allCounts)
+            for bkt1 in combCounts:
+                subBkts = []
+                for bkt2 in allCounts:
+                    if bh.isSubBucket(bkt2,bkt1):
+                        subBkts.append(bkt2)
+                if len(subBkts) == 0:
+                    continue
+                print(aid,bkt1,subBkts)
 quit()
 
 # The problem data is written to an .lp file
