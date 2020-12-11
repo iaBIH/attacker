@@ -49,7 +49,6 @@ if tabType == 'random':
             data[col].append(random.choice(colVals[col]))
 df = pd.DataFrame.from_dict(data)
 print(df)
-quit()
 # old way:
 '''
 # This makes two columns with two values per column
@@ -157,22 +156,37 @@ for i in range(len(cols)-1):
                 continue
             # Now, for every bucket of colComb, we want to find all buckets
             # in colComb+col that are sub-buckets of colComb.
-            allCols = list(colComb)
-            allCols.append(col)
-            allCounts = bh.getColCounts(allCols)
-            #pp.pprint(allCounts)
+            subCols = list(colComb)
+            subCols.append(col)
+            subCounts = bh.getColCounts(subCols)
+            #pp.pprint(subCounts)
             for bkt1 in combCounts:
                 subBkts = []
-                for bkt2 in allCounts:
+                for bkt2 in subCounts:
                     if bh.isSubBucket(bkt2,bkt1):
                         subBkts.append(bkt2)
                 if len(subBkts) == 0:
                     continue
-                print(aid,bkt1,subBkts)
-quit()
+                allBkts = subBkts
+                allBkts.append(bkt1)
+                # Now I have buckets and sub-buckets (in `allBkts`). Any user is either
+                # in the bucket and one sub-bucket (sum==2), or in neither (sum==0).
+                # Because of earlier constraints, the user can't be in more than one bucket
+                # or more than one sub-bucket. As a result, we don't need to worry about
+                # a user being in more than 2 buckets, and obviously we don't need to worry
+                # about the user being in less than 0 buckets. So all we need to do here
+                # is make sure the user isn't in one bucket total. We can do this with
+                # sum of subBkts + -1*bkt1 = 0
+                # Make the per-variable factors
+                factors = [1.0 for _ in range(len(allBkts))]
+                factors[-1] = -1.0
+                print(factors,allBkts)
+                for aid in aids:
+                    prob += lpSum([factors[j]*choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0
 
 # The problem data is written to an .lp file
 prob.writeLP("attack.lp")
+quit()
 
 # A file called attack.txt is created/overwritten for writing to
 attack = open('attack.txt','w')
