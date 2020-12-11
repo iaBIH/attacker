@@ -133,3 +133,6 @@ dmypy.json
 *swp
 tables/
 test.py
+*bat
+*.lp
+linearReconstruction/*txt
