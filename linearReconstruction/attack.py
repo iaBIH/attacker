@@ -114,6 +114,7 @@ if doprint: print(bh.df)
 
 # The prob variable is created to contain the problem data
 prob = LpProblem("Attack-Problem")
+cnum = 0
 
 print("The decision variables are created")
 allCounts = bh.getAllCounts()
@@ -126,17 +127,21 @@ print("We do not define an objective function since none is needed")
 
 print("Constraints ensuring that each bucket has sum equal to number of its users")
 for bkt in allCounts:
-    prob += lpSum([choices[aid][bkt] for aid in aids]) == allCounts[bkt]
+    prob += lpSum([choices[aid][bkt] for aid in aids]) == allCounts[bkt], f"{cnum}: num_users_per_bkt"
+    cnum += 1
 if doprint: pp.pprint(prob)
 
-print("Constraints ensuring that each user is in one bucket per column")
-# scales as cols * aids
-oneColCounts = {}
-for col in cols:
-    # Get all the buckets that are only for a single column
-    oneColCounts[col] = bh.getColCounts([col])
-    for aid in aids:
-        prob += lpSum([choices[aid][bkt] for bkt in oneColCounts[col].keys()]) == 1
+print("Constraints ensuring that each user is in one bucket per column or combination")
+# scales as buckets * aids
+for i in range(len(cols)-1):
+    # Get all combinations with i columns
+    for colComb in itertools.combinations(cols,i+1):
+        # Get all single columns not in the combination
+        combCounts = bh.getColCounts(colComb)
+        pp.pprint(combCounts)
+        for aid in aids:
+            prob += lpSum([choices[aid][bkt] for bkt in combCounts.keys()]) == 1, f"{cnum}: one_user_per_bkt_set"
+            cnum += 1
 
 if doprint: pp.pprint(prob)
 
@@ -182,7 +187,8 @@ for i in range(len(cols)-1):
                 factors[-1] = -1.0
                 print(factors,allBkts)
                 for aid in aids:
-                    prob += lpSum([factors[j]*choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0
+                    prob += lpSum([factors[j]*choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}: bkt_sub-bkt"
+                    cnum += 1
 
 # The problem data is written to an .lp file
 prob.writeLP("attack.lp")
