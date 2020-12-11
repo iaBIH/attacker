@@ -18,19 +18,24 @@ class bucketHandler:
 
     def addBucket(self,cols,vals,count=0):
         # Make a row with NULL values
-        row = [np.nan for _ in range(len(self.dfCols))]
-        row[-1] = count
+        s = [np.nan for _ in range(len(self.dfCols))]
+        s[-1] = count
         for col,val in zip(cols,vals):
             i = self.dfCols.index(col)
-            row[i] = str(val)
-        df2 = pd.DataFrame([row], columns=self.dfCols)
+            s[i] = str(val)
+        df2 = pd.DataFrame([s], columns=self.dfCols)
         self.df = self.df.append(df2,ignore_index=True)
 
     def getAllKeys(self):
         return self._getKeys(self.df)
 
     def getOneColKeys(self,col):
-        pass
+        df1 = self.df.copy()
+        for i, s in self.df.iterrows():
+            if s.isna().sum() != len(self.dfCols) - 2:
+                # This is a row with only one column bucket
+                df1 = df1.drop([i])
+        return self._getKeys(df1)
 
     def _getKeys(self,df):
         ''' Returns a dict where key is bucket expression and val is count
@@ -40,7 +45,6 @@ class bucketHandler:
             # This loop gives me the columns with values
             key = ''
             for i in range(len(self.dfCols)-1):
-                print(i,f"{self.dfCols[i]}, {row[self.dfCols[i]]}, {type(row[self.dfCols[i]])}")
                 if type(row[self.dfCols[i]]) == str:
                     key += f"C{self.dfCols[i]}"
                     key += f"V{row[self.dfCols[i]]}_"

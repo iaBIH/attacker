@@ -92,7 +92,6 @@ prob = LpProblem("Attack-Problem")
 print("The decision variables are created")
 allKeys = bh.getAllKeys()
 pp.pprint(allKeys)
-quit()
 choices = LpVariable.dicts("Choice", (aids, allKeys.keys()), cat='Binary')
 pp.pprint(prob)
 pp.pprint(choices)
@@ -103,16 +102,16 @@ print("Constraints ensuring that each bucket has sum equal to number of its user
 for bkt in allKeys:
     prob += lpSum([choices[aid][bkt] for aid in aids]) == allKeys[bkt]
 pp.pprint(prob)
-quit()
 
 print("Constraints ensuring that each user is in one bucket per column")
 for col in cols:
     # Get all the buckets that are only for a single column
-    zzzz
+    oneColKeys = bh.getOneColKeys(col).keys()
     for aid in aids:
-        prob += lpSum([choices[aid][bkt] for bkt in colBkts[col]]) == 1
+        prob += lpSum([choices[aid][bkt] for bkt in oneColKeys]) == 1
 
 pp.pprint(prob)
+quit()
 
 # The problem data is written to an .lp file
 prob.writeLP("attack.lp")
