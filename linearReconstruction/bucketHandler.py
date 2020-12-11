@@ -13,8 +13,6 @@ class bucketHandler:
         self.dfCols = []
         for col in columns:
             self.dfCols.append(col)
-            valName,_ = self._getValFromCol(col)
-            self.dfCols.append(valName)
         self.dfCols.append('count')
         self.df = pd.DataFrame(columns=self.dfCols)
 
@@ -24,9 +22,7 @@ class bucketHandler:
         row[-1] = count
         for col,val in zip(cols,vals):
             i = self.dfCols.index(col)
-            vName,v = self._getValFromCol(col,val=val)
-            row[i] = col
-            row[i+1] = v
+            row[i] = str(val)
         df2 = pd.DataFrame([row], columns=self.dfCols)
         self.df = self.df.append(df2,ignore_index=True)
 
@@ -40,23 +36,17 @@ class bucketHandler:
         ''' Returns a dict where key is bucket expression and val is count
         '''
         keys = {}
-        for index, row in df.iterrows():
+        for _, row in df.iterrows():
             # This loop gives me the columns with values
             key = ''
-            for i in range(1,len(self.dfCols),2):
+            for i in range(len(self.dfCols)-1):
+                print(i,f"{self.dfCols[i]}, {row[self.dfCols[i]]}, {type(row[self.dfCols[i]])}")
                 if type(row[self.dfCols[i]]) == str:
-                    key += f"{row[self.dfCols[i]]}:"
+                    key += f"C{self.dfCols[i]}"
+                    key += f"V{row[self.dfCols[i]]}_"
             key = key[:-1]
             keys[key] = row['count']
         return keys
-
-    def _getValFromCol(self,col,val=None):
-        ''' returns a val column name, and a val entry '''
-        valName = f"{col}_v"
-        if val:
-            val = valName + '_' + str(val)
-        return(f"{col}_v",val)
-
 
 if __name__ == "__main__":
     import random
