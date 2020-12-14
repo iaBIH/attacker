@@ -20,7 +20,6 @@ import json
 import pandas as pd
 import numpy as np
 import pprint
-import time
 import bucketHandler
 import itertools
 import random
@@ -33,16 +32,14 @@ class lrAttack:
         self.seed = seed
         self.tabType = tabType
         self.numValsPerColumn = numValsPerColumn
-        self.suppress = suppress
-        self.results = {'params':{}}
-        self.results['params']['seed'] = seed
-        self.results['params']['tabType'] = tabType
-        self.results['params']['suppress'] = suppress
-        self.results['solution'] = {}
-        self.force = force
         self.fileName = self._makeFileName()
+        self.tabInfo = self._makeTable()
+        self.suppress = suppress
+        self.force = force
+        self.results = {}
 
-    def solutionToTable(self):
+    def checkSolution(self):
+        # This will hold the table determined by the solution
         data = {}
         for col in self.cols:
             data[col] = []
@@ -57,15 +54,32 @@ class lrAttack:
         dfNew.sort_values(by=self.cols,inplace=True)
         dfNew.reset_index(drop=True,inplace=True)
         self.results['reconstructedTable'] = dfNew.to_dict()
+        ''' I want to know how many of the reconstructed rows match a single original
+            row. Later I'll also want to measure inference.
+        '''
+        countHistogram = []
+        df = self.tabInfo['df']
+        for rowi, s in self.dfNew.iterrows():
+            query = ''
+            for i in range(len(self.cols)):
+                query += f"({cols[i]} == {s[i]}"
+            df2 = df[]
 
-    def saveResults(self):
-        name = self.fileName + '_results.json'
+            keep = True
+            for j in range(len(self.dfCols) - 1):
+                if self.dfCols[j] in cols and type(s[j]) is not str:
+        diff_loc = np.where(dfNew != df)
+        return len(diff_loc[0]) + len(diff_loc[1]), diff_loc
+
+    def saveTable(self):
+        js = self.tabInfo['df'].to_json()
+        name = self.fileName + '_tab.json'
         path = os.path.join('results',name)
         with open(path, 'w') as f:
-            json.dump(self.results, f, indent=4, sort_keys=True)
+            json.dump(js, f)
     
     def _makeFileName(self):
-        fileName = f"s{self.seed}_{self.tabType}_sup{self.suppress}_"
+        fileName = f"s{self.seed}_{self.tabType}_"
         for num in self.numValsPerColumn:
             fileName += f"{num}_"
         fileName = fileName[:-1]
@@ -76,17 +90,14 @@ class lrAttack:
         self.cols = []
         for i in range(numCols):
             self.cols.append(f"i{i}")
-        self.results['params']['columns'] = self.cols
         numAids = 1
         for numVals in self.numValsPerColumn:
             numAids *= numVals
-        self.results['params']['numAids'] = numAids
         print(f"Make '{self.tabType}' table with {numCols} columns and {numAids} aids")
         colVals = {}
         for i in range(numCols):
             col = self.cols[i]
             colVals[col] = list(range((10*i),(10*i+self.numValsPerColumn[i])))
-        self.results['params']['colVals'] = colVals
         if doprint: pp.pprint(colVals)
         data = {}
         if self.tabType == 'random':
@@ -118,7 +129,6 @@ class lrAttack:
         # First check to see if there is already an LpProblem to read in. Note that the
         # problem runs in rounds, where each new solution generates more constraints to prevent
         # the prior solution
-        self.tabInfo = self._makeTable()
         if self.force == False:
             prob = self.readProblem()
             if prob:
@@ -181,7 +191,6 @@ class lrAttack:
         allCounts = self.bh.getAllCounts()
         if doprint: pp.pprint(allCounts)
         self.choices = pulp.LpVariable.dicts("Choice", (aids, allCounts.keys()), cat='Binary')
-        self.results['solution']['numChoices'] = len(aids) * len(allCounts)
         if doprint: pp.pprint(prob)
         if doprint: pp.pprint(self.choices)
         
@@ -250,7 +259,6 @@ class lrAttack:
                         for aid in aids:
                             prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}: bkt_sub-bkt"
                             cnum += 1
-        self.results['solution']['numConstraints'] = cnum-1
         return prob
 
     def _buildChoicesDict(self,vars):
@@ -287,39 +295,43 @@ class lrAttack:
         name = self.fileName + '_prob.json'
         path = os.path.join('results',name)
         prob.to_json(path)
-        name = self.fileName + '_prob.lp'
+        # Store the choices
+        '''
+        name = self.fileName + '_choices.json'
         path = os.path.join('results',name)
-        prob.writeLP(path)
+        pp.pprint(self.choices)
+        with open(path, 'w') as f:
+            json.dump(self.choices, f)
+        '''
     
-if __name__ == "__main__":
-    # Build a table to attack
-    # complete has one user for every possible column/value combination
-    # random has same number of users, but ranomly assigned values. The result
-    # should be that many users are random, some are not
-    seed = 'a'
-    random.seed(seed)
-    tabTypes = ['random','complete']
-    tabType = tabTypes[0]
-    numValsPerColumn = [5,5,5]
-    
-    lra = lrAttack(seed, tabType, numValsPerColumn, suppress=0,force=True)
-    prob = lra.makeProblem()
-    print("Solving problem")
-    lra.storeProblem(prob)
-    start = time.time()
-    prob.solve()
-    end = time.time()
-    lra.results['solution']['elapsedTime'] = end - start
-    lra.results['solution']['solveStatus'] = pulp.LpStatus[prob.status]
-    pp.pprint(f"Solve Status: {pulp.LpStatus[prob.status]}")
-    lra.solutionToTable()
-    lra.saveResults()
+# Build a table to attack
+# complete has one user for every possible column/value combination
+# random has same number of users, but ranomly assigned values. The result
+# should be that many users are random, some are not
+seed = 'a'
+random.seed(seed)
+tabTypes = ['random','complete']
+tabType = tabTypes[1]
+numValsPerColumn = [5,5,5]
+
+lra = lrAttack(seed, tabType, numValsPerColumn, suppress=3,force=True)
+lra.saveTable()
+prob = lra.makeProblem()
+lra.storeProblem(prob)
+
+print("Solving problem")
+lra.storeProblem(prob)
+prob.solve()
+numDiff, diff = lra.checkSolution()
+print(f"Num different rows between solution and original table is {numDiff}")
+print("Status:", pulp.LpStatus[prob.status])
+pp.pprint(prob.status)
+quit()
 
 '''
 Now what happens is that solutions are generated. In each run of the loop, one solution
 is found. Then that solution is prevented from being found again through yet more constraints
 that prevent the same assignment as a previous solution
-'''
 '''
 while True:
     prob.solve()
@@ -346,7 +358,6 @@ while True:
     # If a new optimal solution cannot be found, we end the program
     else:
         break
-'''
 '''
 After each loop, a single new constraint like this is created:
 _C351: Choice_1_1_8 + Choice_1_2_4 + Choice_1_3_1 + Choice_1_4_2
@@ -382,10 +393,7 @@ Relative to a solution like this:
 +-------+-------+-------+
 The sum of all those choices is 81, so the set of choices can't be made again.
 '''
-'''
 sudokuout.close()
 
 # The location of the solutions is give to the user
 print("Solutions Written to sudokuout.txt")
-
-'''
