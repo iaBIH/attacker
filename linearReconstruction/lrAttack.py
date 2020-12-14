@@ -89,6 +89,17 @@ class lrAttack:
                 data[col] = []
                 for _ in range(numAids):
                     data[col].append(random.choice(colVals[col]))
+        if self.tabType == 'complete':
+            prod = []
+            for col in colVals:
+                data[col] = []
+                tups = []
+                for val in colVals[col]:
+                    tups.append(val)
+                prod.append(tups)
+            for vals in itertools.product(*prod):
+                for i in range(len(vals)):
+                    data[self.cols[i]].append(vals[i])
         df = pd.DataFrame.from_dict(data)
         df.sort_values(by=self.cols,inplace=True)
         df.reset_index(drop=True,inplace=True)
@@ -281,7 +292,7 @@ class lrAttack:
 seed = 'a'
 random.seed(seed)
 tabTypes = ['random','complete']
-tabType = tabTypes[0]
+tabType = tabTypes[1]
 numValsPerColumn = [5,5,5]
 
 lra = lrAttack(seed, tabType, numValsPerColumn, force=True)
@@ -295,6 +306,7 @@ prob.solve()
 numDiff, diff = lra.checkSolution()
 print(f"Num different rows between solution and original table is {numDiff}")
 print("Status:", pulp.LpStatus[prob.status])
+pp.pprint(prob.status)
 quit()
 
 '''
