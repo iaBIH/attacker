@@ -26,6 +26,17 @@ class bucketHandler:
         df2 = pd.DataFrame([s], columns=self.dfCols)
         self.df = self.df.append(df2,ignore_index=True)
 
+    def getColsValsFromBkt(self,bktIn):
+        cols = []
+        vals = []
+        bkts = bktIn.split('.')
+        for bkt in bkts:
+            # This strips the leading 'C' before split
+            col,val = bkt[1:].split('V')
+            cols.append(col)
+            vals.append(val)
+        return cols,vals
+    
     def isSubBucket(self,bkt1,bkt2):
         ''' Returns True if bkt1 is a sub-bucket of bkt2. This means that bkt1 has one
             more column dimension than bkt2, and all of the bucket names of bkt2 are

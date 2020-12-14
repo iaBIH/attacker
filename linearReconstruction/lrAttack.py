@@ -18,13 +18,14 @@ Constraints:
 import pulp
 import json
 import pandas as pd
+import numpy as np
 import pprint
 import bucketHandler
 import itertools
 import random
 import os.path
 pp = pprint.PrettyPrinter(indent=4)
-doprint = True
+doprint = False
 
 class lrAttack:
     def __init__(self, seed, tabType, numValsPerColumn, force=False):
@@ -34,6 +35,25 @@ class lrAttack:
         self.fileName = self._makeFileName()
         self.tabInfo = self._makeTable()
         self.force = force
+
+    def checkSolution(self):
+        # This will hold the table determined by the solution
+        data = {}
+        for col in self.cols:
+            data[col] = []
+        for aid in self.choices:
+            for bkt in self.choices[aid]:
+                if pulp.value(self.choices[aid][bkt]) == 1:
+                    cols,vals = self.bh.getColsValsFromBkt(bkt)
+                    if len(cols) == 1:
+                        # This is a one-dimensional bucket, so we'll use it in our new table
+                        data[cols[0]].append(int(vals[0]))
+        dfNew = pd.DataFrame.from_dict(data)
+        dfNew.sort_values(by=self.cols,inplace=True)
+        dfNew.reset_index(drop=True,inplace=True)
+        df = self.tabInfo['df']
+        diff_loc = np.where(dfNew != df)
+        return len(diff_loc[0]) + len(diff_loc[1]), diff_loc
 
     def saveTable(self):
         js = self.tabInfo['df'].to_json()
@@ -51,13 +71,16 @@ class lrAttack:
     
     def _makeTable(self):
         numCols = len(self.numValsPerColumn)
+        self.cols = []
+        for i in range(numCols):
+            self.cols.append(f"i{i}")
         numAids = 1
         for numVals in self.numValsPerColumn:
             numAids *= numVals
         print(f"Make '{self.tabType}' table with {numCols} columns and {numAids} aids")
         colVals = {}
         for i in range(numCols):
-            col = f"i{i}"
+            col = self.cols[i]
             colVals[col] = list(range((10*i),(10*i+self.numValsPerColumn[i])))
         if doprint: pp.pprint(colVals)
         data = {}
@@ -67,6 +90,8 @@ class lrAttack:
                 for _ in range(numAids):
                     data[col].append(random.choice(colVals[col]))
         df = pd.DataFrame.from_dict(data)
+        df.sort_values(by=self.cols,inplace=True)
+        df.reset_index(drop=True,inplace=True)
         tabInfo = {'df':df,
                    'numCols':numCols,
                    'numAids':numAids,}
@@ -97,7 +122,7 @@ class lrAttack:
         
         # This probably not the most efficient, but I'm going to determine the count of every combination
         # of columns and values individually
-        bh = bucketHandler.bucketHandler(cols)
+        self.bh = bucketHandler.bucketHandler(cols)
         for i in range(len(cols)):
             # Get all combinations with i columns
             for colComb in itertools.combinations(cols,i+1):
@@ -122,8 +147,8 @@ class lrAttack:
                     query = query[:-5]
                     varName = varName[:-1]
                     # shape[0] gives the number of rows, which is also the count
-                    bh.addBucket(combCols,combVals,count=df.query(query).shape[0])
-        if doprint: print(bh.df)
+                    self.bh.addBucket(combCols,combVals,count=df.query(query).shape[0])
+        if doprint: print(self.bh.df)
         
         # At this point, `aids` contains a list of all "users", and bh.df contains
         # all the buckets and associated counts
@@ -133,7 +158,7 @@ class lrAttack:
         cnum = 0
 
         print("The decision variables are created")
-        allCounts = bh.getAllCounts()
+        allCounts = self.bh.getAllCounts()
         if doprint: pp.pprint(allCounts)
         self.choices = pulp.LpVariable.dicts("Choice", (aids, allCounts.keys()), cat='Binary')
         if doprint: pp.pprint(prob)
@@ -156,7 +181,7 @@ class lrAttack:
         for i in range(len(cols)-1):
             # Get all combinations with i columns
             for colComb in itertools.combinations(cols,i+1):
-                combCounts = bh.getColCounts(colComb)
+                combCounts = self.bh.getColCounts(colComb)
                 for aid in aids:
                     prob += pulp.lpSum([self.choices[aid][bkt] for bkt in combCounts.keys()]) == 1, f"{cnum}: one_user_per_bkt_set"
                     cnum += 1
@@ -172,7 +197,7 @@ class lrAttack:
             # Get all combinations with i columns
             for colComb in itertools.combinations(cols,i+1):
                 # Get all single columns not in the combination
-                combCounts = bh.getColCounts(colComb)
+                combCounts = self.bh.getColCounts(colComb)
                 for col in cols:
                     if col in colComb:
                         continue
@@ -180,11 +205,11 @@ class lrAttack:
                     # in colComb+col that are sub-buckets of colComb.
                     subCols = list(colComb)
                     subCols.append(col)
-                    subCounts = bh.getColCounts(subCols)
+                    subCounts = self.bh.getColCounts(subCols)
                     for bkt1 in combCounts:
                         subBkts = []
                         for bkt2 in subCounts:
-                            if bh.isSubBucket(bkt2,bkt1):
+                            if self.bh.isSubBucket(bkt2,bkt1):
                                 subBkts.append(bkt2)
                         if len(subBkts) == 0:
                             continue
@@ -259,23 +284,17 @@ tabTypes = ['random','complete']
 tabType = tabTypes[0]
 numValsPerColumn = [5,5,5]
 
-lra = lrAttack(seed, tabType, numValsPerColumn, force=False)
+lra = lrAttack(seed, tabType, numValsPerColumn, force=True)
 lra.saveTable()
 prob = lra.makeProblem()
 lra.storeProblem(prob)
-prob.writeLP("beforeSolve.lp")
 
 print("Solving problem")
 lra.storeProblem(prob)
 prob.solve()
-prob.writeLP("afterSolve.lp")
-choices = lra.choices
+numDiff, diff = lra.checkSolution()
+print(f"Num different rows between solution and original table is {numDiff}")
 print("Status:", pulp.LpStatus[prob.status])
-for aid in choices:
-    print(f"AID {aid}:")
-    for bkt in choices[aid]:
-        if pulp.value(choices[aid][bkt]) == 1:
-            print(f"    {bkt}")
 quit()
 
 '''
