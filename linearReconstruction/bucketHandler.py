@@ -30,10 +30,10 @@ class bucketHandler:
         ''' Returns True if bkt1 is a sub-bucket of bkt2. This means that bkt1 has one
             more column dimension than bkt2, and all of the bucket names of bkt2 are
             also in bkt1.
-            example: Ci1V1_Ci2V1 is a sub-bucket of Ci1V1
+            example: Ci1V1.Ci2V1 is a sub-bucket of Ci1V1
         '''
-        bkts1 = bkt1.split('_')
-        bkts2 = bkt2.split('_')
+        bkts1 = bkt1.split('.')
+        bkts2 = bkt2.split('.')
         if len(bkts1) != len(bkts2) + 1:
             # bkt1 does not have one more dimenstion, so cannot be sub-bucket of bkt2.
             return False
@@ -74,7 +74,7 @@ class bucketHandler:
             for i in range(len(self.dfCols)-1):
                 if type(row[self.dfCols[i]]) == str:
                     key += f"C{self.dfCols[i]}"
-                    key += f"V{row[self.dfCols[i]]}_"
+                    key += f"V{row[self.dfCols[i]]}."
             key = key[:-1]
             keys[key] = row['count']
         return keys
