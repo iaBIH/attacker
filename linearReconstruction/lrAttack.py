@@ -22,6 +22,7 @@ import numpy as np
 import pprint
 import time
 import bucketHandler
+import anonymizer
 import itertools
 import random
 import os.path
@@ -29,18 +30,21 @@ pp = pprint.PrettyPrinter(indent=4)
 doprint = False
 
 class lrAttack:
-    def __init__(self, seed, tabType, numValsPerColumn, force=False, suppress=0):
+    def __init__(self,
+                    seed,
+                    anonymizerParams = None,
+                    tableParams = None,
+                    force=False,
+                ):
         self.seed = seed
-        self.tabType = tabType
-        self.numValsPerColumn = numValsPerColumn
-        self.suppress = suppress
+        self.an = anonymizer.anonymizer(anonymizerParams, tableParams)
         self.results = {'params':{}}
         self.results['params']['seed'] = seed
-        self.results['params']['tabType'] = tabType
-        self.results['params']['suppress'] = suppress
+        self.results['params']['tableParams'] = self.an.tp
+        self.results['params']['anonymizerParams'] = self.an.ap
         self.results['solution'] = {}
         self.force = force
-        self.fileName = self._makeFileName()
+        self.fileName = self.an.makeFileName(seed)
 
     def solutionToTable(self):
         data = {}
@@ -64,61 +68,19 @@ class lrAttack:
         with open(path, 'w') as f:
             json.dump(self.results, f, indent=4, sort_keys=True)
     
-    def _makeFileName(self):
-        fileName = f"s{self.seed}_{self.tabType}_sup{self.suppress}_"
-        for num in self.numValsPerColumn:
-            fileName += f"{num}_"
-        fileName = fileName[:-1]
-        return fileName
-    
-    def _makeTable(self):
-        numCols = len(self.numValsPerColumn)
-        self.cols = []
-        for i in range(numCols):
-            self.cols.append(f"i{i}")
-        self.results['params']['columns'] = self.cols
-        numAids = 1
-        for numVals in self.numValsPerColumn:
-            numAids *= numVals
-        self.results['params']['numAids'] = numAids
-        print(f"Make '{self.tabType}' table with {numCols} columns and {numAids} aids")
-        colVals = {}
-        for i in range(numCols):
-            col = self.cols[i]
-            colVals[col] = list(range((10*i),(10*i+self.numValsPerColumn[i])))
-        self.results['params']['colVals'] = colVals
-        if doprint: pp.pprint(colVals)
-        data = {}
-        if self.tabType == 'random':
-            for col in colVals:
-                data[col] = []
-                for _ in range(numAids):
-                    data[col].append(random.choice(colVals[col]))
-        if self.tabType == 'complete':
-            prod = []
-            for col in colVals:
-                data[col] = []
-                tups = []
-                for val in colVals[col]:
-                    tups.append(val)
-                prod.append(tups)
-            for vals in itertools.product(*prod):
-                for i in range(len(vals)):
-                    data[self.cols[i]].append(vals[i])
-        df = pd.DataFrame.from_dict(data)
-        df.sort_values(by=self.cols,inplace=True)
-        df.reset_index(drop=True,inplace=True)
-        self.results['originalTable'] = df.to_dict()
-        tabInfo = {'df':df,
-                   'numCols':numCols,
-                   'numAids':numAids,}
-        return tabInfo
-    
     def makeProblem(self):
         # First check to see if there is already an LpProblem to read in. Note that the
         # problem runs in rounds, where each new solution generates more constraints to prevent
         # the prior solution
-        self.tabInfo = self._makeTable()
+        self.an.makeTable()
+        self.cols = self.an.cols
+        self.results['params']['columns'] = self.cols
+        self.results['params']['numAids'] = self.an.numAids
+        self.results['params']['colVals'] = self.an.colVals
+        self.results['originalTable'] = self.an.df.to_dict()
+        print(self.an.df)
+        quit()
+        pass
         if self.force == False:
             prob = self.readProblem()
             if prob:
@@ -131,6 +93,7 @@ class lrAttack:
         if doprint: print(aids)
         
         # I'm going to make a dict that has all the column/bucket combinations and associated counts
+        pass
         buckets = {}
         cols = list(df.columns)
         if doprint: print(cols)
@@ -299,10 +262,18 @@ if __name__ == "__main__":
     seed = 'a'
     random.seed(seed)
     tabTypes = ['random','complete']
-    tabType = tabTypes[0]
-    numValsPerColumn = [5,5,5]
+    tableParams = {
+        'tabType': tabTypes[0],
+        'numValsPerColumn': [5,5,5],
+    }
+    anonymizerParams = {
+        'suppressPolicy': 'hard',
+        'suppressThreshold': 0,
+        'noisePolicy': 'simple',
+        'noiseAmount': 0,
+    }
     
-    lra = lrAttack(seed, tabType, numValsPerColumn, suppress=0,force=True)
+    lra = lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
     prob = lra.makeProblem()
     print("Solving problem")
     lra.storeProblem(prob)
