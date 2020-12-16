@@ -33,9 +33,9 @@ class anonymizer:
             self.tp = tableParams
         else:
             self.tp = {}
-        if self.tp['tabType']:
+        if not self.tp['tabType']:
             self.tp['tabType'] = 'complete'
-        if self.tp['numValsPerColumn']:
+        if not self.tp['numValsPerColumn']:
             self.tp['numValsPerColumn'] = [5,5,5]
 
         if anonymizerParams:
@@ -44,12 +44,37 @@ class anonymizer:
             self.ap = {}
         if not self.ap['suppressPolicy']:
             self.ap['suppressPolicy'] = 'hard'
-        if self.ap['suppressThreshold']:
+        if not self.ap['suppressThreshold']:
             self.ap['suppressThreshold'] = 0
-        if self.ap['noisePolicy']:
+        if not self.ap['noisePolicy']:
             self.ap['noisePolicy'] = 'simple'
-        if self.ap['noiseAmount']:
+        if not self.ap['noiseAmount']:
             self.ap['noiseAmount'] = 0
+
+    def queryForCount(self, query):
+        ''' Returns -1 if the count is suppressed, otherwise returns the
+            (possibly noisy) count. Noisy count never less than 0.
+        '''
+        trueCount = self.df.query(query).shape[0]
+        if self.ap['suppressPolicy'] == 'hard':
+            if trueCount < self.ap['suppressThreshold']:
+                return -1,-1
+        else:
+            pass
+        if self.ap['noiseAmount'] == 0:
+            return trueCount, trueCount
+        elif self.ap['noisePolicy'] == 'simple' and self.ap['noiseType'] == 'uniform':
+            span = int(self.ap['noiseAmount']/2)
+            cmin = min(0,trueCount-span)
+            return trueCount+span, cmin
+        print("queryForCount: shouln't get here")
+        quit()
+
+    def colNames(self):
+        return list(self.df.columns)
+
+    def distinctVals(self,col):
+        return list(self.df[col].unique())
 
     def makeFileName(self, seed):
         fileName = f"s{seed}_"

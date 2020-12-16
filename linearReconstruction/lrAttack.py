@@ -78,31 +78,35 @@ class lrAttack:
         self.results['params']['numAids'] = self.an.numAids
         self.results['params']['colVals'] = self.an.colVals
         self.results['originalTable'] = self.an.df.to_dict()
-        print(self.an.df)
-        quit()
-        pass
         if self.force == False:
             prob = self.readProblem()
             if prob:
                 return prob
-        df = self.tabInfo['df']
-        numAids = self.tabInfo['numAids']
+
+        # TODO: For now, I'm using the correct number of AIDs. In practice, this might be
+        # noisy, so later maybe we'll accommodate that
+        numAids = self.an.numAids
         # I want a variable for every user / column / bucket combination.
         if doprint: print("Here are the users")
         aids = [f"a{i}" for i in range(numAids)]
         if doprint: print(aids)
         
         # I'm going to make a dict that has all the column/bucket combinations and associated counts
-        pass
+        # The counts are min and max expected given noise assignment
         buckets = {}
-        cols = list(df.columns)
+        cols = self.an.colNames()
         if doprint: print(cols)
         for col in cols:
-            buckets[col] = list(df[col].unique())
+            buckets[col] = self.an.distinctVals(col)
+            buckets[col] = list(self.an.df[col].unique())
         if doprint: pp.pprint(buckets)
+        # At this point, `buckets` contains a list of distinct values per column
+        # We are presuming that the anonymization is such that such a list can be
+        # obtained by the attacker. (In practice this could be done with bucketization.)
         
-        # This probably not the most efficient, but I'm going to determine the count of every combination
-        # of columns and values individually
+        # This probably not the most efficient, but I'm going to determine the count range
+        # of every combination of columns and values (buckets) individually. However, some
+        # buckets may be suppressed, in which case the counts are -1
         self.bh = bucketHandler.bucketHandler(cols)
         for i in range(len(cols)):
             # Get all combinations with i columns
@@ -110,7 +114,7 @@ class lrAttack:
                 prod = []
                 for col in colComb:
                     tups = []
-                    for bkt in df[col].unique():
+                    for bkt in self.an.df[col].unique():
                         tups.append((col,bkt))
                     prod.append(tups)
                 for fullComb in itertools.product(*prod):
@@ -128,18 +132,29 @@ class lrAttack:
                     query = query[:-5]
                     varName = varName[:-1]
                     # shape[0] gives the number of rows, which is also the count
-                    count = df.query(query).shape[0]
-                    if count >= self.suppress:
-                        self.bh.addBucket(combCols,combVals,count=df.query(query).shape[0])
+                    cmin,cmax = self.an.queryForCount(query)
+                    self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
         if doprint: print(self.bh.df)
         
-        # At this point, `aids` contains a list of all "users", and bh.df contains
-        # all the buckets and associated counts
+        '''
+        At this point, `aids` contains a list of all "users", and bh.df contains
+        all possible buckets and associated count ranges. If the bucket was suppressed by
+        the anonymizer, then the counts are -1
+        '''
+        # Strip away any rows from bh.df where ALL rows for a given dimension (number of
+        # columns) are suppressed.
+        self.bh.stripAwaySuppressedDimensions()
+        print(self.bh.df)
+
+        # Merge suppressed buckets into a single bucket
+        self.bh.mergeSuppressedBuckets()
+        pass
         
         # The prob variable is created to contain the problem data
         prob = pulp.LpProblem("Attack-Problem",pulp.LpMinimize)
         cnum = 0
 
+        pass
         print("The decision variables are created")
         allCounts = self.bh.getAllCounts()
         if doprint: pp.pprint(allCounts)
@@ -155,8 +170,13 @@ class lrAttack:
         prob += 0.0*dummy
         
         print("Constraints ensuring that each bucket has sum equal to number of its users")
-        for bkt in allCounts:
-            prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == allCounts[bkt], f"{cnum}: num_users_per_bkt"
+        for bkt,cnts in allCounts.items():
+            if cnts['cmin'] == cnts['cmax']:
+                # Only one possible value
+                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == cnts['cmin'], f"{cnum}: num_users_per_bkt"
+            else:
+                print("oops")
+                quit()
             cnum += 1
         if doprint: pp.pprint(prob)
         
@@ -177,42 +197,23 @@ class lrAttack:
         # TO do this, we want to loop through every combination of columns, and for each
         # combination, find one additional column and get all the sub-buckets
         # Note this constraint scales poorly and we might need to think of a work-around
-        for i in range(len(cols)-1):
-            # Get all combinations with i columns
-            for colComb in itertools.combinations(cols,i+1):
-                # Get all single columns not in the combination
-                combCounts = self.bh.getColCounts(colComb)
-                for col in cols:
-                    if col in colComb:
-                        continue
-                    # Now, for every bucket of colComb, we want to find all buckets
-                    # in colComb+col that are sub-buckets of colComb.
-                    subCols = list(colComb)
-                    subCols.append(col)
-                    subCounts = self.bh.getColCounts(subCols)
-                    for bkt1 in combCounts:
-                        subBkts = []
-                        for bkt2 in subCounts:
-                            if self.bh.isSubBucket(bkt2,bkt1):
-                                subBkts.append(bkt2)
-                        if len(subBkts) == 0:
-                            continue
-                        allBkts = subBkts
-                        allBkts.append(bkt1)
-                        # Now I have buckets and sub-buckets (in `allBkts`). Any user is either
-                        # in the bucket and one sub-bucket (sum==2), or in neither (sum==0).
-                        # Because of earlier constraints, the user can't be in more than one bucket
-                        # or more than one sub-bucket. As a result, we don't need to worry about
-                        # a user being in more than 2 buckets, and obviously we don't need to worry
-                        # about the user being in less than 0 buckets. So all we need to do here
-                        # is make sure the user isn't in one bucket total. We can do this with
-                        # sum of subBkts + -1*bkt1 = 0
-                        # Make the per-variable factors
-                        factors = [1.0 for _ in range(len(allBkts))]
-                        factors[-1] = -1.0
-                        for aid in aids:
-                            prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}: bkt_sub-bkt"
-                            cnum += 1
+        for bkt,sbkts,_,_ in self.bh.subBucketIterator():
+            allBkts = sbkts
+            allBkts.append(bkt)
+            # Now I have buckets and sub-buckets (in `allBkts`). Any user is either
+            # in the bucket and one sub-bucket (sum==2), or in neither (sum==0).
+            # Because of earlier constraints, the user can't be in more than one bucket
+            # or more than one sub-bucket. As a result, we don't need to worry about
+            # a user being in more than 2 buckets, and obviously we don't need to worry
+            # about the user being in less than 0 buckets. So all we need to do here
+            # is make sure the user isn't in one bucket total. We can do this with
+            # sum of subBkts + -1*bkt1 = 0
+            # Make the per-variable factors
+            factors = [1.0 for _ in range(len(allBkts))]
+            factors[-1] = -1.0
+            for aid in aids:
+                prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}: bkt_sub-bkt"
+                cnum += 1
         self.results['solution']['numConstraints'] = cnum-1
         return prob
 
@@ -263,8 +264,9 @@ if __name__ == "__main__":
     random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
-        'tabType': tabTypes[0],
-        'numValsPerColumn': [5,5,5],
+        'tabType': tabTypes[1],
+        #'numValsPerColumn': [5,5,5],
+        'numValsPerColumn': [3,3,3],
     }
     anonymizerParams = {
         'suppressPolicy': 'hard',
