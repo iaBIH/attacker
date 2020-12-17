@@ -67,7 +67,7 @@ class anonymizer:
             span = int(self.ap['noiseAmount']/2)
             cmin = min(0,trueCount-span)
             return trueCount+span, cmin
-        print("queryForCount: shouln't get here")
+        print("queryForCount: shouldn't get here")
         quit()
 
     def colNames(self):
@@ -75,6 +75,12 @@ class anonymizer:
 
     def distinctVals(self,col):
         return list(self.df[col].unique())
+
+    def getMaxSuppressedCount(self):
+        if self.ap['suppressPolicy'] == 'hard':
+            return self.ap['suppressThreshold'] - 1
+        print("getMaxSuppressedCount: shouldn't get here")
+        quit()
 
     def makeFileName(self, seed):
         fileName = f"s{seed}_"

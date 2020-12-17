@@ -5,13 +5,13 @@ import numpy as np
 
 class bucketHandler:
     ''' Manages various combinations of buckets '''
-    def __init__(self,columns):
-        ''' columns here is a list of column names. our buckets, however,
-            are going to have column/value tuples, so we want a dataframe
-            with len(columns) * 2 columns
+    def __init__(self,columns,an):
+        ''' columns here is a list of column names.
+            an is the anonymizer class object
         '''
         self.pp = pprint.PrettyPrinter(indent=4)
         self.cols = columns
+        self.an = an
         self.dfCols = []
         for col in columns:
             self.dfCols.append(col)
@@ -50,7 +50,7 @@ class bucketHandler:
                         if len(subBkts) == 0:
                             continue
                         # bkt1 is the bucket, subBkts are the sub-buckets of bkt1
-                        yield bkt1,subBkts,cnts1,subCnts
+                        yield bkt1,subBkts,cnts1,subCnts,col
 
     def stripAwaySuppressedDimensions(self):
         ''' Strip away the rows for cases where all of the rows for a given dimension
@@ -85,9 +85,42 @@ class bucketHandler:
             of possible distributions of (for instance) c2m with c1a and c1b.
         '''
         # Make a copy of the df. We'll add and remove from this copy. Note that we can't
-        # remove 
-        for bkt,sbkts,cnts,scnts in self.subBucketIterator():
+        # remove from the current df because we are looping on its contents.
+        self.dfMerged = self.df.copy()
+        print(self.dfMerged)
+        # Remove all suppressed buckets from copy
+        self.dfMerged = self.df[self.dfMerged['cmin'] != -1]
+        print(self.dfMerged)
+        for bkt,sbkts,cnt,scnts,scol in self.subBucketIterator(df=self.df):
+            # count the number of suppressed buckets
+            numSuppressed = [scnts[i]['cmin'] for i in range(len(scnts))].count(-1)
+            if numSuppressed == 0:
+                # no suppressed sub-buckets, so continue
+                if cnt['cmin'] == -1:
+                    # Don't expect bucket to be suppressed when sub-buckets are not!
+                    print(f"ERROR: mergeSuppressedBuckets: Unexpected 1: {bkt}, {sbkts}, {cnt}, {scnts}")
+                    quit()
+                continue
+            # We have one or more suppressed sub-buckets, so merge
+            # The max count of the merged bucket is the sum of the
+            # max possible counts of the suppressed buckets. For now at least
+            # these max possible counts are all the same
+            maxCnt = numSuppressed * self.an.getMaxSuppressedCount()
+            if maxCnt == 0:
+                # This would happen for instance if hard threshold of 1
+                # Don't need a bucket because anyway it would never have anything assigned to it
+                continue
+            # The merged bucket's name
+            bktName = f"{bkt}.merge.{scol}"
             pass
+            for scnt in scnts:
+                if scnt['cmin'] == -1:
+                    # Just double check that this bucket is not in dfMerged
+                    if len(self.dfMerged[self.dfMerged['bkt'] == scnt]) > 0:
+                        print(f"ERROR: mergeSuppressedBuckets: Unexpected 2: {i}, {bkt}, {sbkts}, {cnt}, {scnts}")
+                        quit()
+            pass
+        quit()
 
     def addBucket(self,cols,vals,cmin=0,cmax=0):
         # Make a row with NULL values
@@ -172,14 +205,7 @@ class bucketHandler:
         '''
         keys = {}
         for _, row in df.iterrows():
-            # This loop gives me the columns with values
-            key = ''
-            for i in range(len(self.cols)):
-                if type(row[self.cols[i]]) == str:
-                    key += f"C{self.cols[i]}"
-                    key += f"V{row[self.cols[i]]}."
-            key = key[:-1]
-            keys[key] = {'cmin':row['cmin'],'cmax':row['cmax']}
+            keys[row['bkt']] = {'cmin':row['cmin'],'cmax':row['cmax']}
         return keys
 
 if __name__ == "__main__":

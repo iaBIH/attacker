@@ -107,7 +107,7 @@ class lrAttack:
         # This probably not the most efficient, but I'm going to determine the count range
         # of every combination of columns and values (buckets) individually. However, some
         # buckets may be suppressed, in which case the counts are -1
-        self.bh = bucketHandler.bucketHandler(cols)
+        self.bh = bucketHandler.bucketHandler(cols,self.an)
         for i in range(len(cols)):
             # Get all combinations with i columns
             for colComb in itertools.combinations(cols,i+1):
@@ -197,7 +197,7 @@ class lrAttack:
         # TO do this, we want to loop through every combination of columns, and for each
         # combination, find one additional column and get all the sub-buckets
         # Note this constraint scales poorly and we might need to think of a work-around
-        for bkt,sbkts,_,_ in self.bh.subBucketIterator():
+        for bkt,sbkts,_,_,_ in self.bh.subBucketIterator():
             allBkts = sbkts
             allBkts.append(bkt)
             # Now I have buckets and sub-buckets (in `allBkts`). Any user is either
@@ -264,13 +264,13 @@ if __name__ == "__main__":
     random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
-        'tabType': tabTypes[1],
-        #'numValsPerColumn': [5,5,5],
-        'numValsPerColumn': [3,3,3],
+        'tabType': tabTypes[0],
+        'numValsPerColumn': [5,5,5],
+        #'numValsPerColumn': [3,3,3],
     }
     anonymizerParams = {
         'suppressPolicy': 'hard',
-        'suppressThreshold': 0,
+        'suppressThreshold': 3,
         'noisePolicy': 'simple',
         'noiseAmount': 0,
     }
