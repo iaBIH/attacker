@@ -277,6 +277,14 @@ class lrAttack:
         '''
         return prob
 
+    def solve(self,prob):
+        start = time.time()
+        prob.solve()
+        end = time.time()
+        self.results['solution']['elapsedTime'] = end - start
+        self.results['solution']['solveStatus'] = pulp.LpStatus[prob.status]
+        return self.results['solution']['solveStatus']
+
     def storeProblem(self,prob):
         # Store the PuLP problem
         name = self.fileName + '_prob.json'
@@ -301,7 +309,7 @@ if __name__ == "__main__":
     }
     anonymizerParams = {
         'suppressPolicy': 'hard',
-        'suppressThreshold': 2,
+        'suppressThreshold': 0,
         'noisePolicy': 'simple',
         'noiseAmount': 0,
     }
@@ -310,12 +318,8 @@ if __name__ == "__main__":
     prob = lra.makeProblem()
     print("Solving problem")
     lra.storeProblem(prob)
-    start = time.time()
-    prob.solve()
-    end = time.time()
-    lra.results['solution']['elapsedTime'] = end - start
-    lra.results['solution']['solveStatus'] = pulp.LpStatus[prob.status]
-    pp.pprint(f"Solve Status: {pulp.LpStatus[prob.status]}")
+    solveStatus = lra.solve(prob)
+    print(f"Solve Status: {solveStatus}")
     lra.solutionToTable()
     lra.saveResults()
 
