@@ -2,6 +2,9 @@ import pprint
 import itertools
 import pandas as pd
 import numpy as np
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+
 
 class bucketHandler:
     ''' Manages various combinations of buckets '''
@@ -23,7 +26,7 @@ class bucketHandler:
 
     def subBucketIterator(self,df=None):
         ''' Iterates through every bucket / sub-bucket combination in df
-            Returns the combination and a list of sub-buckets.
+            Returns the bucket and a list of sub-buckets.
         '''
         if df is None:
             df = self.df
@@ -31,7 +34,8 @@ class bucketHandler:
             # Get all combinations with i columns
             for colComb in itertools.combinations(self.cols,i+1):
                 # Get all single columns not in the combination
-                combCounts = self.getColCounts(colComb,df=df)
+                #combCounts = self.getColCounts(colComb,df=df)
+                dfComb = self.getColDf(colComb,df=df)
                 for col in self.cols:
                     if col in colComb:
                         continue
@@ -39,37 +43,43 @@ class bucketHandler:
                     # in colComb+col that are sub-buckets of colComb.
                     subCols = list(colComb)
                     subCols.append(col)
-                    subCounts = self.getColCounts(subCols,df=df)
-                    for bkt1,cnts1 in combCounts.items():
-                        subBkts = []
-                        subCnts = []
-                        for bkt2,cnts2 in subCounts.items():
-                            if self.isSubBucket(bkt2,bkt1):
-                                subBkts.append(bkt2)
-                                subCnts.append(cnts2)
-                        if len(subBkts) == 0:
+                    #subCounts = self.getColCounts(subCols,col=col,df=df)
+                    dfAllSub = self.getColDf(subCols,df=df)
+                    #for bkt1,cnts1 in combCounts.items():
+                    for _, sComb in dfComb.iterrows():
+                        dfSub = pd.DataFrame(columns=self.dfCols)
+                        #for bkt2,cnts2 in subCounts.items():
+                        for _, sSub in dfAllSub.iterrows():
+                            if self.isSubBucket(sSub['bkt'],sComb['bkt']):
+                                df2 = pd.DataFrame([sSub], columns=self.dfCols)
+                                dfSub = dfSub.append(df2,ignore_index=True)
+                        if len(dfSub.index) == 0:
                             continue
                         # bkt1 is the bucket, subBkts are the sub-buckets of bkt1
-                        yield bkt1,subBkts,cnts1,subCnts,col
+                        # col is the additional column that comprises the sub-buckets
+                        yield sComb,dfSub,col
 
     def stripAwaySuppressedDimensions(self):
         ''' Strip away the rows for cases where all of the rows for a given dimension
             are suppressed because no constraints can be generated for these
         '''
+        numRowsBefore = len(self.df.index)
         numNonSuppressed = [0 for _ in range(len(self.cols)+1)]
         # Make a first pass through the buckets table df, and for each dimension,
         # count number of non-suppressed buckets 
         for rowi, s in self.df.iterrows():
-            dim = len(self.cols) - s.isna().sum()
-            if s['cmin'] != -1:
-                numNonSuppressed[dim] += 1
+            if s['cmin'] > 0:
+                numNonSuppressed[s['dim']] += 1
         for dim in range(1,len(self.cols)+1):
             if numNonSuppressed[dim] == 0:
                 # All rows for this dimension are suppressed. Remove them.
                 #self.df = self.df.query(f"dim != {dim}")
                 self.df = self.df[self.df['dim'] != dim]
+        numRowsAfter = len(self.df.index)
+        return numRowsBefore - numRowsAfter
     
     def mergeSuppressedBuckets(self):
+        # This merging turns out to be completely unecessary  :(
         ''' Say column c1 has values a,b,c,d,e and c2 has values i,j,k,l,m.
             For the 2-dim buckets c1.c2, supposed that the 2D buckets with
             c1a and c2 l and m are suppressed, but not c1a and c2 i, j, and k.
@@ -91,14 +101,28 @@ class bucketHandler:
         # Remove all suppressed buckets from copy
         self.dfMerged = self.df[self.dfMerged['cmin'] != -1]
         print(self.dfMerged)
-        for bkt,sbkts,cnt,scnts,scol in self.subBucketIterator(df=self.df):
-            # count the number of suppressed buckets
-            numSuppressed = [scnts[i]['cmin'] for i in range(len(scnts))].count(-1)
+        for s,dfSub,scol in self.subBucketIterator(df=self.df):
+            # count the number of suppressed buckets, and at the same time, get the
+            # column values of the non-suppressed buckets
+            print(s)
+            print(dfSub)
+            print(scol)
+            vals = []
+            sMerge = None
+            for _, srow in dfSub.iterrows():
+                if srow['cmin'] == -1:
+                    vals.append(srow[scol])
+                    sMerge = srow    # This will be the basis of the new row
+                    # Just validate that this bucket is not in dfMerged
+                    if len(self.dfMerged[self.dfMerged['bkt'] == srow['bkt']]) > 0:
+                        print(f"ERROR: mergeSuppressedBuckets: Unexpected 2: {srow}")
+                        quit()
+            numSuppressed = len(vals)
             if numSuppressed == 0:
                 # no suppressed sub-buckets, so continue
-                if cnt['cmin'] == -1:
+                if s['cmin'] == -1:
                     # Don't expect bucket to be suppressed when sub-buckets are not!
-                    print(f"ERROR: mergeSuppressedBuckets: Unexpected 1: {bkt}, {sbkts}, {cnt}, {scnts}")
+                    print(f"ERROR: mergeSuppressedBuckets: Unexpected 1: {s}")
                     quit()
                 continue
             # We have one or more suppressed sub-buckets, so merge
@@ -111,22 +135,19 @@ class bucketHandler:
                 # Don't need a bucket because anyway it would never have anything assigned to it
                 continue
             # The merged bucket's name
-            bktName = f"{bkt}.merge.{scol}"
-            pass
-            for scnt in scnts:
-                if scnt['cmin'] == -1:
-                    # Just double check that this bucket is not in dfMerged
-                    if len(self.dfMerged[self.dfMerged['bkt'] == scnt]) > 0:
-                        print(f"ERROR: mergeSuppressedBuckets: Unexpected 2: {i}, {bkt}, {sbkts}, {cnt}, {scnts}")
-                        quit()
+            sMerge['bkt'] = f"{s['bkt']}.merge.{scol}"
+            sMerge[scol] = vals
+            sMerge['cmin'] = 0
+            sMerge['cmax'] = maxCnt
+            print(sMerge)
+            print("----")
             pass
         quit()
 
     def addBucket(self,cols,vals,cmin=0,cmax=0):
-        # Make a row with NULL values
-        pass
+        # Make a row with empty lists
         df2 = pd.DataFrame(columns=self.dfCols)
-        init = [np.nan for _ in range(len(self.dfCols))]
+        init = [[] for _ in range(len(self.dfCols))]
         df2.loc[0] = init
         s = df2.loc[0]
         s['cmin'] = cmin
@@ -135,15 +156,14 @@ class bucketHandler:
         bkt = ''
         for col,val in zip(cols,vals):
             #i = self.dfCols.index(col)
-            s[col] = str(val)
+            s[col] = [val]
             dim += 1
             bkt += f"C{col}"
             bkt += f"V{val}."
         bkt = bkt[:-1]
         s['dim'] = dim
-        s['bkt'] = bkt
         # add the bucket name
-        pass
+        s['bkt'] = bkt
         df2 = pd.DataFrame([s], columns=self.dfCols)
         self.df = self.df.append(df2,ignore_index=True)
 
@@ -167,7 +187,7 @@ class bucketHandler:
         bkts1 = bkt1.split('.')
         bkts2 = bkt2.split('.')
         if len(bkts1) != len(bkts2) + 1:
-            # bkt1 does not have one more dimenstion, so cannot be sub-bucket of bkt2.
+            # bkt1 does not have one more dimension, so cannot be sub-bucket of bkt2.
             return False
         for bkt in bkts2:
             if bkt not in bkts1:
@@ -179,8 +199,9 @@ class bucketHandler:
             df = self.df
         return self._getCounts(df)
 
-    def getColCounts(self,cols,df=None):
+    def getColDf(self,cols,col=None,df=None):
         ''' Get all buckets comprised only of the given columns `cols`
+            At the same time, build a list of the values in column col
         '''
         if df is None:
             df = self.df
@@ -188,24 +209,27 @@ class bucketHandler:
         for rowi, s in df.iterrows():
             keep = True
             for j in range(len(self.cols)):
-                if self.dfCols[j] in cols and type(s[j]) is not str:
+                if self.dfCols[j] in cols and len(s[j]) == 0:
                     # we want this column but the entry is null
                     keep = False
                     break
-                elif self.dfCols[j] not in cols and type(s[j]) is str:
+                elif self.dfCols[j] not in cols and len(s[j]) > 0:
                     # we don't want this column, but the entry exists
                     keep = False
                     break
             if keep is False:
                 df1 = df1.drop([rowi])
-        return self._getCounts(df1)
+        return df1
 
-    def _getCounts(self,df):
-        ''' Returns a dict where key is bucket expression and val is count
+    def _getCounts(self,df,col=None):
+        ''' Returns a dict where key is bucket expression and val contains
+            the pass
         '''
         keys = {}
         for _, row in df.iterrows():
             keys[row['bkt']] = {'cmin':row['cmin'],'cmax':row['cmax']}
+            if col:
+                keys[row['bkt']]['colVal'] = row[col]
         return keys
 
 if __name__ == "__main__":

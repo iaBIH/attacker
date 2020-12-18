@@ -42,7 +42,7 @@ class lrAttack:
         self.results['params']['seed'] = seed
         self.results['params']['tableParams'] = self.an.tp
         self.results['params']['anonymizerParams'] = self.an.ap
-        self.results['solution'] = {}
+        self.results['solution'] = {'explain': []}
         self.force = force
         self.fileName = self.an.makeFileName(seed)
 
@@ -78,6 +78,9 @@ class lrAttack:
         self.results['params']['numAids'] = self.an.numAids
         self.results['params']['colVals'] = self.an.colVals
         self.results['originalTable'] = self.an.df.to_dict()
+        numBuckets = 0
+        numSuppressedBuckets = 0
+        numIgnoredBuckets = 0
         if self.force == False:
             prob = self.readProblem()
             if prob:
@@ -131,25 +134,39 @@ class lrAttack:
                         combVals.append(entry[1])
                     query = query[:-5]
                     varName = varName[:-1]
-                    # shape[0] gives the number of rows, which is also the count
                     cmin,cmax = self.an.queryForCount(query)
+                    if cmin == -1:
+                        # bucket is suppressed
+                        numSuppressedBuckets += 1
+                        cmin = 0
+                        cmax = self.an.getMaxSuppressedCount()
+                        if cmax == 0:
+                            # Bucket cannot hold any aids, so can ignore
+                            numIgnoredBuckets += 1
+                            continue
                     self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
+                    numBuckets += 1
+        self.results['solution']['numBuckets'] = numBuckets
+        self._addExplain("numBuckets: Total number of buckets, all dimensions")
+        self.results['solution']['numSuppressedBuckets'] = numSuppressedBuckets
+        self._addExplain("numSuppressedBuckets: Buckets suppressed by anonymizer")
+        self.results['solution']['numIgnoredBuckets'] = numIgnoredBuckets
+        self._addExplain("numIgnoredBuckets: Buckets ignored when making constraints")
         if doprint: print(self.bh.df)
         
         '''
         At this point, `aids` contains a list of all "users", and bh.df contains
         all possible buckets and associated count ranges. If the bucket was suppressed by
-        the anonymizer, then the counts are -1
+        the anonymizer, then the counts are in the possible suppressed min/max range
         '''
         # Strip away any rows from bh.df where ALL rows for a given dimension (number of
         # columns) are suppressed.
-        self.bh.stripAwaySuppressedDimensions()
-        print(self.bh.df)
+        # TODO: This is to shrink the number of constraints, but we could also try skipping
+        # this step because then the constraints will ensure that the suppressed buckets don't
+        # have a greater than suppressed number of users
+        self.results['solution']['numStripped'] = self.bh.stripAwaySuppressedDimensions()
+        self._addExplain("numStripped: Rows stripped away because all rows for a dimension were suppressed")
 
-        # Merge suppressed buckets into a single bucket
-        self.bh.mergeSuppressedBuckets()
-        pass
-        
         # The prob variable is created to contain the problem data
         prob = pulp.LpProblem("Attack-Problem",pulp.LpMinimize)
         cnum = 0
@@ -160,6 +177,7 @@ class lrAttack:
         if doprint: pp.pprint(allCounts)
         self.choices = pulp.LpVariable.dicts("Choice", (aids, allCounts.keys()), cat='Binary')
         self.results['solution']['numChoices'] = len(aids) * len(allCounts)
+        self._addExplain("numChoices: Total number of variables for the solver")
         if doprint: pp.pprint(prob)
         if doprint: pp.pprint(self.choices)
         
@@ -169,14 +187,16 @@ class lrAttack:
         dummy=pulp.LpVariable("dummy",0,0,pulp.LpInteger)
         prob += 0.0*dummy
         
-        print("Constraints ensuring that each bucket has sum equal to number of its users")
+        print("Constraints ensuring that each bucket has sum in range of the number of its users")
         for bkt,cnts in allCounts.items():
             if cnts['cmin'] == cnts['cmax']:
                 # Only one possible value
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == cnts['cmin'], f"{cnum}: num_users_per_bkt"
             else:
-                print("oops")
-                quit()
+                # Range of values, so need two constraints
+                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) >= cnts['cmin'], f"{cnum}: num_users_per_bkt"
+                cnum += 1
+                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) <= cnts['cmax'], f"{cnum}: num_users_per_bkt"
             cnum += 1
         if doprint: pp.pprint(prob)
         
@@ -185,11 +205,10 @@ class lrAttack:
         for i in range(len(cols)-1):
             # Get all combinations with i columns
             for colComb in itertools.combinations(cols,i+1):
-                combCounts = self.bh.getColCounts(colComb)
+                dfComb = self.bh.getColDf(colComb)
                 for aid in aids:
-                    prob += pulp.lpSum([self.choices[aid][bkt] for bkt in combCounts.keys()]) == 1, f"{cnum}: one_user_per_bkt_set"
+                    prob += pulp.lpSum([self.choices[aid][bkt] for bkt in dfComb['bkt'].tolist()]) == 1, f"{cnum}: one_user_per_bkt_set"
                     cnum += 1
-        
         if doprint: pp.pprint(prob)
         
         print("Constraints ensuring that each user in c1b1 is in one of c1b1.c2bX")
@@ -197,9 +216,14 @@ class lrAttack:
         # TO do this, we want to loop through every combination of columns, and for each
         # combination, find one additional column and get all the sub-buckets
         # Note this constraint scales poorly and we might need to think of a work-around
-        for bkt,sbkts,_,_,_ in self.bh.subBucketIterator():
-            allBkts = sbkts
-            allBkts.append(bkt)
+        #for bkt,_,sbkts,_,_ in self.bh.subBucketIterator():
+        for s,dfSub,scol in self.bh.subBucketIterator():
+            # s is a pandas series for the bucket. dfSub is a dataframe with the bucket's
+            # sub-buckets. scol is the name of the column comprising the sub-buckets.
+            #allBkts = sbkts
+            allBkts = dfSub['bkt'].tolist()
+            #allBkts.append(bkt)
+            allBkts.append(s['bkt'])
             # Now I have buckets and sub-buckets (in `allBkts`). Any user is either
             # in the bucket and one sub-bucket (sum==2), or in neither (sum==0).
             # Because of earlier constraints, the user can't be in more than one bucket
@@ -209,13 +233,20 @@ class lrAttack:
             # is make sure the user isn't in one bucket total. We can do this with
             # sum of subBkts + -1*bkt1 = 0
             # Make the per-variable factors
+            # TODO: this only correct if the bucket has no noice (cmin == cmax). If the
+            # bucket has noise, then we'll need two constraints (I think)
             factors = [1.0 for _ in range(len(allBkts))]
             factors[-1] = -1.0
             for aid in aids:
                 prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}: bkt_sub-bkt"
                 cnum += 1
         self.results['solution']['numConstraints'] = cnum-1
+        self._addExplain("numConstraints: Total number of constraints for the solver")
+        if doprint: pp.pprint(prob)
         return prob
+
+    def _addExplain(self,msg):
+        self.results['solution']['explain'].append(msg)
 
     def _buildChoicesDict(self,vars):
         self.choices = {}
@@ -264,13 +295,13 @@ if __name__ == "__main__":
     random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
-        'tabType': tabTypes[0],
-        'numValsPerColumn': [5,5,5],
-        #'numValsPerColumn': [3,3,3],
+        'tabType': tabTypes[1],
+        #'numValsPerColumn': [5,5,5],
+        'numValsPerColumn': [3,3,3],
     }
     anonymizerParams = {
         'suppressPolicy': 'hard',
-        'suppressThreshold': 3,
+        'suppressThreshold': 2,
         'noisePolicy': 'simple',
         'noiseAmount': 0,
     }

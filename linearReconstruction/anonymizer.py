@@ -52,7 +52,7 @@ class anonymizer:
             self.ap['noiseAmount'] = 0
 
     def queryForCount(self, query):
-        ''' Returns -1 if the count is suppressed, otherwise returns the
+        ''' Returns possible min/max range if the count is suppressed, otherwise returns the
             (possibly noisy) count. Noisy count never less than 0.
         '''
         trueCount = self.df.query(query).shape[0]
