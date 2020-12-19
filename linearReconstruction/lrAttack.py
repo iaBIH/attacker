@@ -182,7 +182,7 @@ class lrAttack:
         if doprint: pp.pprint(self.choices)
         
         print("We do not define an objective function since none is needed")
-        # The following dummy objecting is a work-around for a but in the
+        # The following dummy object is a work-around for a bug in the
         # to_json call.
         dummy=pulp.LpVariable("dummy",0,0,pulp.LpInteger)
         prob += 0.0*dummy
@@ -191,12 +191,12 @@ class lrAttack:
         for bkt,cnts in allCounts.items():
             if cnts['cmin'] == cnts['cmax']:
                 # Only one possible value
-                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == cnts['cmin'], f"{cnum}: num_users_per_bkt"
+                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == cnts['cmin'], f"{cnum}_num_users_per_bkt"
             else:
                 # Range of values, so need two constraints
-                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) >= cnts['cmin'], f"{cnum}: num_users_per_bkt"
+                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) >= cnts['cmin'], f"{cnum}_num_users_per_bkt"
                 cnum += 1
-                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) <= cnts['cmax'], f"{cnum}: num_users_per_bkt"
+                prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) <= cnts['cmax'], f"{cnum}_num_users_per_bkt"
             cnum += 1
         if doprint: pp.pprint(prob)
         
@@ -207,7 +207,7 @@ class lrAttack:
             for colComb in itertools.combinations(cols,i+1):
                 dfComb = self.bh.getColDf(colComb)
                 for aid in aids:
-                    prob += pulp.lpSum([self.choices[aid][bkt] for bkt in dfComb['bkt'].tolist()]) == 1, f"{cnum}: one_user_per_bkt_set"
+                    prob += pulp.lpSum([self.choices[aid][bkt] for bkt in dfComb['bkt'].tolist()]) == 1, f"{cnum}_one_user_per_bkt_set"
                     cnum += 1
         if doprint: pp.pprint(prob)
         
@@ -238,7 +238,7 @@ class lrAttack:
             factors = [1.0 for _ in range(len(allBkts))]
             factors[-1] = -1.0
             for aid in aids:
-                prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}: bkt_sub-bkt"
+                prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}_bkt_sub-bkt"
                 cnum += 1
         self.results['solution']['numConstraints'] = cnum-1
         self._addExplain("numConstraints: Total number of constraints for the solver")
@@ -279,9 +279,12 @@ class lrAttack:
 
     def solve(self,prob):
         start = time.time()
-        prob.solve()
+        pulp.LpSolverDefault.msg = 1
+        print("Doing GUROBI_CMD")
+        prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
+        #prob.solve(solver)
         end = time.time()
-        self.results['solution']['elapsedTime'] = end - start
+        self.results['solution']['elapsedTime'] = round((end - start),2)
         self.results['solution']['solveStatus'] = pulp.LpStatus[prob.status]
         return self.results['solution']['solveStatus']
 

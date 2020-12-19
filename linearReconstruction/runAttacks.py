@@ -19,7 +19,7 @@ anonymizerParams = {
 
 prod = []
 # numColumnVals is first because the larger numbers may take a long time to solve
-numColumnVals = [[3,3,3],[3,3,3,3,3],[5,5,5],[5,5,5,5,5],[10,10,10],[10,10,10,10,10]]
+numColumnVals = [[3,3,3],[5,5,5],[10,10,10],[3,3,3,3],[5,5,5,5],[10,10,10,10]]
 prod.append(numColumnVals)
 seeds = ['a']
 prod.append(seeds)
