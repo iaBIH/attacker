@@ -28,6 +28,8 @@ import random
 import os.path
 pp = pprint.PrettyPrinter(indent=4)
 doprint = False
+solver = 'gurobi'
+#solver = 'default'
 
 class lrAttack:
     def __init__(self,
@@ -152,6 +154,7 @@ class lrAttack:
         self._addExplain("numSuppressedBuckets: Buckets suppressed by anonymizer")
         self.results['solution']['numIgnoredBuckets'] = numIgnoredBuckets
         self._addExplain("numIgnoredBuckets: Buckets ignored when making constraints")
+        if doprint: print("Initial bucket table:")
         if doprint: print(self.bh.df)
         
         '''
@@ -166,12 +169,13 @@ class lrAttack:
         # have a greater than suppressed number of users
         self.results['solution']['numStripped'] = self.bh.stripAwaySuppressedDimensions()
         self._addExplain("numStripped: Rows stripped away because all rows for a dimension were suppressed")
+        if doprint: print("Bucket table after stripping suppressed dimensions:")
+        if doprint: print(self.bh.df)
 
         # The prob variable is created to contain the problem data
         prob = pulp.LpProblem("Attack-Problem",pulp.LpMinimize)
         cnum = 0
 
-        pass
         print("The decision variables are created")
         allCounts = self.bh.getAllCounts()
         if doprint: pp.pprint(allCounts)
@@ -206,6 +210,8 @@ class lrAttack:
             # Get all combinations with i columns
             for colComb in itertools.combinations(cols,i+1):
                 dfComb = self.bh.getColDf(colComb)
+                if dfComb.empty:
+                    continue
                 for aid in aids:
                     prob += pulp.lpSum([self.choices[aid][bkt] for bkt in dfComb['bkt'].tolist()]) == 1, f"{cnum}_one_user_per_bkt_set"
                     cnum += 1
@@ -280,9 +286,12 @@ class lrAttack:
     def solve(self,prob):
         start = time.time()
         pulp.LpSolverDefault.msg = 1
-        print("Doing GUROBI_CMD")
-        prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
-        #prob.solve(solver)
+        if solver == 'gurobi':
+            print("Using GUROBI_CMD solver")
+            prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
+        else:
+            print("Using Pulp default solver")
+            prob.solve()
         end = time.time()
         self.results['solution']['elapsedTime'] = round((end - start),2)
         self.results['solution']['solveStatus'] = pulp.LpStatus[prob.status]
@@ -312,7 +321,7 @@ if __name__ == "__main__":
     }
     anonymizerParams = {
         'suppressPolicy': 'hard',
-        'suppressThreshold': 0,
+        'suppressThreshold': 4,
         'noisePolicy': 'simple',
         'noiseAmount': 0,
     }

@@ -47,7 +47,7 @@ def gatherResults():
     columns = []
     stuff = os.listdir('results')
     for thing in stuff:
-        if 'results.json' in thing and 'swp' not in thing:
+        if 'results.json' in thing and 'swp' not in thing and '~' not in thing:
             path = os.path.join('results',thing)
             print(path)
             with open(path, 'r') as f:
@@ -68,3 +68,4 @@ print(df['solveStatus'])
 dfFailed = df[df['solveStatus'] != 'Optimal']
 for rowi, s in dfFailed.iterrows():
     print(s)
+print(df[['solveStatus','numStripped', 'numSuppressedBuckets', 'elapsedTime', 'numChoices', 'numConstraints']])
