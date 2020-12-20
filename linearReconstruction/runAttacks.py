@@ -47,9 +47,15 @@ for numValsPerColumn,seed,tabType,suppressPolicy,suppressThreshold,noisePolicy,n
 
     random.seed(seed)
     lra = lrAttack.lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
+    if lra.problemAlreadySolved():
+        print(f"Attack {lra.fileName} already solved. Moving on.")
+        continue
+    else:
+        print(f"Running attack {lra.fileName}")
+    quit()
     prob = lra.makeProblem()
-    print("Solving problem")
     lra.storeProblem(prob)
+    print("Solving problem")
     solveStatus = lra.solve(prob)
     pp.pprint(f"Solve Status: {solveStatus}")
     lra.solutionToTable()

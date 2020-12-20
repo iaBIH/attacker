@@ -64,9 +64,38 @@ class lrAttack:
         dfNew.reset_index(drop=True,inplace=True)
         self.results['reconstructedTable'] = dfNew.to_dict()
 
-    def saveResults(self):
+    def problemAlreadyAttempted(self):
+        ''' Returns true if the problem was already tried (whether solved or not)
+        '''
+        path = self.getResultsPath()
+        if not path.exists():
+            return False
+        with open(path, 'r') as f:
+            res = json.load(f)
+            if 'solution' in res and 'solveStatus' in res['solution']:
+                return True
+        return False
+
+    def problemAlreadySolved(self):
+        ''' Returns true if the problem was already tried (whether solved or not)
+        '''
+        path = self.getResultsPath()
+        if not os.path.exists(path):
+            return False
+        with open(path, 'r') as f:
+            res = json.load(f)
+            if 'solution' in res and 'solveStatus' in res['solution']:
+                if res['solution']['solveStatus'] == 'Optimal':
+                    return True
+        return False
+
+    def getResultsPath(self):
         name = self.fileName + '_results.json'
         path = os.path.join('results',name)
+        return path
+
+    def saveResults(self):
+        path = self.getResultsPath()
         with open(path, 'w') as f:
             json.dump(self.results, f, indent=4, sort_keys=True)
     
