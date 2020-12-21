@@ -17,14 +17,15 @@ anonymizerParams = {
     'noiseAmount': 'a.noiA',
 }
 solutionParams = {
-    'elapsedTime': 0.16,
-    'numBuckets': 63,
-    'numChoices': 972,
-    'numConstraints': 683,
-    'numIgnoredBuckets': 0,
-    'numStripped': 27,
-    'numSuppressedBuckets': 27,
-    'solveStatus': 'Optimal'
+    'elapsedTime': 's.tim',
+    'matchFraction': 's.mat',
+    'numBuckets': 's.bkts',
+    'numChoices': 's.choi',
+    'numConstraints': 's.cons',
+    'numIgnoredBuckets': 's.ign',
+    'numStripped': 's.str',
+    'numSuppressedBuckets': 's.sup',
+    'solveStatus': 's.sol'
 }
 
 def makeColumns(result):
@@ -32,26 +33,26 @@ def makeColumns(result):
     for k,v in result['solution'].items():
         if k == 'explain':
             continue
-        columns.append(k)
+        columns.append(solutionParams[k])
     for k,v in result['params']['anonymizerParams'].items():
-        columns.append(k)
+        columns.append(anonymizerParams[k])
     for k,v in result['params']['tableParams'].items():
-        columns.append(k)
+        columns.append(tableParams[k])
     return columns
 
 def loadRow(data,columns,result):
     for k,v in result['solution'].items():
-        if k not in columns:
+        if k not in solutionParams or solutionParams[k] not in columns:
             continue
-        data[k].append(str(v))
+        data[solutionParams[k]].append(v)
     for k,v in result['params']['anonymizerParams'].items():
-        if k not in columns:
+        if k not in anonymizerParams or anonymizerParams[k] not in columns:
             continue
-        data[k].append(str(v))
+        data[anonymizerParams[k]].append(v)
     for k,v in result['params']['tableParams'].items():
-        if k not in columns:
+        if tableParams[k] not in columns:
             continue
-        data[k].append(str(v))
+        data[tableParams[k]].append(v)
 
 def gatherResults():
     columns = []
@@ -74,8 +75,8 @@ def gatherResults():
 df = gatherResults()
 print(df)
 print(list(df.columns))
-print(df['solveStatus'])
-dfFailed = df[df['solveStatus'] != 'Optimal']
+print(df['s.sol'])
+dfFailed = df[df['s.sol'] != 'Optimal']
 for rowi, s in dfFailed.iterrows():
     print(s)
-print(df[['solveStatus','numStripped', 'numSuppressedBuckets', 'elapsedTime', 'numChoices', 'numConstraints']])
+print(df[['s.sol','s.str', 's.sup', 's.tim', 's.choi', 's.cons']])
