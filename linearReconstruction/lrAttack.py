@@ -395,13 +395,13 @@ if __name__ == "__main__":
     # complete has one user for every possible column/value combination
     # random has same number of users, but ranomly assigned values. The result
     # should be that many users are random, some are not
-    seed = 'a'
+    seed = 'b'
     random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
-        'tabType': tabTypes[1],
+        'tabType': tabTypes[0],
         #'numValsPerColumn': [5,5,5],
-        'numValsPerColumn': [3,3,3],
+        'numValsPerColumn': [3,3,3,3],
     }
     anonymizerParams = {
         'suppressPolicy': 'hard',
@@ -411,6 +411,16 @@ if __name__ == "__main__":
     }
     
     lra = lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
+    if lra.problemAlreadySolved():
+        print(f"Attack {lra.fileName} already solved")
+        if not lra.solutionAlreadyMeasured():
+            print("    Measuring solution match")
+            lra.measureMatch(force=False)
+        else:
+            print("    Match already measured")
+        quit()
+    else:
+        print(f"Running attack {lra.fileName}")
     prob = lra.makeProblem()
     print("Solving problem")
     lra.storeProblem(prob)
@@ -418,6 +428,7 @@ if __name__ == "__main__":
     print(f"Solve Status: {solveStatus}")
     lra.solutionToTable()
     lra.saveResults()
+    lra.measureMatch(force=False)
 
 '''
 Now what happens is that solutions are generated. In each run of the loop, one solution

@@ -73,7 +73,6 @@ class bucketHandler:
         for dim in range(1,len(self.cols)+1):
             if numNonSuppressed[dim] == 0:
                 # All rows for this dimension are suppressed. Remove them.
-                #self.df = self.df.query(f"dim != {dim}")
                 self.df = self.df[self.df['dim'] != dim]
         numRowsAfter = len(self.df.index)
         return numRowsBefore - numRowsAfter
