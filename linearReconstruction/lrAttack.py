@@ -64,11 +64,55 @@ class lrAttack:
         dfNew.reset_index(drop=True,inplace=True)
         self.results['reconstructedTable'] = dfNew.to_dict()
 
+    def measureMatchDf(self,df1,df2):
+        # I don't find a nice pandas method to do this, so brute force it
+        totalRows = len(df1.index)
+        matchingRows = 0
+        cols = df1.columns.tolist()
+        for i, s in df1.iterrows():
+            # for each row in df1, see if there is a perfect match in df2
+            query = ''
+            for col in cols:
+                query += f"({col} == {s[col]}) and "
+            query = query[:-5]
+            df = df2.query(query)
+            if len(df.index) > 0:
+                # There is a matching row.
+                matchingRows += 1
+                index = df.index[0]
+                df2 = df2.drop(index)
+        print(f"{matchingRows} of {totalRows} match")
+        print(df1)
+        print(df2)
+        matchFrac = round((matchingRows/totalRows),3)
+        print(f"    match frac = {matchFrac}")
+        return matchFrac
+
+    def measureMatch(self,force=False):
+        ''' Measures the fraction of rows in the original table that match rows
+            in the reconstructured table
+        '''
+        path = self.getResultsPath()
+        if not os.path.exists(path):
+            return
+        with open(path, 'r') as f:
+            res = json.load(f)
+            if 'reconstructedTable' not in res:
+                return None
+            if not force and 'matchFraction' in res['solution']:
+                return res['solution']['matchFraction']
+            dfOrig = pd.DataFrame.from_dict(res['originalTable'])
+            dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
+            res['solution']['matchFraction'] = self.measureMatchDf(dfOrig, dfRe)
+        with open(path, 'w') as f:
+            self.saveResults(results=res)
+        return res['solution']['matchFraction']
+
     def problemAlreadyAttempted(self):
         ''' Returns true if the problem was already tried (whether solved or not)
         '''
         path = self.getResultsPath()
-        if not path.exists():
+        if not os.path.exists(path):
             return False
         with open(path, 'r') as f:
             res = json.load(f)
@@ -89,15 +133,29 @@ class lrAttack:
                     return True
         return False
 
+    def solutionAlreadyMeasured(self):
+        ''' Returns true if the match fraction already measured
+        '''
+        path = self.getResultsPath()
+        if not os.path.exists(path):
+            return False
+        with open(path, 'r') as f:
+            res = json.load(f)
+            if 'solution' in res and 'matchFraction' in res['solution']:
+                return True
+        return False
+
     def getResultsPath(self):
         name = self.fileName + '_results.json'
         path = os.path.join('results',name)
         return path
 
-    def saveResults(self):
+    def saveResults(self,results=None):
+        if not results:
+            results = self.results
         path = self.getResultsPath()
         with open(path, 'w') as f:
-            json.dump(self.results, f, indent=4, sort_keys=True)
+            json.dump(results, f, indent=4, sort_keys=True)
     
     def makeProblem(self):
         # First check to see if there is already an LpProblem to read in. Note that the
@@ -251,13 +309,10 @@ class lrAttack:
         # TO do this, we want to loop through every combination of columns, and for each
         # combination, find one additional column and get all the sub-buckets
         # Note this constraint scales poorly and we might need to think of a work-around
-        #for bkt,_,sbkts,_,_ in self.bh.subBucketIterator():
         for s,dfSub,scol in self.bh.subBucketIterator():
             # s is a pandas series for the bucket. dfSub is a dataframe with the bucket's
             # sub-buckets. scol is the name of the column comprising the sub-buckets.
-            #allBkts = sbkts
             allBkts = dfSub['bkt'].tolist()
-            #allBkts.append(bkt)
             allBkts.append(s['bkt'])
             # Now I have buckets and sub-buckets (in `allBkts`). Any user is either
             # in the bucket and one sub-bucket (sum==2), or in neither (sum==0).

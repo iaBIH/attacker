@@ -48,7 +48,12 @@ for numValsPerColumn,seed,tabType,suppressPolicy,suppressThreshold,noisePolicy,n
     random.seed(seed)
     lra = lrAttack.lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
     if lra.problemAlreadySolved():
-        print(f"Attack {lra.fileName} already solved. Moving on.")
+        print(f"Attack {lra.fileName} already solved")
+        if not lra.solutionAlreadyMeasured():
+            print("    Measuring solution match")
+            lra.measureMatch(force=False)
+        else:
+            print("    Match already measured")
         continue
     else:
         print(f"Running attack {lra.fileName}")

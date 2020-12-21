@@ -7,14 +7,24 @@ import numpy as np
 pp = pprint.PrettyPrinter(indent=4)
 
 tableParams = {
-    'tabType': None,
-    'numValsPerColumn': None,
+    'tabType': 't.tab',
+    'numValsPerColumn': 't.shape',
 }
 anonymizerParams = {
-    'suppressPolicy': None,
-    'suppressThreshold': None,
-    'noisePolicy': None,
-    'noiseAmount': None,
+    'suppressPolicy': 'a.supP',
+    'suppressThreshold': 'a.supT',
+    'noisePolicy': 'a.noiP',
+    'noiseAmount': 'a.noiA',
+}
+solutionParams = {
+    'elapsedTime': 0.16,
+    'numBuckets': 63,
+    'numChoices': 972,
+    'numConstraints': 683,
+    'numIgnoredBuckets': 0,
+    'numStripped': 27,
+    'numSuppressedBuckets': 27,
+    'solveStatus': 'Optimal'
 }
 
 def makeColumns(result):
