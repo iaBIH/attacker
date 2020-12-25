@@ -10,31 +10,38 @@ class resultGatherer:
     '''
     def __init__(self):
         self.tableParams = {
-            'tabType': 't.tab',
-            'numValsPerColumn': 't.shape',
+            'tabType': 't_tab',
+            'numValsPerColumn': 't_shape',
         }
         self.anonymizerParams = {
-            'suppressPolicy': 'a.supP',
-            'suppressThreshold': 'a.supT',
-            'noisePolicy': 'a.noiP',
-            'noiseAmount': 'a.noiA',
+            'suppressPolicy': 'a_supP',
+            'suppressThreshold': 'a_supT',
+            'noisePolicy': 'a_noiP',
+            'noiseAmount': 'a_noiA',
         }
         self.solutionParams = {
-            'elapsedTime': 's.tim',
-            'matchFraction': 's.mat',
-            'numBuckets': 's.bkts',
-            'numChoices': 's.choi',
-            'numConstraints': 's.cons',
-            'numIgnoredBuckets': 's.ign',
-            'numStripped': 's.str',
-            'numSuppressedBuckets': 's.sup',
-            'solveStatus': 's.sol'
+            'elapsedTime': 's_tim',
+            'matchFraction': 's_matc',
+            'attackableAndRightFrac': 's_rght',
+            'attackableButWrongFrac': 's_wrng',
+            'nonAttackableFrac': 's_nona',
+            'matchImprove': 's_impv',
+            'numBuckets': 's_bkts',
+            'numChoices': 's_choi',
+            'numConstraints': 's_cons',
+            'numIgnoredBuckets': 's_ign',
+            'numStripped': 's_str',
+            'numSuppressedBuckets': 's_sup',
+            'solveStatus': 's_sol',
+            # These are out of date or should otherwise be ignored
+            'susceptibleFraction': 'ignore',
+            'explain': 'ignore',
         }
     
     def makeColumns(self,result):
         columns = ['seed']
         for k,v in result['solution'].items():
-            if k == 'explain':
+            if self.solutionParams[k] == 'ignore':
                 continue
             columns.append(self.solutionParams[k])
         for k,v in result['params']['anonymizerParams'].items():
@@ -43,22 +50,32 @@ class resultGatherer:
             columns.append(self.tableParams[k])
         return columns
     
-    def loadRow(self,data,columns,result):
+    def loadRowWork(self,data,res,check,columns):
+        numAppend = 0
+        for k,v in res.items():
+            if k not in check or check[k] not in columns:
+                continue
+            if type(v) is list:
+                data[check[k]].append(str(v))
+            else:
+                data[check[k]].append(v)
+            numAppend += 1
+        return numAppend
+
+    def loadRow(self,data,columns,result,path,doprint):
+        numAppend = 1
         data['seed'].append(result['params']['seed'])
-        for k,v in result['solution'].items():
-            if k not in self.solutionParams or self.solutionParams[k] not in columns:
-                continue
-            data[self.solutionParams[k]].append(v)
-        for k,v in result['params']['anonymizerParams'].items():
-            if k not in self.anonymizerParams or self.anonymizerParams[k] not in columns:
-                continue
-            data[self.anonymizerParams[k]].append(v)
-        for k,v in result['params']['tableParams'].items():
-            if self.tableParams[k] not in columns:
-                continue
-            data[self.tableParams[k]].append(v)
+        numAppend += self.loadRowWork(data,result['solution'],self.solutionParams,columns)
+        numAppend += self.loadRowWork(data,result['params']['anonymizerParams'],self.anonymizerParams,columns)
+        numAppend += self.loadRowWork(data,result['params']['tableParams'],self.tableParams,columns)
+        if numAppend != len(columns):
+            print(f"Wrong number of values ({numAppend} vs. {len(columns)} on {path}")
+            print(columns)
+            pp.pprint(result['params'])
+            pp.pprint(result['solution'])
+            quit()
     
-    def gatherResults(self):
+    def gatherResults(self,doprint=False):
         columns = []
         stuff = os.listdir('results')
         for thing in stuff:
@@ -71,18 +88,20 @@ class resultGatherer:
                         data = {}
                         for col in columns:
                             data[col] = []
-                    self.loadRow(data,columns,result)
+                        if doprint: print(f"Columns:")
+                        if doprint: pp.pprint(columns)
+                    self.loadRow(data,columns,result,path,doprint)
         df = pd.DataFrame.from_dict(data)
         return df
 
 if __name__ == "__main__":
     print("Example of resultGatherer")
     rg = resultGatherer()
-    df = rg.gatherResults()
+    df = rg.gatherResults(doprint=True)
     print(df)
     print(list(df.columns))
-    print(df['s.sol'])
-    dfFailed = df[df['s.sol'] != 'Optimal']
+    print(df['s_sol'])
+    dfFailed = df[df['s_sol'] != 'Optimal']
     for rowi, s in dfFailed.iterrows():
         print(s)
-    print(df[['s.sol','s.str', 's.sup', 's.tim', 's.choi', 's.cons']])
+    print(df[['s_sol','s_str', 's_sup', 's_tim', 's_choi', 's_cons']])

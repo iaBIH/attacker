@@ -64,49 +64,129 @@ class lrAttack:
         dfNew.reset_index(drop=True,inplace=True)
         self.results['reconstructedTable'] = dfNew.to_dict()
 
-    def measureMatchDf(self,df1,df2):
+    def measureMatchDf(self,dfOrig,dfRecon):
+        ''' Measures two things:
+            1. The reconstuction quality (how many rows from dfOrig match rows in dfRecon,
+               using each row in dfRecon at most once) as a fraction from 0 to 1
+            2. The fraction of rows in the reconstructed that are considered non-attackable
+               (can't be singled out or inferred)
+            3. The fraction of rows in the reconstructed table that are attackable but the
+               attack is incorrect (singling-out or inference is wrong)
+            4. The fraction of rows in the reconstructed table that are attackable and the
+               attack correct
+        '''
         # I don't find a nice pandas method to do this, so brute force it
-        totalRows = len(df1.index)
+        # dfRcopy will be destroyed as we go
+        dfRcopy = dfRecon.copy()
+        totalRows = len(dfOrig.index)
         matchingRows = 0
-        cols = df1.columns.tolist()
-        for i, s in df1.iterrows():
-            # for each row in df1, see if there is a perfect match in df2
+        attackableButWrong = 0
+        attackableAndRight = 0
+        cols = dfOrig.columns.tolist()
+        for i, s in dfOrig.iterrows():
+            # for each row in dfOrig, see if there is a perfect match in dfRcopy
             query = ''
             for col in cols:
                 query += f"({col} == {s[col]}) and "
             query = query[:-5]
-            df = df2.query(query)
-            if len(df.index) > 0:
-                # There is a matching row.
+            # First check basic reconstruction
+            dfC = dfRcopy.query(query)
+            if len(dfC.index) > 0:
+                # There is at least one matching row.
                 matchingRows += 1
-                index = df.index[0]
-                df2 = df2.drop(index)
-        print(f"{matchingRows} of {totalRows} match")
-        print(df1)
-        print(df2)
+                index = dfC.index[0]
+                dfRcopy = dfRcopy.drop(index)
+            # Then check if an attack is possible and is correct or wrong
+            dfR = dfRecon.query(query)
+            dfO = dfOrig.query(query)
+            if len(dfR.index) == 1:
+                # The reconstructed table tells us that this row (user) is singled out ...
+                if len(dfO.index) == 1:
+                    # ... and indeed that is the case in the original table. So singling-out violation.
+                    attackableAndRight += 1
+                else:
+                    attackableButWrong += 1
+            elif len(dfR.index) > 1:
+                # Possible inference. We are looking for the case where the reconstructed table
+                # shows that N-1 columns definately infers the Nth column, and that this is in
+                # fact true in the original table
+                infer = False
+                for colComb in itertools.combinations(cols,len(cols)-1):
+                    # colComb contains the N-1 columns
+                    query = ''
+                    for col in colComb:
+                        query += f"({col} == {s[col]}) and "
+                    query = query[:-5]
+                    dfRInfer = dfRecon.query(query)
+                    # If all rows in dfInfer are identical, then the Nth column can be inferred from
+                    # the other two columns, so the row being evaluated in the reconstructed table
+                    # can in fact be used to violate privacy
+                    if len(dfRInfer.drop_duplicates().index) == 1:
+                        # There is only one value for the Nth row, so inference is possible. Now check
+                        # the original table
+                        dfOInfer = dfOrig.query(query)
+                        if len(dfOInfer.drop_duplicates().index) == 1:
+                            # Same for the original table. So now just check to make sure that the
+                            # inferred value is in fact the right one
+                            if dfRInfer.iloc[0].equals(dfOInfer.iloc[0]):
+                                infer = True
+                if infer:
+                    attackableAndRight += 1
+                else:
+                    attackableButWrong += 1
         matchFrac = round((matchingRows/totalRows),3)
-        print(f"    match frac = {matchFrac}")
-        return matchFrac
+        nonAttackable = totalRows - attackableAndRight - attackableButWrong
+        nonAttackableFrac = round((nonAttackable/totalRows),3)
+        attackableAndRightFrac = round((attackableAndRight/totalRows),3)
+        attackableButWrongFrac = round((attackableButWrong/totalRows),3)
+        return matchFrac, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac
 
     def measureMatch(self,force=False):
-        ''' Measures the fraction of rows in the original table that match rows
-            in the reconstructured table
+        ''' There are three measures we are interested in. One is simply the fraction
+            of rows that we guessed right (this shows how well we reconstructed, and is
+            for instance the measure the US Census uses). (matchFraction)
+            A second measure is how much this improves over random guessing (matchImprove).
+            A third is the fraction of the matched rows are either unique (and therefore can
+            be singled out), or not unique but where a column can be inferred from the other
+            columns.
         '''
         path = self.getResultsPath()
         if not os.path.exists(path):
             return
         with open(path, 'r') as f:
             res = json.load(f)
-            if 'reconstructedTable' not in res:
-                return None
-            if not force and 'matchFraction' in res['solution']:
-                return res['solution']['matchFraction']
-            dfOrig = pd.DataFrame.from_dict(res['originalTable'])
-            dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
-            res['solution']['matchFraction'] = self.measureMatchDf(dfOrig, dfRe)
+        if 'reconstructedTable' not in res:
+            return None
+        if (not force and 'matchFraction' in res['solution'] and
+            'matchImprove' in res['solution'] and
+            'susceptibleFraction' in res['solution']):
+            return
+        dfOrig = pd.DataFrame.from_dict(res['originalTable'])
+        dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
+        matchFraction, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac = self.measureMatchDf(dfOrig, dfRe)
+        res['solution']['matchFraction'] = matchFraction
+        self._addExplain("matchFraction: Fraction of correctly reconstructed rows")
+        res['solution']['nonAttackableFrac'] = nonAttackableFrac
+        self._addExplain("nonAttackableFrac: Fraction of reconstructed rows that could not be singled out or inferred")
+        res['solution']['attackableAndRightFrac'] = attackableAndRightFrac
+        self._addExplain("nonAttackableFrac: Fraction of attackable rows where the attack is correct")
+        res['solution']['attackableButWrongFrac'] = attackableButWrongFrac
+        self._addExplain("nonAttackableFrac: Fraction of attackable rows where the attack is not correct")
+        dfRan = self.an.makeRandomTable()
+        if len(dfRan.index) != len(dfOrig.index):
+            print(f"measureMatch: error: tables not same length")
+            print(dfOrig)
+            print(dfRan)
+            quit()
+        matchRandom,_,_,_ = self.measureMatchDf(dfOrig, dfRan)
+        if matchRandom == 1.0:
+            print("Wow, random table matches original table!")
+            print(dfOrig)
+            print(dfRan)
+            quit()
+        res['solution']['matchImprove'] = (matchFraction - matchRandom) / (1.0 - matchRandom)
         with open(path, 'w') as f:
             self.saveResults(results=res)
-        return res['solution']['matchFraction']
 
     def problemAlreadyAttempted(self):
         ''' Returns true if the problem was already tried (whether solved or not)
@@ -141,7 +221,9 @@ class lrAttack:
             return False
         with open(path, 'r') as f:
             res = json.load(f)
-            if 'solution' in res and 'matchFraction' in res['solution']:
+            if ('solution' in res and 'matchFraction' in res['solution'] and
+                'matchImprove' in res['solution'] and
+                'susceptibleFraction' in res['solution']):
                 return True
         return False
 
@@ -198,7 +280,7 @@ class lrAttack:
         
         # This probably not the most efficient, but I'm going to determine the count range
         # of every combination of columns and values (buckets) individually. However, some
-        # buckets may be suppressed, in which case the counts are -1
+        # buckets may be suppressed, in which case the returned counts are -1
         self.bh = bucketHandler.bucketHandler(cols,self.an)
         for i in range(len(cols)):
             # Get all combinations with i columns
@@ -229,8 +311,8 @@ class lrAttack:
                         numSuppressedBuckets += 1
                         cmin = 0
                         cmax = self.an.getMaxSuppressedCount()
-                        if cmax == 0:
-                            # Bucket cannot hold any aids, so can ignore
+                        if cmax <= 0:
+                            # Bucket couldn't hold any aids anyway, so can ignore
                             numIgnoredBuckets += 1
                             continue
                     self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
@@ -394,16 +476,18 @@ if __name__ == "__main__":
     # Build a table to attack
     # complete has one user for every possible column/value combination
     # random has same number of users, but ranomly assigned values. The result
-    # should be that many users are random, some are not
-    seed = 'b'
+    # should be that many users are distinct, some are not
+    seed = 'a'
     random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
-        'tabType': tabTypes[0],
+        'tabType': tabTypes[1],
         #'numValsPerColumn': [5,5,5],
         'numValsPerColumn': [3,3,3,3],
+        #'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
+        #'suppressPolicy': 'noisy',
         'suppressPolicy': 'hard',
         'suppressThreshold': 4,
         'noisePolicy': 'simple',
