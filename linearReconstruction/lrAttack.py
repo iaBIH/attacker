@@ -305,16 +305,21 @@ class lrAttack:
                         combVals.append(entry[1])
                     query = query[:-5]
                     varName = varName[:-1]
-                    cmin,cmax = self.an.queryForCount(query)
-                    if cmin == -1:
+                    noisyCount,cmax_sd = self.an.queryForCount(query)
+                    if noisyCount == -1:
                         # bucket is suppressed
                         numSuppressedBuckets += 1
                         cmin = 0
-                        cmax = self.an.getMaxSuppressedCount()
-                        if cmax <= 0:
+                        cmax = cmax_sd
+                        if cmax_sd == 0:
                             # Bucket couldn't hold any aids anyway, so can ignore
                             numIgnoredBuckets += 1
                             continue
+                    else:
+                        # Compute the possible range of values (currently +- 3 standard deviations)
+                        # noisyCount is an integer. cmax_sd is float.
+                        cmin = noisyCount - (3 * cmax_sd)
+                        cmax = noisyCount + (3 * cmax_sd)
                     self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
                     numBuckets += 1
         self.results['solution']['numBuckets'] = numBuckets
@@ -477,25 +482,24 @@ if __name__ == "__main__":
     # complete has one user for every possible column/value combination
     # random has same number of users, but ranomly assigned values. The result
     # should be that many users are distinct, some are not
+    forceSolution = True
     seed = 'a'
     random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
         'tabType': tabTypes[1],
         #'numValsPerColumn': [5,5,5],
-        'numValsPerColumn': [3,3,3,3],
+        'numValsPerColumn': [3,3,3],
         #'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
-        #'suppressPolicy': 'noisy',
-        'suppressPolicy': 'hard',
-        'suppressThreshold': 4,
-        'noisePolicy': 'simple',
-        'noiseAmount': 0,
+        'lcfMin': 2,
+        'lcfMax': 14,
+        'standardDeviation': 0,
     }
     
-    lra = lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
-    if lra.problemAlreadySolved():
+    lra = lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=forceSolution)
+    if not forceSolution and lra.problemAlreadySolved():
         print(f"Attack {lra.fileName} already solved")
         if not lra.solutionAlreadyMeasured():
             print("    Measuring solution match")
@@ -507,7 +511,6 @@ if __name__ == "__main__":
         print(f"Running attack {lra.fileName}")
     prob = lra.makeProblem()
     print("Solving problem")
-    lra.storeProblem(prob)
     solveStatus = lra.solve(prob)
     print(f"Solve Status: {solveStatus}")
     lra.solutionToTable()

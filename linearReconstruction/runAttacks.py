@@ -11,73 +11,93 @@ tableParams = {
     'numValsPerColumn': None,
 }
 anonymizerParams = {
-    'suppressPolicy': None,
-    'suppressThreshold': None,
-    'noisePolicy': None,
-    'noiseAmount': None,
+    'lcfMin': None,
+    'lcfMax': None,
+    'standardDeviation': None,
 }
 
-forceMeasure = True
+forceMeasure = False
+forceSolution = False
+doStoreProblem = False
+
+def oneAttackGroup(prod):
+    for passType in ['justCheck','solve']:
+        for numValsPerColumn,seed,tabType,lcf,sd in itertools.product(*prod):
+            print(passType)
+            print(numValsPerColumn,seed,tabType,lcf,sd)
+            tableParams['tabType'] = tabType
+            tableParams['numValsPerColumn'] = numValsPerColumn
+            anonymizerParams['lcfMin'] = lcf[0]
+            anonymizerParams['lcfMax'] = lcf[1]
+            anonymizerParams['standardDeviation'] = sd
+            pp.pprint(tableParams)
+            pp.pprint(anonymizerParams)
+        
+            random.seed(seed)
+            lra = lrAttack.lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
+            if not forceSolution and lra.problemAlreadySolved():
+                print(f"Attack {lra.fileName} already solved")
+                if forceMeasure:
+                    print("    Measuring solution match (forced)")
+                    lra.measureMatch(force=True)
+                else:
+                    if not lra.solutionAlreadyMeasured():
+                        print("    Measuring solution match")
+                        lra.measureMatch(force=False)
+                    else:
+                        print("    Match already measured")
+                continue
+            if passType == 'solve':
+                print(f"Running attack {lra.fileName}")
+                prob = lra.makeProblem()
+                if (doStoreProblem):
+                    lra.storeProblem(prob)
+                print("Solving problem")
+                solveStatus = lra.solve(prob)
+                pp.pprint(f"Solve Status: {solveStatus}")
+                lra.solutionToTable()
+                lra.saveResults()
+                lra.measureMatch(force=False)
 
 prod = []
 # numColumnVals is first because the larger numbers may take a long time to solve
-numColumnVals = [[3,3,3],[5,5,5],[3,3,3,3],[10,10,10],[5,5,5,5],[10,10,10,10]]
+numColumnVals = [[3,3,3]]
 prod.append(numColumnVals)
-seeds = ['a','b']
+seeds = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
 prod.append(seeds)
 tabTypes = ['random','complete']
 prod.append(tabTypes)
-suppressPolicies = ['hard','noisy']
-prod.append(suppressPolicies)
-suppressThresholds = [0,1,2,4,8]
-prod.append(suppressThresholds)
-noisePolicies = ['simple']
-prod.append(noisePolicies)
-noiseAmounts = [0]
-prod.append(noiseAmounts)
+lcf = [[2,6]]
+prod.append(lcf)
+sf = [0]
+prod.append(sf)
+oneAttackGroup(prod)
+quit()
 
-for passType in ['justCheck','solve']:
-    for numValsPerColumn,seed,tabType,suppressPolicy,suppressThreshold,noisePolicy,noiseAmount in itertools.product(*prod):
-        print(passType)
-        print(seed,tabType,suppressPolicy,suppressThreshold,noisePolicy,noiseAmount,numValsPerColumn)
-        if seeds.index(seed) > 0 and tabType == 'complete':
-            # Changing the seed won't lead to a different table for 'complete' tables, so don't bother
-            print(f"Don't bother with seed {seed} and table type {tabType}")
-            continue
-        if suppressPolicy == 'noisy' and suppressThreshold < 4:
-            print(f"Don't bother with suppress policy {suppressPolicy} and threshold {suppressThreshold}")
-            continue
-        tableParams['tabType'] = tabType
-        tableParams['numValsPerColumn'] = numValsPerColumn
-        anonymizerParams['suppressPolicy'] = suppressPolicy
-        anonymizerParams['suppressThreshold'] = suppressThreshold
-        anonymizerParams['noisePolicy'] = noisePolicy
-        anonymizerParams['noiseAmount'] = noiseAmount
-        pp.pprint(tableParams)
-        pp.pprint(anonymizerParams)
-    
-        random.seed(seed)
-        lra = lrAttack.lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
-        if lra.problemAlreadySolved():
-            print(f"Attack {lra.fileName} already solved")
-            if forceMeasure:
-                print("    Measuring solution match (forced)")
-                lra.measureMatch(force=True)
-            else:
-                if not lra.solutionAlreadyMeasured():
-                    print("    Measuring solution match")
-                    lra.measureMatch(force=False)
-                else:
-                    print("    Match already measured")
-            continue
-        if passType == 'solve':
-            print(f"Running attack {lra.fileName}")
-            prob = lra.makeProblem()
-            lra.storeProblem(prob)
-            print("Solving problem")
-            solveStatus = lra.solve(prob)
-            pp.pprint(f"Solve Status: {solveStatus}")
-            lra.solutionToTable()
-            lra.saveResults()
-            lra.measureMatch(force=False)
-        
+prod = []
+# numColumnVals is first because the larger numbers may take a long time to solve
+numColumnVals = [[3,3,3],[5,5,5],[3,3,3,3],[10,10,10]]
+prod.append(numColumnVals)
+seeds = ['a']
+prod.append(seeds)
+tabTypes = ['random','complete']
+prod.append(tabTypes)
+lcf = [[0,0],[2,2],[4,4],[8,8],[2,6],[2,14]]
+prod.append(lcf)
+sf = [0]
+prod.append(sf)
+oneAttackGroup(prod)
+
+prod = []
+# numColumnVals is first because the larger numbers may take a long time to solve
+numColumnVals = [[5,5,5,5],[10,10,10,10]]
+prod.append(numColumnVals)
+seeds = ['a']
+prod.append(seeds)
+tabTypes = ['random','complete']
+prod.append(tabTypes)
+lcf = [[0,0],[2,2],[4,4],[8,8],[2,6],[2,14]]
+prod.append(lcf)
+sf = [0]
+prod.append(sf)
+oneAttackGroup(prod)

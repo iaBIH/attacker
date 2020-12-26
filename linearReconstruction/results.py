@@ -14,10 +14,9 @@ class resultGatherer:
             'numValsPerColumn': 't_shape',
         }
         self.anonymizerParams = {
-            'suppressPolicy': 'a_supP',
-            'suppressThreshold': 'a_supT',
-            'noisePolicy': 'a_noiP',
-            'noiseAmount': 'a_noiA',
+            'lcfMin': 'a_lcfL',
+            'lcfMax': 'a_lcfH',
+            'standardDeviation': 'a_sd',
         }
         self.solutionParams = {
             'elapsedTime': 's_tim',
@@ -75,6 +74,14 @@ class resultGatherer:
             pp.pprint(result['solution'])
             quit()
     
+    def updateResult(self,result,path):
+        ''' Here we modify the results as per new versions of results
+        '''
+        madeChange = False
+        if madeChange:
+            with open(path, 'w') as f:
+                json.dump(result, f, indent=4, sort_keys=True)
+
     def gatherResults(self,doprint=False):
         columns = []
         stuff = os.listdir('results')
@@ -83,14 +90,15 @@ class resultGatherer:
                 path = os.path.join('results',thing)
                 with open(path, 'r') as f:
                     result = json.load(f)
-                    if len(columns) == 0:
-                        columns = self.makeColumns(result)
-                        data = {}
-                        for col in columns:
-                            data[col] = []
-                        if doprint: print(f"Columns:")
-                        if doprint: pp.pprint(columns)
-                    self.loadRow(data,columns,result,path,doprint)
+                self.updateResult(result,path)
+                if len(columns) == 0:
+                    columns = self.makeColumns(result)
+                    data = {}
+                    for col in columns:
+                        data[col] = []
+                    if doprint: print(f"Columns:")
+                    if doprint: pp.pprint(columns)
+                self.loadRow(data,columns,result,path,doprint)
         df = pd.DataFrame.from_dict(data)
         return df
 

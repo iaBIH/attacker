@@ -21,11 +21,9 @@ class anonymizer:
     def __init__(self, anonymizerParams, tableParams):
         '''
             anonymizerParams:
-                suppressPolicy = 'hard' or 'noisy'
-                suppressThreshold = 0,
-                noisePolicy = 'simple' or 'layered'
-                noiseType = 'normal' or 'uniform'
-                noiseAmount = 0
+                lcfMin = lowest possible threshold
+                lcfMax = highest possible threshold
+                standardDeviation = noise standard deviation
             tableParams:
                 tabType = 'random' or 'complete'
                 numValsPerColumn = [5,5,5]
@@ -43,14 +41,12 @@ class anonymizer:
             self.ap = anonymizerParams
         else:
             self.ap = {}
-        if not self.ap['suppressPolicy']:
-            self.ap['suppressPolicy'] = 'hard'
-        if not self.ap['suppressThreshold']:
-            self.ap['suppressThreshold'] = 0
-        if not self.ap['noisePolicy']:
-            self.ap['noisePolicy'] = 'simple'
-        if not self.ap['noiseAmount']:
-            self.ap['noiseAmount'] = 0
+        if not self.ap['lcfMin']:
+            self.ap['lcfMin'] = 0
+        if not self.ap['lcfMax']:
+            self.ap['lcfMax'] = 0
+        if not self.ap['standardDeviation']:
+            self.ap['standardDeviation'] = 0.0
         self.numCols = len(self.tp['numValsPerColumn'])
         self.cols = []
         for i in range(self.numCols):
@@ -65,54 +61,26 @@ class anonymizer:
         if doprint: pp.pprint(self.colVals)
 
     def queryForCount(self, query):
-        ''' Returns possible min/max range if the count is suppressed, otherwise returns the
-            (possibly noisy) count. Noisy count never less than 0.
+        ''' Returns two values. If suppressed, the first value is -1 and the second is
+            the maximum possible true count.
+            If not suppressed, the first value is the rounded noisy count, and the second is the
+            standard deviation of the noise. The noisy count is never less than 0.
         '''
         trueCount = self.df.query(query).shape[0]
-        if self.ap['suppressPolicy'] == 'hard':
-            if trueCount < self.ap['suppressThreshold']:
-                return -1,-1
-        elif self.ap['suppressPolicy'] == 'noisy':
-            ''' Here a noisy threshold operates by selecting a random value uniformly between 2
-                and t+(t-2). So if the threshold is 3, the range is 2-4. If the threshold is 4,
-                the range is 2-6, and so on.
-            '''
-            if self.ap['suppressThreshold'] <= 2:
-                threshold = self.ap['suppressThreshold']
-            else:
-                minThresh = 2
-                maxThresh = self.ap['suppressThreshold'] + (self.ap['suppressThreshold'] - 2)
-                threshold = random.randrange(minThresh,maxThresh+1)
-            if trueCount < threshold:
-                return -1,-1
-        else:
-            print(f"queryForCount: unknown suppress policy {self.ap['suppressPolicy']}")
-            quit()
-        if self.ap['noiseAmount'] == 0:
-            return trueCount, trueCount
-        elif self.ap['noisePolicy'] == 'simple' and self.ap['noiseType'] == 'uniform':
-            span = int(self.ap['noiseAmount']/2)
-            cmin = min(0,trueCount-span)
-            return cmin, trueCount+span
-        print("queryForCount: shouldn't get here")
-        quit()
+        lcfThresh = random.randrange(self.ap['lcfMin'],self.ap['lcfMax']+1)
+        if trueCount < lcfThresh:
+            maxTrueValue = self.ap['lcfMax'] - 1
+            return -1,maxTrueValue
+        noise = random.gauss(0,self.ap['standardDeviation'])
+        noisyCount = round(trueCount + noise)
+        noisyCount = max(0,noisyCount)
+        return noisyCount,self.ap['standardDeviation']
 
     def colNames(self):
         return list(self.df.columns)
 
     def distinctVals(self,col):
         return list(self.df[col].unique())
-
-    def getMaxSuppressedCount(self):
-        if self.ap['suppressPolicy'] == 'hard':
-            return self.ap['suppressThreshold'] - 1
-        elif self.ap['suppressPolicy'] == 'noisy':
-            if self.ap['suppressThreshold'] <= 2:
-                return self.ap['suppressThreshold'] - 1
-            maxThresh = self.ap['suppressThreshold'] + (self.ap['suppressThreshold'] - 2)
-            return maxThresh - 1
-        print("getMaxSuppressedCount: shouldn't get here")
-        quit()
 
     def makeFileName(self, seed):
         fileName = f"s{seed}_"
