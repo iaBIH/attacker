@@ -25,6 +25,7 @@ class resultGatherer:
             'attackableButWrongFrac': 's_wrng',
             'nonAttackableFrac': 's_nona',
             'matchImprove': 's_impv',
+            'aggregateErrorAvg': 's_err',
             'numBuckets': 's_bkts',
             'numChoices': 's_choi',
             'numConstraints': 's_cons',

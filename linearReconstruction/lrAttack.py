@@ -25,6 +25,7 @@ import bucketHandler
 import anonymizer
 import itertools
 import random
+import statistics
 import os.path
 pp = pprint.PrettyPrinter(indent=4)
 doprint = False
@@ -189,15 +190,27 @@ class lrAttack:
             print(dfRan)
             quit()
         res['solution']['matchImprove'] = (matchFraction - matchRandom) / (1.0 - matchRandom)
+        self._addExplain("matchImprove: Improvement in reconstructed table over random table")
         # Then aggregates
-        errors = self.measureAggregatesDf(dfOrig, dfRan)
+        errors = self.measureAggregatesDf(dfOrig, dfRe)
+        res['solution']['aggregateErrorAvg'] = statistics.mean(errors)
+        self._addExplain("aggregateErrorAvg: Average of absolute errors in bucket counts, original versus reconstructed")
         with open(path, 'w') as f:
             self.saveResults(results=res)
 
-    def measureAggregatesDf(self, dfOrig, dfRan):
+    def measureAggregatesDf(self, dfOrig, dfRe):
         errors = []
         # loop through all aggregates for all dimensions
-        pass
+        for fullComb in self.combColIterator():
+            # Now we make a dataframe query out of the combination
+            query = ''
+            for entry in fullComb:
+                # entry[0] is the column name, entry[1] is the bucket value
+                query += f"{entry[0]} == {entry[1]} and "
+            query = query[:-5]
+            cntOrig = dfOrig.query(query).shape[0]
+            cntRe = dfRe.query(query).shape[0]
+            errors.append(abs(cntOrig - cntRe))
         return errors
 
     def problemAlreadyAttempted(self):
