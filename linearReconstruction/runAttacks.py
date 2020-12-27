@@ -39,11 +39,11 @@ def oneAttackGroup(prod):
                 print(f"Attack {lra.fileName} already solved")
                 if forceMeasure:
                     print("    Measuring solution match (forced)")
-                    lra.measureMatch(force=True)
+                    lra.measureMatch()
                 else:
                     if not lra.solutionAlreadyMeasured():
                         print("    Measuring solution match")
-                        lra.measureMatch(force=False)
+                        lra.measureMatch()
                     else:
                         print("    Match already measured")
                 continue
@@ -57,7 +57,7 @@ def oneAttackGroup(prod):
                 pp.pprint(f"Solve Status: {solveStatus}")
                 lra.solutionToTable()
                 lra.saveResults()
-                lra.measureMatch(force=False)
+                lra.measureMatch()
 
 prod = []
 # numColumnVals is first because the larger numbers may take a long time to solve
@@ -67,7 +67,7 @@ seeds = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r'
 prod.append(seeds)
 tabTypes = ['random','complete']
 prod.append(tabTypes)
-lcf = [[2,6]]
+lcf = [[4,4],[2,6]]
 prod.append(lcf)
 sf = [0]
 prod.append(sf)

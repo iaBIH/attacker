@@ -141,14 +141,21 @@ class lrAttack:
         attackableButWrongFrac = round((attackableButWrong/totalRows),3)
         return matchFrac, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac
 
-    def measureMatch(self,force=False):
-        ''' There are three measures we are interested in. One is simply the fraction
+    def measureMatch(self):
+        ''' This makes two sets of measures. One is for row-level reconstruction quality (measures
+            individual rows). The other measures aggregates, and is used to help determine
+            wy row-level reconstruction is good or bad.
+        
+            For row-level, there are three measures we are interested in. One is simply the fraction
             of rows that we guessed right (this shows how well we reconstructed, and is
             for instance the measure the US Census uses). (matchFraction)
             A second measure is how much this improves over random guessing (matchImprove).
             A third is the fraction of the matched rows are either unique (and therefore can
             be singled out), or not unique but where a column can be inferred from the other
             columns.
+
+            For aggregates, we measure the absolute error between the aggregates counts of the
+            original and reconstructed data.
         '''
         path = self.getResultsPath()
         if not os.path.exists(path):
@@ -157,12 +164,9 @@ class lrAttack:
             res = json.load(f)
         if 'reconstructedTable' not in res:
             return None
-        if (not force and 'matchFraction' in res['solution'] and
-            'matchImprove' in res['solution'] and
-            'susceptibleFraction' in res['solution']):
-            return
         dfOrig = pd.DataFrame.from_dict(res['originalTable'])
         dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
+        # First row-level reconstruction
         matchFraction, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac = self.measureMatchDf(dfOrig, dfRe)
         res['solution']['matchFraction'] = matchFraction
         self._addExplain("matchFraction: Fraction of correctly reconstructed rows")
@@ -185,8 +189,16 @@ class lrAttack:
             print(dfRan)
             quit()
         res['solution']['matchImprove'] = (matchFraction - matchRandom) / (1.0 - matchRandom)
+        # Then aggregates
+        errors = self.measureAggregatesDf(dfOrig, dfRan)
         with open(path, 'w') as f:
             self.saveResults(results=res)
+
+    def measureAggregatesDf(self, dfOrig, dfRan):
+        errors = []
+        # loop through all aggregates for all dimensions
+        pass
+        return errors
 
     def problemAlreadyAttempted(self):
         ''' Returns true if the problem was already tried (whether solved or not)
@@ -221,9 +233,8 @@ class lrAttack:
             return False
         with open(path, 'r') as f:
             res = json.load(f)
-            if ('solution' in res and 'matchFraction' in res['solution'] and
-                'matchImprove' in res['solution'] and
-                'susceptibleFraction' in res['solution']):
+            if ('solution' in res):
+                # add any new measurement here
                 return True
         return False
 
@@ -238,6 +249,19 @@ class lrAttack:
         path = self.getResultsPath()
         with open(path, 'w') as f:
             json.dump(results, f, indent=4, sort_keys=True)
+
+    def combColIterator(self):
+        for i in range(len(self.cols)):
+            # Get all combinations with i columns
+            for colComb in itertools.combinations(self.cols,i+1):
+                prod = []
+                for col in colComb:
+                    tups = []
+                    for bkt in self.an.df[col].unique():
+                        tups.append((col,bkt))
+                    prod.append(tups)
+                for fullComb in itertools.product(*prod):
+                    yield fullComb
     
     def makeProblem(self):
         # First check to see if there is already an LpProblem to read in. Note that the
@@ -282,46 +306,37 @@ class lrAttack:
         # of every combination of columns and values (buckets) individually. However, some
         # buckets may be suppressed, in which case the returned counts are -1
         self.bh = bucketHandler.bucketHandler(cols,self.an)
-        for i in range(len(cols)):
-            # Get all combinations with i columns
-            for colComb in itertools.combinations(cols,i+1):
-                prod = []
-                for col in colComb:
-                    tups = []
-                    for bkt in self.an.df[col].unique():
-                        tups.append((col,bkt))
-                    prod.append(tups)
-                for fullComb in itertools.product(*prod):
-                    # Now we make a dataframe query out of the combination
-                    query = ''
-                    varName = ''
-                    combCols = []
-                    combVals = []
-                    for entry in fullComb:
-                        # entry[0] is the column name, entry[1] is the bucket value
-                        query += f"{entry[0]} == {entry[1]} and "
-                        varName += f"{entry[0]}.v{entry[1]}."
-                        combCols.append(entry[0])
-                        combVals.append(entry[1])
-                    query = query[:-5]
-                    varName = varName[:-1]
-                    noisyCount,cmax_sd = self.an.queryForCount(query)
-                    if noisyCount == -1:
-                        # bucket is suppressed
-                        numSuppressedBuckets += 1
-                        cmin = 0
-                        cmax = cmax_sd
-                        if cmax_sd == 0:
-                            # Bucket couldn't hold any aids anyway, so can ignore
-                            numIgnoredBuckets += 1
-                            continue
-                    else:
-                        # Compute the possible range of values (currently +- 3 standard deviations)
-                        # noisyCount is an integer. cmax_sd is float.
-                        cmin = noisyCount - (3 * cmax_sd)
-                        cmax = noisyCount + (3 * cmax_sd)
-                    self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
-                    numBuckets += 1
+        for fullComb in self.combColIterator():
+            # Now we make a dataframe query out of the combination
+            query = ''
+            varName = ''
+            combCols = []
+            combVals = []
+            for entry in fullComb:
+                # entry[0] is the column name, entry[1] is the bucket value
+                query += f"{entry[0]} == {entry[1]} and "
+                varName += f"{entry[0]}.v{entry[1]}."
+                combCols.append(entry[0])
+                combVals.append(entry[1])
+            query = query[:-5]
+            varName = varName[:-1]
+            noisyCount,cmax_sd = self.an.queryForCount(query)
+            if noisyCount == -1:
+                # bucket is suppressed
+                numSuppressedBuckets += 1
+                cmin = 0
+                cmax = cmax_sd
+                if cmax_sd == 0:
+                    # Bucket couldn't hold any aids anyway, so can ignore
+                    numIgnoredBuckets += 1
+                    continue
+            else:
+                # Compute the possible range of values (currently +- 3 standard deviations)
+                # noisyCount is an integer. cmax_sd is float.
+                cmin = noisyCount - (3 * cmax_sd)
+                cmax = noisyCount + (3 * cmax_sd)
+            self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
+            numBuckets += 1
         self.results['solution']['numBuckets'] = numBuckets
         self._addExplain("numBuckets: Total number of buckets, all dimensions")
         self.results['solution']['numSuppressedBuckets'] = numSuppressedBuckets
@@ -503,7 +518,7 @@ if __name__ == "__main__":
         print(f"Attack {lra.fileName} already solved")
         if not lra.solutionAlreadyMeasured():
             print("    Measuring solution match")
-            lra.measureMatch(force=False)
+            lra.measureMatch()
         else:
             print("    Match already measured")
         quit()
@@ -515,7 +530,7 @@ if __name__ == "__main__":
     print(f"Solve Status: {solveStatus}")
     lra.solutionToTable()
     lra.saveResults()
-    lra.measureMatch(force=False)
+    lra.measureMatch()
 
 '''
 Now what happens is that solutions are generated. In each run of the loop, one solution

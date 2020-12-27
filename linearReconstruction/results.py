@@ -47,6 +47,7 @@ class resultGatherer:
             columns.append(self.anonymizerParams[k])
         for k,v in result['params']['tableParams'].items():
             columns.append(self.tableParams[k])
+        columns.append('l_lcf')
         return columns
     
     def loadRowWork(self,data,res,check,columns):
@@ -61,12 +62,17 @@ class resultGatherer:
             numAppend += 1
         return numAppend
 
+    def addLcfLabel(self,data,ap,columns):
+        data['l_lcf'].append(f"LCF({ap['lcfMin']},{ap['lcfMax']})")
+        return 1
+
     def loadRow(self,data,columns,result,path,doprint):
         numAppend = 1
         data['seed'].append(result['params']['seed'])
         numAppend += self.loadRowWork(data,result['solution'],self.solutionParams,columns)
         numAppend += self.loadRowWork(data,result['params']['anonymizerParams'],self.anonymizerParams,columns)
         numAppend += self.loadRowWork(data,result['params']['tableParams'],self.tableParams,columns)
+        numAppend += self.addLcfLabel(data,result['params']['anonymizerParams'],columns)
         if numAppend != len(columns):
             print(f"Wrong number of values ({numAppend} vs. {len(columns)} on {path}")
             print(columns)
