@@ -511,6 +511,7 @@ if __name__ == "__main__":
     # random has same number of users, but ranomly assigned values. The result
     # should be that many users are distinct, some are not
     forceSolution = True
+    doStoreProblem = True
     seed = 'a'
     random.seed(seed)
     tabTypes = ['random','complete']
@@ -538,6 +539,8 @@ if __name__ == "__main__":
     else:
         print(f"Running attack {lra.fileName}")
     prob = lra.makeProblem()
+    if (doStoreProblem):
+        lra.storeProblem(prob)
     print("Solving problem")
     solveStatus = lra.solve(prob)
     print(f"Solve Status: {solveStatus}")
