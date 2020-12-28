@@ -15,6 +15,11 @@ anonymizerParams = {
     'lcfMax': None,
     'standardDeviation': None,
 }
+solveParams = {
+    'lcfMin': None,
+    'lcfMax': None,
+    'standardDeviation': None,
+}
 
 forceMeasure = False
 forceSolution = False
@@ -22,7 +27,7 @@ doStoreProblem = False
 
 def oneAttackGroup(prod):
     for passType in ['justCheck','solve']:
-        for numValsPerColumn,seed,tabType,lcf,sd in itertools.product(*prod):
+        for numValsPerColumn,seed,tabType,lcf,sd,eLcf,eSd in itertools.product(*prod):
             print(passType)
             print(numValsPerColumn,seed,tabType,lcf,sd)
             tableParams['tabType'] = tabType
@@ -30,11 +35,15 @@ def oneAttackGroup(prod):
             anonymizerParams['lcfMin'] = lcf[0]
             anonymizerParams['lcfMax'] = lcf[1]
             anonymizerParams['standardDeviation'] = sd
+            solveParams['lcfMin'] = eLcf[0]
+            solveParams['lcfMax'] = eLcf[1]
+            solveParams['standardDeviation'] = eSd
             pp.pprint(tableParams)
             pp.pprint(anonymizerParams)
+            pp.pprint(solveParams)
         
             random.seed(seed)
-            lra = lrAttack.lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=True)
+            lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
             if not forceSolution and lra.problemAlreadySolved():
                 print(f"Attack {lra.fileName} already solved")
                 if forceMeasure:
@@ -71,6 +80,10 @@ lcf = [[4,4],[2,6]]
 prod.append(lcf)
 sf = [0]
 prod.append(sf)
+eLcf = [[None,None]]
+prod.append(eLcf)
+eSd = None
+prod.append(eSd)
 oneAttackGroup(prod)
 quit()
 

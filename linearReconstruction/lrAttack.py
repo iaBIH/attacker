@@ -33,18 +33,16 @@ solver = 'gurobi'
 #solver = 'default'
 
 class lrAttack:
-    def __init__(self,
-                    seed,
-                    anonymizerParams = None,
-                    tableParams = None,
-                    force=False,
-                ):
+    def __init__(self, seed, anonymizerParams, tableParams, solveParams, force=False,):
+        print(seed)
+        pp.pprint(tableParams)
         self.seed = seed
         self.an = anonymizer.anonymizer(anonymizerParams, tableParams)
         self.results = {'params':{}}
         self.results['params']['seed'] = seed
         self.results['params']['tableParams'] = self.an.tp
         self.results['params']['anonymizerParams'] = self.an.ap
+        self.results['params']['solveParams'] = solveParams
         self.results['solution'] = {'explain': []}
         self.force = force
         self.fileName = self.an.makeFileName(seed)
@@ -526,8 +524,13 @@ if __name__ == "__main__":
         'lcfMax': 14,
         'standardDeviation': 0,
     }
+    solveParams = {
+        'lcfMin': None,
+        'lcfMax': None,
+        'standardDeviation': None,
+    }
     
-    lra = lrAttack(seed, tableParams=tableParams, anonymizerParams=anonymizerParams, force=forceSolution)
+    lra = lrAttack(seed, anonymizerParams, tableParams, solveParams, force=forceSolution)
     if not forceSolution and lra.problemAlreadySolved():
         print(f"Attack {lra.fileName} already solved")
         if not lra.solutionAlreadyMeasured():
