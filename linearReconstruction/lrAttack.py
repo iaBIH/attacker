@@ -38,6 +38,7 @@ class lrAttack:
         pp.pprint(tableParams)
         self.seed = seed
         self.an = anonymizer.anonymizer(anonymizerParams, tableParams)
+        self.sp = solveParams
         self.results = {'params':{}}
         self.results['params']['seed'] = seed
         self.results['params']['tableParams'] = self.an.tp
@@ -45,7 +46,25 @@ class lrAttack:
         self.results['params']['solveParams'] = solveParams
         self.results['solution'] = {'explain': []}
         self.force = force
-        self.fileName = self.an.makeFileName(seed)
+        self.fileName = self.makeFileName(seed)
+
+    def _makeFileNameWork(self, fileName, params):
+        for key in sorted(list(params.keys())):
+            val = params[key]
+            if type(val) == list:
+                for lv in val:
+                    fileName += f"{lv}_"
+            else:
+                fileName += f"{val}_"
+        return fileName
+
+    def makeFileName(self, seed):
+        fileName = f"s{seed}_"
+        fileName = self._makeFileNameWork(fileName,self.an.tp)
+        fileName = self._makeFileNameWork(fileName,self.an.ap)
+        fileName = self._makeFileNameWork(fileName,self.sp)
+        fileName = fileName[:-1]
+        return fileName
 
     def solutionToTable(self):
         data = {}
@@ -337,13 +356,16 @@ class lrAttack:
                 numSuppressedBuckets += 1
                 cmin = 0
                 cmax = cmax_sd
-                if cmax_sd == 0:
+                # TODO put elastic constraints here
+                if cmax == 0:
                     # Bucket couldn't hold any aids anyway, so can ignore
                     numIgnoredBuckets += 1
                     continue
             else:
                 # Compute the possible range of values (currently +- 3 standard deviations)
+                # These are the hard constraints. cmax_sd = 0 if no noise at all.
                 # noisyCount is an integer. cmax_sd is float.
+                # TODO put elastic constraints here
                 cmin = noisyCount - (3 * cmax_sd)
                 cmax = noisyCount + (3 * cmax_sd)
             self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
@@ -441,7 +463,7 @@ class lrAttack:
             factors = [1.0 for _ in range(len(allBkts))]
             factors[-1] = -1.0
             for aid in aids:
-                prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}_bkt_sub-bkt"
+                prob += pulp.lpSum([factors[j]*self.choices[aid][allBkts[j]] for j in range(len(allBkts))]) == 0, f"{cnum}_bkt_sub_bkt"
                 cnum += 1
         self.results['solution']['numConstraints'] = cnum-1
         self._addExplain("numConstraints: Total number of constraints for the solver")
@@ -525,9 +547,8 @@ if __name__ == "__main__":
         'standardDeviation': 0,
     }
     solveParams = {
-        'lcfMin': None,
-        'lcfMax': None,
-        'standardDeviation': None,
+        'elasticLcf': 0,
+        'elasticNoise': 0,
     }
     
     lra = lrAttack(seed, anonymizerParams, tableParams, solveParams, force=forceSolution)

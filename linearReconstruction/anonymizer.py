@@ -82,25 +82,6 @@ class anonymizer:
     def distinctVals(self,col):
         return list(self.df[col].unique())
 
-    def makeFileName(self, seed):
-        fileName = f"s{seed}_"
-        for key in sorted(list(self.tp.keys())):
-            val = self.tp[key]
-            if type(val) == list:
-                for lv in val:
-                    fileName += f"{lv}_"
-            else:
-                fileName += f"{val}_"
-        for key in sorted(list(self.ap.keys())):
-            val = self.ap[key]
-            if type(val) == list:
-                for lv in val:
-                    fileName += f"{lv}_"
-            else:
-                fileName += f"{val}_"
-        fileName = fileName[:-1]
-        return fileName
-
     def makeRandomTable(self):
         random.seed()
         data = {}
