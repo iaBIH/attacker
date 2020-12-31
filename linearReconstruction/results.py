@@ -18,6 +18,10 @@ class resultGatherer:
             'lcfMax': 'a_lcfH',
             'standardDeviation': 'a_sd',
         }
+        self.solveParams = {
+            'elasticLcf': 'e_lcf',
+            'elasticNoise': 'e_nse',
+        }
         self.solutionParams = {
             'elapsedTime': 's_tim',
             'matchFraction': 's_matc',
@@ -26,6 +30,7 @@ class resultGatherer:
             'nonAttackableFrac': 's_nona',
             'matchImprove': 's_impv',
             'aggregateErrorAvg': 's_err',
+            'aggregateErrorTargetAvg': 's_errt',
             'numBuckets': 's_bkts',
             'numChoices': 's_choi',
             'numConstraints': 's_cons',
@@ -46,6 +51,8 @@ class resultGatherer:
             columns.append(self.solutionParams[k])
         for k,v in result['params']['anonymizerParams'].items():
             columns.append(self.anonymizerParams[k])
+        for k,v in result['params']['solveParams'].items():
+            columns.append(self.solveParams[k])
         for k,v in result['params']['tableParams'].items():
             columns.append(self.tableParams[k])
         columns.append('l_lcf')
@@ -72,6 +79,7 @@ class resultGatherer:
         data['seed'].append(result['params']['seed'])
         numAppend += self.loadRowWork(data,result['solution'],self.solutionParams,columns)
         numAppend += self.loadRowWork(data,result['params']['anonymizerParams'],self.anonymizerParams,columns)
+        numAppend += self.loadRowWork(data,result['params']['solveParams'],self.solveParams,columns)
         numAppend += self.loadRowWork(data,result['params']['tableParams'],self.tableParams,columns)
         numAppend += self.addLcfLabel(data,result['params']['anonymizerParams'],columns)
         if numAppend != len(columns):

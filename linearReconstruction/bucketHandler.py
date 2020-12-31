@@ -20,9 +20,15 @@ class bucketHandler:
             self.dfCols.append(col)
         self.dfCols.append('cmin')    # min probable count
         self.dfCols.append('cmax')    # max probable count
+        self.dfCols.append('emin')    # min elastic range
+        self.dfCols.append('emax')    # max elastic range
+        self.dfCols.append('trueCount')
+        self.dfCols.append('noisyCount')
+        self.dfCols.append('cmax_sd')
         self.dfCols.append('dim')     # bucket dimension
         self.dfCols.append('bkt')     # the bucket name
         self.df = pd.DataFrame(columns=self.dfCols)
+        self.buckets = {}
 
     def subBucketIterator(self,df=None):
         ''' Iterates through every bucket / sub-bucket combination in df
@@ -143,7 +149,7 @@ class bucketHandler:
             pass
         quit()
 
-    def addBucket(self,cols,vals,cmin=0,cmax=0):
+    def addBucket(self,cols,vals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd):
         # Make a row with empty lists
         df2 = pd.DataFrame(columns=self.dfCols)
         init = [[] for _ in range(len(self.dfCols))]
@@ -151,20 +157,44 @@ class bucketHandler:
         s = df2.loc[0]
         s['cmin'] = cmin
         s['cmax'] = cmax
+        s['emin'] = emin
+        s['emax'] = emax
+        s['trueCount'] = trueCount
+        s['noisyCount'] = noisyCount
+        s['cmax_sd'] = cmax_sd
+        bucket = {}
+        bucket['cmin'] = cmin
+        bucket['cmax'] = cmax
+        bucket['emin'] = emin
+        bucket['emax'] = emax
+        bucket['trueCount'] = trueCount
+        bucket['noisyCount'] = noisyCount
+        bucket['cmax_sd'] = cmax_sd
         dim = 0
         bkt = ''
         for col,val in zip(cols,vals):
-            #i = self.dfCols.index(col)
             s[col] = [val]
             dim += 1
             bkt += f"C{col}"
             bkt += f"V{val}."
         bkt = bkt[:-1]
         s['dim'] = dim
+        bucket['dim'] = dim
         # add the bucket name
         s['bkt'] = bkt
+        bucket['bkt'] = bkt
         df2 = pd.DataFrame([s], columns=self.dfCols)
         self.df = self.df.append(df2,ignore_index=True)
+        #self.buckets[bkt] = s.to_list()
+        self.buckets[bkt] = bucket
+
+    def getBktFromColValPairs(self,pairs):
+        bkt = ''
+        for col,val in pairs:
+            bkt += f"C{col}"
+            bkt += f"V{val}."
+        bkt = bkt[:-1]
+        return bkt
 
     def getColsValsFromBkt(self,bktIn):
         cols = []
@@ -226,7 +256,8 @@ class bucketHandler:
         '''
         keys = {}
         for _, row in df.iterrows():
-            keys[row['bkt']] = {'cmin':row['cmin'],'cmax':row['cmax']}
+            keys[row['bkt']] = {'cmin':row['cmin'],'cmax':row['cmax'],
+                                'emin':row['emin'],'emax':row['emax']}
             if col:
                 keys[row['bkt']]['colVal'] = row[col]
         return keys
