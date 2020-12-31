@@ -16,9 +16,8 @@ anonymizerParams = {
     'standardDeviation': None,
 }
 solveParams = {
-    'lcfMin': None,
-    'lcfMax': None,
-    'standardDeviation': None,
+    'elasticLcf': None,
+    'elasticNoise': None,
 }
 
 forceMeasure = False
@@ -27,32 +26,37 @@ doStoreProblem = False
 
 def oneAttackGroup(prod):
     for passType in ['justCheck','solve']:
-        for numValsPerColumn,seed,tabType,lcf,sd,eLcf,eSd in itertools.product(*prod):
+        for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
             print(passType)
-            print(numValsPerColumn,seed,tabType,lcf,sd)
+            print(numValsPerColumn,seed,tabType,lcf,sd,elastic)
             tableParams['tabType'] = tabType
             tableParams['numValsPerColumn'] = numValsPerColumn
             anonymizerParams['lcfMin'] = lcf[0]
             anonymizerParams['lcfMax'] = lcf[1]
             anonymizerParams['standardDeviation'] = sd
-            solveParams['lcfMin'] = eLcf[0]
-            solveParams['lcfMax'] = eLcf[1]
-            solveParams['standardDeviation'] = eSd
+            solveParams['elasticLcf'] = elastic[0]
+            solveParams['elasticNoise'] = elastic[1]
             pp.pprint(tableParams)
             pp.pprint(anonymizerParams)
             pp.pprint(solveParams)
         
             random.seed(seed)
+            if (anonymizerParams['lcfMin'] == 0 and anonymizerParams['lcfMax'] == 0 and
+                solveParams['elasticLcf'] != 1.0):
+                print("    Skip because elastic LCF parameter without LCF")
+                continue
             lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
             if not forceSolution and lra.problemAlreadySolved():
                 print(f"Attack {lra.fileName} already solved")
                 if forceMeasure:
                     print("    Measuring solution match (forced)")
                     lra.measureMatch()
+                    lra.saveResults()
                 else:
                     if not lra.solutionAlreadyMeasured():
                         print("    Measuring solution match")
                         lra.measureMatch()
+                        lra.saveResults()
                     else:
                         print("    Match already measured")
                 continue
@@ -64,9 +68,9 @@ def oneAttackGroup(prod):
                 print("Solving problem")
                 solveStatus = lra.solve(prob)
                 pp.pprint(f"Solve Status: {solveStatus}")
-                lra.solutionToTable()
-                lra.saveResults()
+                lra.solutionToTable(prob)
                 lra.measureMatch()
+                lra.saveResults()
 
 prod = []
 # numColumnVals is first because the larger numbers may take a long time to solve
@@ -80,10 +84,9 @@ lcf = [[4,4],[2,6]]
 prod.append(lcf)
 sf = [0]
 prod.append(sf)
-eLcf = [[None,None]]
-prod.append(eLcf)
-eSd = None
-prod.append(eSd)
+elastic = [[0.1,1.0],[0.25,1.0],[0.5,1.0],[0.75,1.0],[1.0,1.0]]
+#elastic = [[1.0,1.0]]
+prod.append(elastic)
 oneAttackGroup(prod)
 quit()
 

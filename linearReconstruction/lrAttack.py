@@ -43,8 +43,9 @@ class lrAttack:
         self.results['params']['seed'] = seed
         self.results['params']['tableParams'] = self.an.tp
         self.results['params']['anonymizerParams'] = self.an.ap
-        self.results['params']['solveParams'] = solveParams
+        self.results['params']['solveParams'] = self.sp
         self.results['solution'] = {'explain': []}
+        self.results['buckets'] = None
         self.force = force
         self.fileName = self.makeFileName(seed)
 
@@ -66,17 +67,31 @@ class lrAttack:
         fileName = fileName[:-1]
         return fileName
 
-    def solutionToTable(self):
+    def solutionToTable(self,prob):
         data = {}
+        log = []
         for col in self.cols:
             data[col] = []
         for aid in self.choices:
             for bkt in self.choices[aid]:
-                if pulp.value(self.choices[aid][bkt]) == 1:
-                    cols,vals = self.bh.getColsValsFromBkt(bkt)
-                    if len(cols) == 1:
-                        # This is a one-dimensional bucket, so we'll use it in our new table
+                cols,vals = self.bh.getColsValsFromBkt(bkt)
+                if len(cols) == 1:
+                    outcome = pulp.value(self.choices[aid][bkt])
+                    log.append({'aid':aid,'col':cols[0],'val':vals[0],'outcome':outcome})
+                    # We compare with 0.5 here rather than == 1.0 because there is some machine
+                    # error in the value and it is not exactly 1.0...
+                    if outcome > 0.5:
                         data[cols[0]].append(int(vals[0]))
+        # Check that data has valid shape
+        for k,v in data.items():
+            if len(v) != self.results['params']['numAids']:
+                print(f"ERROR: solutionToTable: bad data {len(v)} against {self.results['params']['numAids']} ... storing problem")
+                pp.pprint(self.choices)
+                pp.pprint(self.results)
+                pp.pprint(data)
+                pp.pprint(log)
+                self.storeProblem(prob)
+                quit()
         dfNew = pd.DataFrame.from_dict(data)
         dfNew.sort_values(by=self.cols,inplace=True)
         dfNew.reset_index(drop=True,inplace=True)
@@ -175,13 +190,16 @@ class lrAttack:
             For aggregates, we measure the absolute error between the aggregates counts of the
             original and reconstructed data.
         '''
-        path = self.getResultsPath()
-        if not os.path.exists(path):
-            return
-        with open(path, 'r') as f:
-            res = json.load(f)
-        if 'reconstructedTable' not in res:
-            return None
+        if 'reconstructedTable' in self.results:
+            res = self.results
+        else:
+            path = self.getResultsPath()
+            if not os.path.exists(path):
+                return
+            with open(path, 'r') as f:
+                res = json.load(f)
+            if 'reconstructedTable' not in res:
+                return None
         dfOrig = pd.DataFrame.from_dict(res['originalTable'])
         dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
         # First row-level reconstruction
@@ -209,14 +227,15 @@ class lrAttack:
         res['solution']['matchImprove'] = (matchFraction - matchRandom) / (1.0 - matchRandom)
         self._addExplain("matchImprove: Improvement in reconstructed table over random table")
         # Then aggregates
-        errors = self.measureAggregatesDf(dfOrig, dfRe)
-        res['solution']['aggregateErrorAvg'] = statistics.mean(errors)
+        errsTrue,errsTarget = self.measureAggregatesDf(dfOrig, dfRe)
+        res['solution']['aggregateErrorAvg'] = statistics.mean(errsTrue)
         self._addExplain("aggregateErrorAvg: Average of absolute errors in bucket counts, original versus reconstructed")
-        with open(path, 'w') as f:
-            self.saveResults(results=res)
+        res['solution']['aggregateErrorTargetAvg'] = statistics.mean(errsTarget)
+        self._addExplain("aggregateErrorTargetAvg: Average of absolute errors in elastic target, original versus reconstructed")
 
     def measureAggregatesDf(self, dfOrig, dfRe):
-        errors = []
+        errsTrue = []
+        errsTarget = []
         # loop through all aggregates for all dimensions
         for fullComb in self.combColIterator():
             # Now we make a dataframe query out of the combination
@@ -227,8 +246,14 @@ class lrAttack:
             query = query[:-5]
             cntOrig = dfOrig.query(query).shape[0]
             cntRe = dfRe.query(query).shape[0]
-            errors.append(abs(cntOrig - cntRe))
-        return errors
+            errsTrue.append(abs(cntOrig - cntRe))
+            bkt = self.bh.getBktFromColValPairs(fullComb)
+            bktData = self.bh.buckets[bkt]
+            if cntOrig != bktData['trueCount']:
+                print(f"ERROR: measureAggregatesDf: mismatched counts on {bkt} ({cntOrig}, {bktData['trueCount']}")
+            targetVal = self.getTargetVal(bktData)
+            errsTarget.append(abs(cntRe - targetVal))
+        return errsTrue,errsTarget
 
     def problemAlreadyAttempted(self):
         ''' Returns true if the problem was already tried (whether solved or not)
@@ -293,6 +318,19 @@ class lrAttack:
                 for fullComb in itertools.product(*prod):
                     yield fullComb
     
+    def makeElastic(self,cmin,cmax,penaltyFreeFrac):
+        if cmin == cmax:
+            return cmin,cmax
+        if penaltyFreeFrac == 1.0:
+            return cmin,cmax
+        mid = (cmax-cmin)/2
+        distance = (cmax-mid)*penaltyFreeFrac
+        emax = mid + distance
+        emin = mid - distance
+        emax = min(cmax,emax)
+        emin = max(cmin,emin)
+        return emin,emax
+
     def makeProblem(self):
         # First check to see if there is already an LpProblem to read in. Note that the
         # problem runs in rounds, where each new solution generates more constraints to prevent
@@ -350,25 +388,27 @@ class lrAttack:
                 combVals.append(entry[1])
             query = query[:-5]
             varName = varName[:-1]
-            noisyCount,cmax_sd = self.an.queryForCount(query)
+            trueCount,noisyCount,cmax_sd = self.an.queryForCount(query)
             if noisyCount == -1:
                 # bucket is suppressed
                 numSuppressedBuckets += 1
                 cmin = 0
                 cmax = cmax_sd
-                # TODO put elastic constraints here
                 if cmax == 0:
                     # Bucket couldn't hold any aids anyway, so can ignore
                     numIgnoredBuckets += 1
                     continue
+                # Make elastic constraints
+                emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticLcf'])
             else:
                 # Compute the possible range of values (currently +- 3 standard deviations)
                 # These are the hard constraints. cmax_sd = 0 if no noise at all.
                 # noisyCount is an integer. cmax_sd is float.
-                # TODO put elastic constraints here
                 cmin = noisyCount - (3 * cmax_sd)
                 cmax = noisyCount + (3 * cmax_sd)
-            self.bh.addBucket(combCols,combVals,cmin=cmin,cmax=cmax)
+                # Make elastic constraints
+                emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
+            self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd)
             numBuckets += 1
         self.results['solution']['numBuckets'] = numBuckets
         self._addExplain("numBuckets: Total number of buckets, all dimensions")
@@ -393,6 +433,7 @@ class lrAttack:
         self._addExplain("numStripped: Rows stripped away because all rows for a dimension were suppressed")
         if doprint: print("Bucket table after stripping suppressed dimensions:")
         if doprint: print(self.bh.df)
+        self.results['buckets'] = self.bh.buckets
 
         # The prob variable is created to contain the problem data
         prob = pulp.LpProblem("Attack-Problem",pulp.LpMinimize)
@@ -410,20 +451,38 @@ class lrAttack:
         print("We do not define an objective function since none is needed")
         # The following dummy object is a work-around for a bug in the
         # to_json call.
-        dummy=pulp.LpVariable("dummy",0,0,pulp.LpInteger)
-        prob += 0.0*dummy
+        if False:
+            dummy=pulp.LpVariable("dummy",0,0,pulp.LpInteger)
+            prob += 0.0*dummy
         
         print("Constraints ensuring that each bucket has sum in range of the number of its users")
         for bkt,cnts in allCounts.items():
             if cnts['cmin'] == cnts['cmax']:
                 # Only one possible value
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == cnts['cmin'], f"{cnum}_num_users_per_bkt"
+                cnum += 1
             else:
                 # Range of values, so need two constraints
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) >= cnts['cmin'], f"{cnum}_num_users_per_bkt"
                 cnum += 1
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) <= cnts['cmax'], f"{cnum}_num_users_per_bkt"
-            cnum += 1
+                cnum += 1
+                if cnts['emax'] < cnts['cmax']:
+                    # Make the elastic constraints
+                    constraint_LHS = pulp.LpAffineExpression([(self.choices[aid][bkt],1) for aid in aids])
+                    # `targetVal` is a point in the middle of the penalty-free range defined by emin and emax
+                    targetVal = self.getTargetVal(cnts)
+                    targetVal = cnts['emin'] + ((cnts['emax'] - cnts['emin'])/2)
+                    # The penalty-free range is defined by a fraction of the target value:
+                    # https://coin-or.github.io/pulp/guides/how_to_elastic_constraints.html
+                    # Here, emin and emax are the actual low and high values of the penalty-free range.
+                    # We need to convert these into a target value fraction
+                    penaltyFracLow = (targetVal - cnts['emin']) / targetVal
+                    penaltyFracHigh = (cnts['emax'] - targetVal) / targetVal
+                    constraint = pulp.LpConstraint(e=constraint_LHS, sense=pulp.LpConstraintEQ, name=f"{cnum}_elastic_num_users_per_bkt", rhs=targetVal)
+                    conElastic = constraint.makeElasticSubProblem(penalty = 100, proportionFreeBoundList = [penaltyFracLow,penaltyFracHigh])
+                    prob.extend(conElastic)
+                # TODO: add elastic constraints
         if doprint: pp.pprint(prob)
         
         print("Constraints ensuring that each user is in one bucket per column or combination")
@@ -469,6 +528,10 @@ class lrAttack:
         self._addExplain("numConstraints: Total number of constraints for the solver")
         if doprint: pp.pprint(prob)
         return prob
+
+    def getTargetVal(self,bktData):
+        targetVal = bktData['emin'] + ((bktData['emax'] - bktData['emin'])/2)
+        return targetVal
 
     def _addExplain(self,msg):
         self.results['solution']['explain'].append(msg)
@@ -547,8 +610,10 @@ if __name__ == "__main__":
         'standardDeviation': 0,
     }
     solveParams = {
-        'elasticLcf': 0,
-        'elasticNoise': 0,
+        # This is fraction of the LCF or noise range that is penalty-free
+        # Value 1.0 means there is no elastic constraint at all
+        'elasticLcf': 0.25,
+        'elasticNoise': 1.0,
     }
     
     lra = lrAttack(seed, anonymizerParams, tableParams, solveParams, force=forceSolution)
@@ -557,6 +622,7 @@ if __name__ == "__main__":
         if not lra.solutionAlreadyMeasured():
             print("    Measuring solution match")
             lra.measureMatch()
+            lra.saveResults()
         else:
             print("    Match already measured")
         quit()
@@ -568,9 +634,9 @@ if __name__ == "__main__":
     print("Solving problem")
     solveStatus = lra.solve(prob)
     print(f"Solve Status: {solveStatus}")
-    lra.solutionToTable()
-    lra.saveResults()
+    lra.solutionToTable(prob)
     lra.measureMatch()
+    lra.saveResults()
 
 '''
 Now what happens is that solutions are generated. In each run of the loop, one solution

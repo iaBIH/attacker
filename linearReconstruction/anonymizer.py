@@ -70,11 +70,11 @@ class anonymizer:
         lcfThresh = random.randrange(self.ap['lcfMin'],self.ap['lcfMax']+1)
         if trueCount < lcfThresh:
             maxTrueValue = self.ap['lcfMax'] - 1
-            return -1,maxTrueValue
+            return trueCount,-1,maxTrueValue
         noise = random.gauss(0,self.ap['standardDeviation'])
         noisyCount = round(trueCount + noise)
         noisyCount = max(0,noisyCount)
-        return noisyCount,self.ap['standardDeviation']
+        return trueCount,noisyCount,self.ap['standardDeviation']
 
     def colNames(self):
         return list(self.df.columns)
