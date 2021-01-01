@@ -34,10 +34,9 @@ solver = 'gurobi'
 
 class lrAttack:
     def __init__(self, seed, anonymizerParams, tableParams, solveParams, force=False,):
-        print(seed)
         pp.pprint(tableParams)
         self.seed = seed
-        self.an = anonymizer.anonymizer(anonymizerParams, tableParams)
+        self.an = anonymizer.anonymizer(seed, anonymizerParams, tableParams)
         self.sp = solveParams
         self.results = {'params':{}}
         self.results['params']['seed'] = seed
@@ -596,7 +595,6 @@ if __name__ == "__main__":
     forceSolution = True
     doStoreProblem = True
     seed = 'a'
-    random.seed(seed)
     tabTypes = ['random','complete']
     tableParams = {
         'tabType': tabTypes[1],

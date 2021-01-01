@@ -13,12 +13,11 @@ import bucketHandler
 import itertools
 import random
 import os.path
-import random
 pp = pprint.PrettyPrinter(indent=4)
 doprint = False
 
 class anonymizer:
-    def __init__(self, anonymizerParams, tableParams):
+    def __init__(self, seed, anonymizerParams, tableParams):
         '''
             anonymizerParams:
                 lcfMin = lowest possible threshold
@@ -28,6 +27,9 @@ class anonymizer:
                 tabType = 'random' or 'complete'
                 numValsPerColumn = [5,5,5]
         '''
+        # Makes random thread-safe
+        self.loc_random = random.Random()
+        self.loc_random.seed(seed)
         if tableParams:
             self.tp = tableParams
         else:
@@ -67,11 +69,11 @@ class anonymizer:
             standard deviation of the noise. The noisy count is never less than 0.
         '''
         trueCount = self.df.query(query).shape[0]
-        lcfThresh = random.randrange(self.ap['lcfMin'],self.ap['lcfMax']+1)
+        lcfThresh = self.loc_random.randrange(self.ap['lcfMin'],self.ap['lcfMax']+1)
         if trueCount < lcfThresh:
             maxTrueValue = self.ap['lcfMax'] - 1
             return trueCount,-1,maxTrueValue
-        noise = random.gauss(0,self.ap['standardDeviation'])
+        noise = self.loc_random.gauss(0,self.ap['standardDeviation'])
         noisyCount = round(trueCount + noise)
         noisyCount = max(0,noisyCount)
         return trueCount,noisyCount,self.ap['standardDeviation']
@@ -83,12 +85,11 @@ class anonymizer:
         return list(self.df[col].unique())
 
     def makeRandomTable(self):
-        random.seed()
         data = {}
         for col in self.colVals:
             data[col] = []
             for _ in range(self.numAids):
-                data[col].append(random.choice(self.colVals[col]))
+                data[col].append(self.loc_random.choice(self.colVals[col]))
         df = pd.DataFrame.from_dict(data)
         df.sort_values(by=self.cols,inplace=True)
         df.reset_index(drop=True,inplace=True)
@@ -103,7 +104,7 @@ class anonymizer:
             for col in self.colVals:
                 data[col] = []
                 for _ in range(self.numAids):
-                    data[col].append(random.choice(self.colVals[col]))
+                    data[col].append(self.loc_random.choice(self.colVals[col]))
         if tabType == 'complete':
             prod = []
             for col in self.colVals:
