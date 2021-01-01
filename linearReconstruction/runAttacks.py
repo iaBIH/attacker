@@ -8,8 +8,11 @@ import time
 import lrAttack
 pp = pprint.PrettyPrinter(indent=4)
 
-def doAttack(params):
+def doAttackThread(params):
     tid = threading.get_ident()
+    doAttack(params,tid=tid)
+
+def doAttack(params,tid=None):
     tableParams = {
         'tabType': None,
         'numValsPerColumn': None,
@@ -108,7 +111,7 @@ def attackIterator():
     prod = []
     seeds = ['a','b','c','d','e']
     prod.append(seeds)
-    numColumnVals = [[5,5,5],[10,10,10],[3,3,3,3]]
+    numColumnVals = [[5,5,5],[3,3,3,3]]
     prod.append(numColumnVals)
     tabTypes = ['random','complete']
     prod.append(tabTypes)
@@ -126,7 +129,7 @@ def attackIterator():
     prod = []
     seeds = ['a','b','c','d','e']
     prod.append(seeds)
-    numColumnVals = [[5,5,5,5],[10,10,10,10]]
+    numColumnVals = [[10,10,10],[5,5,5,5],[10,10,10,10]]
     prod.append(numColumnVals)
     tabTypes = ['random','complete']
     prod.append(tabTypes)
@@ -149,45 +152,48 @@ def getEmptyThreadIndex(threads):
 forceMeasure = False
 forceSolution = False
 doStoreProblem = False
-numThreads = 2
+numThreads = 0
 threads = [None for _ in range(numThreads)]
 format = "%(asctime)s: %(message)s"
 lg.basicConfig(format=format, level=lg.DEBUG, datefmt="%H:%M:%S")
 for passType in ['justCheck','solve']:
     for attack in attackIterator():
         lg.info(f"Main: run attack {attack}")
-        while True:
-            # Find empty thread slot
-            i = getEmptyThreadIndex(threads)
-            if i is None:
-                lg.debug("Main: no empty threads, so spin until we get one")
-                while True:
-                    emptyThreadIndex = -1
-                    for i in range(len(threads)):
-                        t = threads[i]
-                        if t.is_alive() is True:
-                            lg.debug(f"Main: join thread {t} at {i}")
-                            t.join(timeout=0.1)
-                            if t.is_alive() is False:
+        params = {
+            'attack':attack,
+            'passType':passType,
+            'forceMeasure':False,
+            'forceSolution':False,
+            'doStoreProblem':False
+        }
+        if numThreads > 1:
+            while True:
+                # Find empty thread slot
+                i = getEmptyThreadIndex(threads)
+                if i is None:
+                    lg.debug("Main: no empty threads, so spin until we get one")
+                    while True:
+                        emptyThreadIndex = -1
+                        for i in range(len(threads)):
+                            t = threads[i]
+                            if t.is_alive() is True:
+                                lg.debug(f"Main: join thread {t} at {i}")
+                                t.join(timeout=0.1)
+                                if t.is_alive() is False:
+                                    emptyThreadIndex = i
+                                    break
+                            else:
+                                lg.debug("Main: thread {t} at {i} not alive")
                                 emptyThreadIndex = i
                                 break
-                        else:
-                            lg.debug("Main: thread {t} at {i} not alive")
-                            emptyThreadIndex = i
+                        if emptyThreadIndex >= 0:
+                            threads[i] = None
                             break
-                    if emptyThreadIndex >= 0:
-                        threads[i] = None
-                        break
-            else:
-                # create a thread
-                params = {
-                    'attack':attack,
-                    'passType':passType,
-                    'forceMeasure':False,
-                    'forceSolution':False,
-                    'doStoreProblem':False
-                }
-                threads[i] = threading.Thread(target=doAttack, args=(params,))
-                threads[i].start()
-                lg.debug(f"Main: Created thread {threads[i]} at {i} ({threads})")
-                break
+                else:
+                    # create a thread
+                    threads[i] = threading.Thread(target=doAttack, args=(params,))
+                    threads[i].start()
+                    lg.debug(f"Main: Created thread {threads[i]} at {i} ({threads})")
+                    break
+        else:
+            doAttack(params)

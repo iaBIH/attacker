@@ -29,8 +29,8 @@ import statistics
 import os.path
 pp = pprint.PrettyPrinter(indent=4)
 doprint = False
-solver = 'gurobi'
-#solver = 'default'
+useSolver = 'gurobi'
+#useSolver = 'default'
 
 class lrAttack:
     def __init__(self, seed, anonymizerParams, tableParams, solveParams, force=False,):
@@ -567,9 +567,23 @@ class lrAttack:
     def solve(self,prob):
         start = time.time()
         pulp.LpSolverDefault.msg = 1
-        if solver == 'gurobi':
+        if useSolver == 'gurobi':
             print("Using GUROBI_CMD solver")
-            prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
+            if True:
+                #Build the solverModel for your preferred
+                solver = pulp.GUROBI_CMD(timeLimit=60.0,gapRel=0.9)
+                #solver.buildSolverModel(prob)
+
+                #Modify the solvermodel
+                #solver.solverModel.parameters.timelimit.set(60)
+
+                #Solve P
+                #solver.callSolver(prob)
+                status = solver.actualSolve(prob)
+                print(status)
+            else:
+                #prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
+                prob.solve(pulp.GUROBI_CMD(timeLimit=1))
         else:
             print("Using Pulp default solver")
             prob.solve()
@@ -593,14 +607,14 @@ if __name__ == "__main__":
     # random has same number of users, but ranomly assigned values. The result
     # should be that many users are distinct, some are not
     forceSolution = True
-    doStoreProblem = True
+    doStoreProblem = False
     seed = 'a'
     tabTypes = ['random','complete']
     tableParams = {
         'tabType': tabTypes[1],
         #'numValsPerColumn': [5,5,5],
-        'numValsPerColumn': [3,3,3],
-        #'numValsPerColumn': [10,10,10],
+        #'numValsPerColumn': [3,3,3],
+        'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
         'lcfMin': 2,
@@ -610,7 +624,7 @@ if __name__ == "__main__":
     solveParams = {
         # This is fraction of the LCF or noise range that is penalty-free
         # Value 1.0 means there is no elastic constraint at all
-        'elasticLcf': 0.25,
+        'elasticLcf': 1.0,
         'elasticNoise': 1.0,
     }
     
