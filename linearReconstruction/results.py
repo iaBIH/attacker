@@ -115,6 +115,8 @@ class resultGatherer:
                     if doprint: pp.pprint(columns)
                 self.loadRow(data,columns,result,path,doprint)
         df = pd.DataFrame.from_dict(data)
+        # This dataframe `df` contains all of the individual attack runs (each seed)
+        # Now we want to take summary results for the multiple seeds of the same attack
         return df
 
 if __name__ == "__main__":
