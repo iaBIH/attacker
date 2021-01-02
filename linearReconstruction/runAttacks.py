@@ -26,7 +26,7 @@ def doAttack(params,tid=None):
         'elasticLcf': None,
         'elasticNoise': None,
     }
-    numValsPerColumn,seed,tabType,lcf,sd,elastic = params['attack']
+    seed,numValsPerColumn,tabType,lcf,sd,elastic = params['attack']
     lg.info(f"    {tid}: {params['passType']}")
     lg.info(f"    {tid}: {numValsPerColumn},{seed},{tabType},{lcf},{sd},{elastic}")
     tableParams['tabType'] = tabType
@@ -71,10 +71,10 @@ def doAttack(params,tid=None):
 def attackIterator():
     # This first group is for testing different seeds with elastic constraints
     prod = []
-    numColumnVals = [[3,3,3]]
-    prod.append(numColumnVals)
     seeds = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
     prod.append(seeds)
+    numColumnVals = [[3,3,3]]
+    prod.append(numColumnVals)
     tabTypes = ['random','complete']
     prod.append(tabTypes)
     lcf = [[4,4],[2,6]]
@@ -86,7 +86,6 @@ def attackIterator():
     #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
     for things in itertools.product(*prod):
         yield things
-    return
     
     # This second group gets the remaining [3,3,3] shaped networks (without elastic constraints)
     # Start with five seeds. We can add more later
@@ -124,6 +123,7 @@ def attackIterator():
     #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
     for things in itertools.product(*prod):
         yield things
+    return
     
     # This group gets the bigger network shapes across the desired parameters
     prod = []
@@ -150,7 +150,7 @@ def getEmptyThreadIndex(threads):
     return None
     
 forceMeasure = False
-forceSolution = False
+forceSolution = True
 doStoreProblem = False
 numThreads = 0
 threads = [None for _ in range(numThreads)]

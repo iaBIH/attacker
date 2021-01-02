@@ -459,12 +459,30 @@ class lrAttack:
             if cnts['cmin'] == cnts['cmax']:
                 # Only one possible value
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) == cnts['cmin'], f"{cnum}_num_users_per_bkt"
+                '''
+                constraint_LHS = pulp.LpAffineExpression([(self.choices[aid][bkt],1) for aid in aids])
+                constraint = pulp.LpConstraint(e=constraint_LHS, sense=pulp.LpConstraintEQ, name=f"{cnum}_num_users_per_bkt", rhs=cnts['cmin'])
+                conElastic = constraint.makeElasticSubProblem(penalty = 100, proportionFreeBoundList = [0.0,0.0])
+                prob.extend(conElastic)
+                '''
                 cnum += 1
             else:
                 # Range of values, so need two constraints
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) >= cnts['cmin'], f"{cnum}_num_users_per_bkt"
+                '''
+                constraint_LHS = pulp.LpAffineExpression([(self.choices[aid][bkt],1) for aid in aids])
+                constraint = pulp.LpConstraint(e=constraint_LHS, sense=pulp.LpConstraintGE, name=f"{cnum}_num_users_per_bkt", rhs=cnts['cmin'])
+                conElastic = constraint.makeElasticSubProblem(penalty = 100, proportionFreeBoundList = [0.0,0.0])
+                prob.extend(conElastic)
+                '''
                 cnum += 1
                 prob += pulp.lpSum([self.choices[aid][bkt] for aid in aids]) <= cnts['cmax'], f"{cnum}_num_users_per_bkt"
+                '''
+                constraint_LHS = pulp.LpAffineExpression([(self.choices[aid][bkt],1) for aid in aids])
+                constraint = pulp.LpConstraint(e=constraint_LHS, sense=pulp.LpConstraintLE, name=f"{cnum}_num_users_per_bkt", rhs=cnts['cmax'])
+                conElastic = constraint.makeElasticSubProblem(penalty = 100, proportionFreeBoundList = [0.0,0.0])
+                prob.extend(conElastic)
+                '''
                 cnum += 1
                 if cnts['emax'] < cnts['cmax']:
                     # Make the elastic constraints
@@ -569,9 +587,11 @@ class lrAttack:
         pulp.LpSolverDefault.msg = 1
         if useSolver == 'gurobi':
             print("Using GUROBI_CMD solver")
-            if True:
+            if False:
                 #Build the solverModel for your preferred
-                solver = pulp.GUROBI_CMD(timeLimit=60.0,gapRel=0.9)
+                solver = pulp.apis.GUROBI_CMD(timeLimit=10.0, gapRel=0.9, mip=True)
+                print(solver.getOptions())
+                #solver = pulp.GUROBI_CMD(timeLimit=60.0,gapRel=0.9,options={'TimeLimit':10})
                 #solver.buildSolverModel(prob)
 
                 #Modify the solvermodel
@@ -611,14 +631,14 @@ if __name__ == "__main__":
     seed = 'a'
     tabTypes = ['random','complete']
     tableParams = {
-        'tabType': tabTypes[1],
+        'tabType': tabTypes[0],
         #'numValsPerColumn': [5,5,5],
-        #'numValsPerColumn': [3,3,3],
-        'numValsPerColumn': [10,10,10],
+        'numValsPerColumn': [3,3,3,3],
+        #'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
-        'lcfMin': 2,
-        'lcfMax': 14,
+        'lcfMin': 4,
+        'lcfMax': 4,
         'standardDeviation': 0,
     }
     solveParams = {
