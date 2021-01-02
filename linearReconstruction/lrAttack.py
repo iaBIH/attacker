@@ -400,11 +400,11 @@ class lrAttack:
                 # Make elastic constraints
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticLcf'])
             else:
-                # Compute the possible range of values (currently +- 3 standard deviations)
+                # Compute the possible range of values
                 # These are the hard constraints. cmax_sd = 0 if no noise at all.
                 # noisyCount is an integer. cmax_sd is float.
-                cmin = noisyCount - (3 * cmax_sd)
-                cmax = noisyCount + (3 * cmax_sd)
+                cmin = noisyCount - (self.sp['numSDs'] * cmax_sd)
+                cmax = noisyCount + (self.sp['numSDs'] * cmax_sd)
                 # Make elastic constraints
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
             self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd)
@@ -633,19 +633,20 @@ if __name__ == "__main__":
     tableParams = {
         'tabType': tabTypes[0],
         #'numValsPerColumn': [5,5,5],
-        'numValsPerColumn': [3,3,3,3],
+        'numValsPerColumn': [3,3,3],
         #'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
-        'lcfMin': 4,
-        'lcfMax': 4,
-        'standardDeviation': 0,
+        'lcfMin': 0,
+        'lcfMax': 0,
+        'standardDeviation': 2,
     }
     solveParams = {
         # This is fraction of the LCF or noise range that is penalty-free
         # Value 1.0 means there is no elastic constraint at all
         'elasticLcf': 1.0,
         'elasticNoise': 1.0,
+        'numSDs': 3.0
     }
     
     lra = lrAttack(seed, anonymizerParams, tableParams, solveParams, force=forceSolution)

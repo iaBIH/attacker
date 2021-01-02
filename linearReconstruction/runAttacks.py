@@ -90,7 +90,7 @@ def attackIterator():
     # This second group gets the remaining [3,3,3] shaped networks (without elastic constraints)
     # Start with five seeds. We can add more later
     prod = []
-    seeds = ['a','b','c','d','e']
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
     prod.append(seeds)
     numColumnVals = [[3,3,3]]
     prod.append(numColumnVals)
@@ -108,7 +108,7 @@ def attackIterator():
     
     # This group gets the other smallish network shapes across the desired parameters
     prod = []
-    seeds = ['a','b','c','d','e']
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
     prod.append(seeds)
     numColumnVals = [[5,5,5],[3,3,3,3]]
     prod.append(numColumnVals)
@@ -123,13 +123,31 @@ def attackIterator():
     #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
     for things in itertools.product(*prod):
         yield things
+    
+    # This group gets [10,10,10]
+    prod = []
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
+    prod.append(seeds)
+    numColumnVals = [[10,10,10]]
+    prod.append(numColumnVals)
+    tabTypes = ['random']
+    prod.append(tabTypes)
+    lcf = [[4,4],[2,6],[2,10]]
+    prod.append(lcf)
+    sf = [0]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
     return
     
     # This group gets the bigger network shapes across the desired parameters
     prod = []
     seeds = ['a','b','c','d','e']
     prod.append(seeds)
-    numColumnVals = [[10,10,10],[5,5,5,5],[10,10,10,10]]
+    numColumnVals = [[5,5,5,5],[10,10,10,10]]
     prod.append(numColumnVals)
     tabTypes = ['random','complete']
     prod.append(tabTypes)
@@ -150,7 +168,7 @@ def getEmptyThreadIndex(threads):
     return None
     
 forceMeasure = False
-forceSolution = True
+forceSolution = False
 doStoreProblem = False
 numThreads = 0
 threads = [None for _ in range(numThreads)]

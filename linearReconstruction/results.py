@@ -42,10 +42,11 @@ class resultGatherer:
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
         }
-        self.pCols = ['a_lcfH','a_lcfL','a_sd','t_shape','t_tab','e_lcf','e_nse']
+        self.pCols = ['a_lcfH','a_lcfL','a_sd','t_shape','t_tab','e_lcf','e_nse','l_lcf']
     
     def makeColumns(self,result):
         columns = ['seed']
+        columns.append('t_aids')
         for k,v in result['solution'].items():
             if self.solutionParams[k] == 'ignore':
                 continue
@@ -65,7 +66,7 @@ class resultGatherer:
             if k not in check or check[k] not in columns:
                 continue
             if type(v) is list:
-                data[check[k]].append(str(v))
+                data[check[k]].append(str(v).replace(' ',''))
             else:
                 data[check[k]].append(v)
             numAppend += 1
@@ -76,8 +77,9 @@ class resultGatherer:
         return 1
 
     def loadRow(self,data,columns,result,path,doprint):
-        numAppend = 1
         data['seed'].append(result['params']['seed'])
+        data['t_aids'].append(result['params']['numAids'])
+        numAppend = 2
         numAppend += self.loadRowWork(data,result['solution'],self.solutionParams,columns)
         numAppend += self.loadRowWork(data,result['params']['anonymizerParams'],self.anonymizerParams,columns)
         numAppend += self.loadRowWork(data,result['params']['solveParams'],self.solveParams,columns)
@@ -131,9 +133,10 @@ class resultGatherer:
                 agg[col] = []
             elif pd.api.types.is_numeric_dtype(df[col]):
                 # This is a numeric column, so we'll be taking the stats
-                agg[col+'_a'] = []
-                agg[col+'_n'] = []
-                agg[col+'_x'] = []
+                agg[col+'_av'] = []
+                agg[col+'_mn'] = []
+                agg[col+'_mx'] = []
+                agg[col+'_sd'] = []
         # Now agg is the basic dict. for building the aggregates dataframe
         for rowi, s in dfParams.iterrows():
             query = ''
@@ -146,9 +149,10 @@ class resultGatherer:
                 if col in self.pCols:
                     agg[col].append(s[col])
                 elif pd.api.types.is_numeric_dtype(df[col]):
-                    agg[col+'_a'].append(dfTemp[col].mean())
-                    agg[col+'_n'].append(dfTemp[col].min())
-                    agg[col+'_x'].append(dfTemp[col].max())
+                    agg[col+'_av'].append(dfTemp[col].mean())
+                    agg[col+'_mn'].append(dfTemp[col].min())
+                    agg[col+'_mx'].append(dfTemp[col].max())
+                    agg[col+'_sd'].append(dfTemp[col].std())
         #pp.pprint(agg)
         dfAgg = pd.DataFrame.from_dict(agg)
         if doprint: print(dfAgg)
