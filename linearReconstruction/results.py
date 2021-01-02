@@ -42,6 +42,7 @@ class resultGatherer:
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
         }
+        self.pCols = ['a_lcfH','a_lcfL','a_sd','t_shape','t_tab','e_lcf','e_nse']
     
     def makeColumns(self,result):
         columns = ['seed']
@@ -98,7 +99,7 @@ class resultGatherer:
                 json.dump(result, f, indent=4, sort_keys=True)
 
     def gatherResults(self,doprint=False):
-        columns = []
+        self.columns = []
         stuff = os.listdir('results')
         for thing in stuff:
             if 'results.json' in thing and 'swp' not in thing and '~' not in thing:
@@ -106,23 +107,57 @@ class resultGatherer:
                 with open(path, 'r') as f:
                     result = json.load(f)
                 self.updateResult(result,path)
-                if len(columns) == 0:
-                    columns = self.makeColumns(result)
+                if len(self.columns) == 0:
+                    self.columns = self.makeColumns(result)
                     data = {}
-                    for col in columns:
+                    for col in self.columns:
                         data[col] = []
                     if doprint: print(f"Columns:")
-                    if doprint: pp.pprint(columns)
-                self.loadRow(data,columns,result,path,doprint)
+                    if doprint: pp.pprint(self.columns)
+                self.loadRow(data,self.columns,result,path,doprint)
         df = pd.DataFrame.from_dict(data)
+        if doprint: print(df)
         # This dataframe `df` contains all of the individual attack runs (each seed)
         # Now we want to take summary results for the multiple seeds of the same attack
-        return df
+        # Start with a dataframe containing only the parameters columns (distinct values)
+        dfParams = df[self.pCols]
+        dfParams = dfParams.drop_duplicates()
+        if doprint: print(dfParams)
+        # For each distinct parameters set, we want to take the avg, min, and max for the
+        # other columns and add to a new aggregates table
+        agg = {'num':[]}
+        for col in self.columns:
+            if col in self.pCols:
+                agg[col] = []
+            elif pd.api.types.is_numeric_dtype(df[col]):
+                # This is a numeric column, so we'll be taking the stats
+                agg[col+'_a'] = []
+                agg[col+'_n'] = []
+                agg[col+'_x'] = []
+        # Now agg is the basic dict. for building the aggregates dataframe
+        for rowi, s in dfParams.iterrows():
+            query = ''
+            for col in dfParams.columns:
+                query += f'({col} == "{s[col]}") and '
+            query = query[:-5]
+            dfTemp = df.query(query)
+            agg['num'].append(dfTemp.shape[0])
+            for col in self.columns:
+                if col in self.pCols:
+                    agg[col].append(s[col])
+                elif pd.api.types.is_numeric_dtype(df[col]):
+                    agg[col+'_a'].append(dfTemp[col].mean())
+                    agg[col+'_n'].append(dfTemp[col].min())
+                    agg[col+'_x'].append(dfTemp[col].max())
+        #pp.pprint(agg)
+        dfAgg = pd.DataFrame.from_dict(agg)
+        if doprint: print(dfAgg)
+        return df,dfAgg
 
 if __name__ == "__main__":
     print("Example of resultGatherer")
     rg = resultGatherer()
-    df = rg.gatherResults(doprint=True)
+    df,dfAgg = rg.gatherResults(doprint=True)
     print(df)
     print(list(df.columns))
     print(df['s_sol'])
