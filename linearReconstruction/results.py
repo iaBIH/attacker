@@ -19,8 +19,9 @@ class resultGatherer:
             'standardDeviation': 'a_sd',
         }
         self.solveParams = {
-            'elasticLcf': 'e_lcf',
-            'elasticNoise': 'e_nse',
+            'elasticLcf': 'v_lcf',
+            'elasticNoise': 'v_nse',
+            'numSDs': 'v_nsds',
         }
         self.solutionParams = {
             'elapsedTime': 's_tim',
@@ -42,7 +43,7 @@ class resultGatherer:
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
         }
-        self.pCols = ['a_lcfH','a_lcfL','a_sd','t_shape','t_tab','e_lcf','e_nse','l_lcf']
+        self.pCols = ['a_lcfH','a_lcfL','a_sd','t_shape','t_tab','v_lcf','v_nse','v_nsds','l_lcf']
     
     def makeColumns(self,result):
         columns = ['seed']
@@ -68,6 +69,11 @@ class resultGatherer:
             if type(v) is list:
                 data[check[k]].append(str(v).replace(' ',''))
             else:
+                if k == 'solveStatus':
+                    if v == 'Optimal':
+                        v = 1
+                    else:
+                        v = 0
                 data[check[k]].append(v)
             numAppend += 1
         return numAppend
@@ -96,9 +102,13 @@ class resultGatherer:
         ''' Here we modify the results as per new versions of results
         '''
         madeChange = False
+        if 'numSDs' not in result['params']['solveParams']:
+            result['params']['solveParams']['numSDs'] = None
+            madeChange = True
         if madeChange:
             with open(path, 'w') as f:
                 json.dump(result, f, indent=4, sort_keys=True)
+        return madeChange
 
     def gatherResults(self,doprint=False):
         self.columns = []
@@ -108,7 +118,10 @@ class resultGatherer:
                 path = os.path.join('results',thing)
                 with open(path, 'r') as f:
                     result = json.load(f)
-                self.updateResult(result,path)
+                madeChange = self.updateResult(result,path)
+                if madeChange:
+                    with open(path, 'r') as f:
+                        result = json.load(f)
                 if len(self.columns) == 0:
                     self.columns = self.makeColumns(result)
                     data = {}
@@ -164,8 +177,4 @@ if __name__ == "__main__":
     df,dfAgg = rg.gatherResults(doprint=True)
     print(df)
     print(list(df.columns))
-    print(df['s_sol'])
-    dfFailed = df[df['s_sol'] != 'Optimal']
-    for rowi, s in dfFailed.iterrows():
-        print(s)
     print(df[['s_sol','s_str', 's_sup', 's_tim', 's_choi', 's_cons']])

@@ -47,6 +47,8 @@ class lrAttack:
         self.results['buckets'] = None
         self.force = force
         self.fileName = self.makeFileName(seed)
+        if 'numSDs' not in self.sp:
+            self.sp['numSDs'] = 3.0
 
     def _makeFileNameWork(self, fileName, params):
         for key in sorted(list(params.keys())):
@@ -173,7 +175,7 @@ class lrAttack:
         attackableButWrongFrac = round((attackableButWrong/totalRows),3)
         return matchFrac, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac
 
-    def measureMatch(self):
+    def measureMatch(self,force=False):
         ''' This makes two sets of measures. One is for row-level reconstruction quality (measures
             individual rows). The other measures aggregates, and is used to help determine
             wy row-level reconstruction is good or bad.
@@ -189,6 +191,16 @@ class lrAttack:
             For aggregates, we measure the absolute error between the aggregates counts of the
             original and reconstructed data.
         '''
+        if not force and 'reconstructedTable' not in self.results:
+            # Failed to find solution
+            self.results['solution']['matchFraction'] = None
+            self.results['solution']['attackableAndRightFrac'] = None
+            self.results['solution']['nonAttackableFrac'] = None
+            self.results['solution']['attackableButWrongFrac'] = None
+            self.results['solution']['matchImprove'] = None
+            self.results['solution']['aggregateErrorAvg'] = None
+            self.results['solution']['aggregateErrorTargetAvg'] = None
+            return
         if 'reconstructedTable' in self.results:
             res = self.results
         else:
@@ -208,9 +220,9 @@ class lrAttack:
         res['solution']['nonAttackableFrac'] = nonAttackableFrac
         self._addExplain("nonAttackableFrac: Fraction of reconstructed rows that could not be singled out or inferred")
         res['solution']['attackableAndRightFrac'] = attackableAndRightFrac
-        self._addExplain("nonAttackableFrac: Fraction of attackable rows where the attack is correct")
+        self._addExplain("attackableAndRightFrac: Fraction of attackable rows where the attack is correct")
         res['solution']['attackableButWrongFrac'] = attackableButWrongFrac
-        self._addExplain("nonAttackableFrac: Fraction of attackable rows where the attack is not correct")
+        self._addExplain("attackableButWrongFrac: Fraction of attackable rows where the attack is not correct")
         dfRan = self.an.makeRandomTable()
         if len(dfRan.index) != len(dfOrig.index):
             print(f"measureMatch: error: tables not same length")
@@ -405,6 +417,9 @@ class lrAttack:
                 # noisyCount is an integer. cmax_sd is float.
                 cmin = noisyCount - (self.sp['numSDs'] * cmax_sd)
                 cmax = noisyCount + (self.sp['numSDs'] * cmax_sd)
+                # We know we can't have a negative count, so...
+                cmin = max(0,cmin)
+                cmax = max(0,cmax)
                 # Make elastic constraints
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
             self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd)
@@ -627,26 +642,26 @@ if __name__ == "__main__":
     # random has same number of users, but ranomly assigned values. The result
     # should be that many users are distinct, some are not
     forceSolution = True
-    doStoreProblem = False
+    doStoreProblem = True
     seed = 'a'
     tabTypes = ['random','complete']
     tableParams = {
         'tabType': tabTypes[0],
-        #'numValsPerColumn': [5,5,5],
-        'numValsPerColumn': [3,3,3],
+        'numValsPerColumn': [2,2],
+        #'numValsPerColumn': [3,3,3],
         #'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
         'lcfMin': 0,
         'lcfMax': 0,
-        'standardDeviation': 2,
+        'standardDeviation': 1,
     }
     solveParams = {
         # This is fraction of the LCF or noise range that is penalty-free
         # Value 1.0 means there is no elastic constraint at all
         'elasticLcf': 1.0,
         'elasticNoise': 1.0,
-        'numSDs': 3.0
+        'numSDs': 2
     }
     
     lra = lrAttack(seed, anonymizerParams, tableParams, solveParams, force=forceSolution)
@@ -654,7 +669,7 @@ if __name__ == "__main__":
         print(f"Attack {lra.fileName} already solved")
         if not lra.solutionAlreadyMeasured():
             print("    Measuring solution match")
-            lra.measureMatch()
+            lra.measureMatch(force=True)
             lra.saveResults()
         else:
             print("    Match already measured")
@@ -667,8 +682,9 @@ if __name__ == "__main__":
     print("Solving problem")
     solveStatus = lra.solve(prob)
     print(f"Solve Status: {solveStatus}")
-    lra.solutionToTable(prob)
-    lra.measureMatch()
+    if solveStatus == 'Optimal':
+        lra.solutionToTable(prob)
+    lra.measureMatch(force=False)
     lra.saveResults()
 
 '''

@@ -25,10 +25,11 @@ def doAttack(params,tid=None):
     solveParams = {
         'elasticLcf': None,
         'elasticNoise': None,
+        'numSDs': None,
     }
-    seed,numValsPerColumn,tabType,lcf,sd,elastic = params['attack']
+    seed,numValsPerColumn,tabType,lcf,sd,elastic,numSDs = params['attack']
     lg.info(f"    {tid}: {params['passType']}")
-    lg.info(f"    {tid}: {numValsPerColumn},{seed},{tabType},{lcf},{sd},{elastic}")
+    lg.info(f"    {tid}: {numValsPerColumn},{seed},{tabType},{lcf},{sd},{elastic},{numSDs}")
     tableParams['tabType'] = tabType
     tableParams['numValsPerColumn'] = numValsPerColumn
     anonymizerParams['lcfMin'] = lcf[0]
@@ -36,6 +37,7 @@ def doAttack(params,tid=None):
     anonymizerParams['standardDeviation'] = sd
     solveParams['elasticLcf'] = elastic[0]
     solveParams['elasticNoise'] = elastic[1]
+    solveParams['numSDs'] = numSDs
 
     if (anonymizerParams['lcfMin'] == 0 and anonymizerParams['lcfMax'] == 0 and
         solveParams['elasticLcf'] != 1.0):
@@ -46,12 +48,12 @@ def doAttack(params,tid=None):
         lg.info(f"    {tid}: Attack {lra.fileName} already solved")
         if forceMeasure:
             lg.info(f"    {tid}:     Measuring solution match (forced)")
-            lra.measureMatch()
+            lra.measureMatch(force=True)
             lra.saveResults()
         else:
             if not lra.solutionAlreadyMeasured():
                 lg.info(f"    {tid}:     Measuring solution match")
-                lra.measureMatch()
+                lra.measureMatch(force=True)
                 lra.saveResults()
             else:
                 lg.info(f"    {tid}:     Match already measured")
@@ -64,11 +66,95 @@ def doAttack(params,tid=None):
         lg.info(f"    {tid}: Solving problem")
         solveStatus = lra.solve(prob)
         lg.info(f"    {tid}: Solve Status: {solveStatus}")
-        lra.solutionToTable(prob)
-        lra.measureMatch()
+        if solveStatus == 'Optimal':
+            lra.solutionToTable(prob)
+        lra.measureMatch(force=False)
         lra.saveResults()
 
 def attackIterator():
+    # This group tests with both noise and LCF, larger tables
+    prod = []
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
+    prod.append(seeds)
+    numColumnVals = [[5,5,5,5],[10,10,10]]
+    prod.append(numColumnVals)
+    tabTypes = ['random']
+    prod.append(tabTypes)
+    lcf = [[2,6]]
+    prod.append(lcf)
+    sf = [2]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    numSDs = [3]
+    prod.append(numSDs)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
+    return
+
+    # This group tests with both noise and LCF
+    prod = []
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
+    prod.append(seeds)
+    numColumnVals = [[3,3,3],[5,5,5],[3,3,3,3]]
+    prod.append(numColumnVals)
+    tabTypes = ['random','complete']
+    prod.append(tabTypes)
+    lcf = [[2,6]]
+    prod.append(lcf)
+    sf = [2]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    numSDs = [2]
+    prod.append(numSDs)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
+    return
+
+    # This group tests noise without lcf
+    prod = []
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
+    prod.append(seeds)
+    numColumnVals = [[3,3,3],[5,5,5],[3,3,3,3]]
+    prod.append(numColumnVals)
+    tabTypes = ['random','complete']
+    prod.append(tabTypes)
+    lcf = [[0,0]]
+    prod.append(lcf)
+    sf = [1,2]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    numSDs = [1,2,3]
+    prod.append(numSDs)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
+    return
+    
+    # This group gets the bigger network shapes across the desired parameters
+    prod = []
+    seeds = ['a','b','c','d','e']
+    prod.append(seeds)
+    numColumnVals = [[5,5,5,5],[10,10,10,10]]
+    prod.append(numColumnVals)
+    tabTypes = ['random','complete']
+    prod.append(tabTypes)
+    lcf = [[0,0],[2,2],[4,4],[2,6],[2,10]]
+    prod.append(lcf)
+    sf = [0]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
+
+    # The following already done or in progress
+    return
     # This first group is for testing different seeds with elastic constraints
     prod = []
     seeds = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
@@ -82,25 +168,6 @@ def attackIterator():
     sf = [0]
     prod.append(sf)
     elastic = [[0.1,1.0],[0.25,1.0],[0.5,1.0],[0.75,1.0],[1.0,1.0]]
-    prod.append(elastic)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    
-    # This second group gets the remaining [3,3,3] shaped networks (without elastic constraints)
-    # Start with five seeds. We can add more later
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[0,0],[2,2],[2,10]]
-    prod.append(lcf)
-    sf = [0]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
     prod.append(elastic)
     #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
     for things in itertools.product(*prod):
@@ -133,25 +200,6 @@ def attackIterator():
     tabTypes = ['random']
     prod.append(tabTypes)
     lcf = [[4,4],[2,6],[2,10]]
-    prod.append(lcf)
-    sf = [0]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    return
-    
-    # This group gets the bigger network shapes across the desired parameters
-    prod = []
-    seeds = ['a','b','c','d','e']
-    prod.append(seeds)
-    numColumnVals = [[5,5,5,5],[10,10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[0,0],[2,2],[4,4],[2,6],[2,10]]
     prod.append(lcf)
     sf = [0]
     prod.append(sf)
