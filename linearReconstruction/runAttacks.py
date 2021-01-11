@@ -72,6 +72,10 @@ def doAttack(params,tid=None):
         lra.saveResults()
 
 def attackIterator():
+    ''' This routine contains multiple sets of attack parameters. For each such set,
+        one or more parameter values are set for each parameter. All combinations of
+        all parameters for each group are run.
+    '''
     # This group tests with both noise and LCF, larger tables
     prod = []
     seeds = ['a','b','c','d','e','f','g','h','i','j']
@@ -215,10 +219,22 @@ def getEmptyThreadIndex(threads):
             return i
     return None
     
+# This is used to force experimental measurement based on the reconstructed table. It is
+# used when we want to add a new measure, but don't need to rerun the solutions
 forceMeasure = False
+
+# This is used to force the solver to run again even though it has already run with the
+# given set of parameters. This is used when we make changes to the solver and want to overwrite
+# prior solutions.
 forceSolution = False
+
+# This forces the LP problem itself to be stored.
 doStoreProblem = False
+
+# Threading is not necessary if the solver itself runs in parallel.  (Probably stupid to have
+# implemented it.)
 numThreads = 0
+
 threads = [None for _ in range(numThreads)]
 format = "%(asctime)s: %(message)s"
 lg.basicConfig(format=format, level=lg.DEBUG, datefmt="%H:%M:%S")

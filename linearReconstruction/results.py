@@ -9,6 +9,9 @@ class resultGatherer:
     '''
     '''
     def __init__(self):
+        # These dicts show how the parameter names in the results files are mapped to the
+        # column names in the notebook. (This is done simply to have more compact column
+        # names in the notebook)
         self.tableParams = {
             'tabType': 't_tab',
             'numValsPerColumn': 't_shape',

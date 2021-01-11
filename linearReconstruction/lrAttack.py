@@ -637,12 +637,15 @@ class lrAttack:
         prob.writeLP(path)
     
 if __name__ == "__main__":
-    # Build a table to attack
-    # complete has one user for every possible column/value combination
-    # random has same number of users, but ranomly assigned values. The result
-    # should be that many users are distinct, some are not
+    # Forces the solver to run even if there is already a solution in the `results` directory
     forceSolution = True
+
+    # Forces the LP problem itself to be stored in the `results` directory
     doStoreProblem = True
+
+    # See the associated notebooks to understand what the following parameters do, esp. `basic.ipynb`.
+    # See the __init__ routine of class resultGatherer in results.py to understand how the following
+    # dict keys map to column names in the notebooks.
     seed = 'a'
     tabTypes = ['random','complete']
     tableParams = {
@@ -686,78 +689,3 @@ if __name__ == "__main__":
         lra.solutionToTable(prob)
     lra.measureMatch(force=False)
     lra.saveResults()
-
-'''
-Now what happens is that solutions are generated. In each run of the loop, one solution
-is found. Then that solution is prevented from being found again through yet more constraints
-that prevent the same assignment as a previous solution
-'''
-'''
-while True:
-    prob.solve()
-    # The status of the solution is printed to the screen
-    print("Status:", LpStatus[prob.status])
-    # The solution is printed if it was deemed "optimal" i.e met the constraints
-    if LpStatus[prob.status] == "Optimal":
-        # The solution is written to the sudokuout.txt file
-        for r in ROWS:
-            if r in [1, 4, 7]:
-                sudokuout.write("+-------+-------+-------+\n")
-            for c in COLS:
-                for v in VALS:
-                    if value(choices[v][r][c]) == 1:
-                        if c in [1, 4, 7]:
-                            sudokuout.write("| ")
-                        sudokuout.write(str(v) + " ")
-                        if c == 9:
-                            sudokuout.write("|\n")
-        sudokuout.write("+-------+-------+-------+\n\n")
-        # The constraint is added that the same solution cannot be returned again
-        prob += lpSum([choices[v][r][c] for v in VALS for r in ROWS for c in COLS
-                       if value(choices[v][r][c]) == 1]) <= 80
-    # If a new optimal solution cannot be found, we end the program
-    else:
-        break
-'''
-'''
-After each loop, a single new constraint like this is created:
-_C351: Choice_1_1_8 + Choice_1_2_4 + Choice_1_3_1 + Choice_1_4_2
- + Choice_1_5_7 + Choice_1_6_6 + Choice_1_7_3 + Choice_1_8_5 + Choice_1_9_9
- + Choice_2_1_3 + Choice_2_2_9 + Choice_2_3_6 + Choice_2_4_8 + Choice_2_5_2
- + Choice_2_6_5 + Choice_2_7_7 + Choice_2_8_1 + Choice_2_9_4 + Choice_3_1_2
- + Choice_3_2_8 + Choice_3_3_4 + Choice_3_4_9 + Choice_3_5_6 + Choice_3_6_3
- + Choice_3_7_5 + Choice_3_8_7 + Choice_3_9_1 + Choice_4_1_7 + Choice_4_2_3
- + Choice_4_3_5 + Choice_4_4_6 + Choice_4_5_1 + Choice_4_6_8 + Choice_4_7_9
- + Choice_4_8_4 + Choice_4_9_2 + Choice_5_1_1 + Choice_5_2_6 + Choice_5_3_9
- + Choice_5_4_7 + Choice_5_5_5 + Choice_5_6_2 + Choice_5_7_4 + Choice_5_8_8
- + Choice_5_9_3 + Choice_6_1_4 + Choice_6_2_1 + Choice_6_3_8 + Choice_6_4_5
- + Choice_6_5_3 + Choice_6_6_7 + Choice_6_7_2 + Choice_6_8_9 + Choice_6_9_6
- + Choice_7_1_5 + Choice_7_2_2 + Choice_7_3_7 + Choice_7_4_4 + Choice_7_5_9
- + Choice_7_6_1 + Choice_7_7_6 + Choice_7_8_3 + Choice_7_9_8 + Choice_8_1_6
- + Choice_8_2_7 + Choice_8_3_3 + Choice_8_4_1 + Choice_8_5_4 + Choice_8_6_9
- + Choice_8_7_8 + Choice_8_8_2 + Choice_8_9_5 + Choice_9_1_9 + Choice_9_2_5
- + Choice_9_3_2 + Choice_9_4_3 + Choice_9_5_8 + Choice_9_6_4 + Choice_9_7_1
- + Choice_9_8_6 + Choice_9_9_7 <= 80
-Relative to a solution like this:
-+-------+-------+-------+
-| 5 3 2 | 6 7 8 | 4 1 9 |
-| 6 7 4 | 1 9 5 | 8 3 2 |
-| 1 9 8 | 3 4 2 | 7 6 5 |
-+-------+-------+-------+
-| 8 1 9 | 7 6 4 | 5 2 3 |
-| 4 2 6 | 8 5 3 | 1 9 7 |
-| 7 5 3 | 9 2 1 | 6 4 8 |
-+-------+-------+-------+
-| 9 6 1 | 5 3 7 | 2 8 4 |
-| 2 8 7 | 4 1 9 | 3 5 6 |
-| 3 4 5 | 2 8 6 | 9 7 1 |
-+-------+-------+-------+
-The sum of all those choices is 81, so the set of choices can't be made again.
-'''
-'''
-sudokuout.close()
-
-# The location of the solutions is give to the user
-print("Solutions Written to sudokuout.txt")
-
-'''
