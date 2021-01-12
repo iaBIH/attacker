@@ -417,9 +417,10 @@ class lrAttack:
                 # noisyCount is an integer. cmax_sd is float.
                 cmin = noisyCount - (self.sp['numSDs'] * cmax_sd)
                 cmax = noisyCount + (self.sp['numSDs'] * cmax_sd)
-                # We know we can't have a negative count, so...
-                cmin = max(0,cmin)
-                cmax = max(0,cmax)
+                # We know we can't have a negative count. We also can't have a count of zero
+                # because that would be suppressed
+                cmin = max(1,cmin)
+                cmax = max(1,cmax)
                 # Make elastic constraints
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
             self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd)
@@ -514,7 +515,6 @@ class lrAttack:
                     constraint = pulp.LpConstraint(e=constraint_LHS, sense=pulp.LpConstraintEQ, name=f"{cnum}_elastic_num_users_per_bkt", rhs=targetVal)
                     conElastic = constraint.makeElasticSubProblem(penalty = 100, proportionFreeBoundList = [penaltyFracLow,penaltyFracHigh])
                     prob.extend(conElastic)
-                # TODO: add elastic constraints
         if doprint: pp.pprint(prob)
         
         print("Constraints ensuring that each user is in one bucket per column or combination")
@@ -641,7 +641,7 @@ if __name__ == "__main__":
     forceSolution = True
 
     # Forces the LP problem itself to be stored in the `results` directory
-    doStoreProblem = True
+    doStoreProblem = False
 
     # See the associated notebooks to understand what the following parameters do, esp. `basic.ipynb`.
     # See the __init__ routine of class resultGatherer in results.py to understand how the following
@@ -650,21 +650,21 @@ if __name__ == "__main__":
     tabTypes = ['random','complete']
     tableParams = {
         'tabType': tabTypes[0],
-        'numValsPerColumn': [2,2],
+        'numValsPerColumn': [5,5,5],
         #'numValsPerColumn': [3,3,3],
         #'numValsPerColumn': [10,10,10],
     }
     anonymizerParams = {
         'lcfMin': 0,
         'lcfMax': 0,
-        'standardDeviation': 1,
+        'standardDeviation': 2,
     }
     solveParams = {
         # This is fraction of the LCF or noise range that is penalty-free
         # Value 1.0 means there is no elastic constraint at all
         'elasticLcf': 1.0,
         'elasticNoise': 1.0,
-        'numSDs': 2
+        'numSDs': 2,
     }
     
     lra = lrAttack(seed, anonymizerParams, tableParams, solveParams, force=forceSolution)
