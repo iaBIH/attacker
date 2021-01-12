@@ -70,6 +70,8 @@ class resultGatherer:
             if k not in check or check[k] not in columns:
                 continue
             if type(v) is list:
+                # This just removes some white space and makes table types look better
+                # [3, 3, 3] --> [3,3,3]
                 data[check[k]].append(str(v).replace(' ',''))
             else:
                 if k == 'solveStatus':
