@@ -76,6 +76,48 @@ def attackIterator():
         one or more parameter values are set for each parameter. All combinations of
         all parameters for each group are run.
     '''
+    # This group tests increasing the number of columns
+    prod = []
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
+    prod.append(seeds)
+    numColumnVals = [[2,2],[2,2,2],[2,2,2,2],[2,2,2,2,2],[2,2,2,2,2,2]]
+    prod.append(numColumnVals)
+    tabTypes = ['random']
+    prod.append(tabTypes)
+    lcf = [[2,6]]
+    prod.append(lcf)
+    sf = [2]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    numSDs = [2]
+    prod.append(numSDs)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
+    return
+
+    # This group tests increasing the number of values per column
+    prod = []
+    seeds = ['a','b','c','d','e','f','g','h','i','j']
+    prod.append(seeds)
+    numColumnVals = [[3,3,3],[4,4,4],[5,5,5],[6,6,6],[7,7,7]]
+    prod.append(numColumnVals)
+    tabTypes = ['random']
+    prod.append(tabTypes)
+    lcf = [[2,6]]
+    prod.append(lcf)
+    sf = [2]
+    prod.append(sf)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    numSDs = [2]
+    prod.append(numSDs)
+    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
+    for things in itertools.product(*prod):
+        yield things
+    return
+
     # This group tests the solving time and accuracy of large numSDs values
     # Note that LCF is turned off because we don't yet have a way to increase the
     # constraint range for LCF
