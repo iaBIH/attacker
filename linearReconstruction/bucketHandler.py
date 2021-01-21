@@ -263,7 +263,6 @@ class bucketHandler:
         return keys
 
 if __name__ == "__main__":
-    import random
     pp = pprint.PrettyPrinter(indent=4)
     cols = ['c1','c2','c3']
     bh = bucketHandler(cols)

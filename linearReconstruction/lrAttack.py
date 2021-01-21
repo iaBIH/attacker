@@ -92,7 +92,7 @@ class lrAttack:
                 pp.pprint(data)
                 pp.pprint(log)
                 self.storeProblem(prob)
-                quit()
+                return
         dfNew = pd.DataFrame.from_dict(data)
         dfNew.sort_values(by=self.cols,inplace=True)
         dfNew.reset_index(drop=True,inplace=True)
