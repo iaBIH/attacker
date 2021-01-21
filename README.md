@@ -1,6 +1,10 @@
 # attacker
 Script for testing Diffix by running attacks
 
+# Requirements
+
+Requires a directory called `tables` under the directory where attacks.py is executed.
+
 # Basic workflow
 
 * Build table to attack
@@ -16,4 +20,3 @@ There are two main steps:
 
 1. Build table that has all possible combinations of columns and specified values.
 2. Add or delete rows individually to create the required attack conditions.
-
