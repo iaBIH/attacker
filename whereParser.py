@@ -7,10 +7,9 @@ class simpleWhere:
         Incoming SQL must be of the form:
            SELECT foo
            FROM table
-           WHERE stuff
-
+           WHERE condition1 or condition2 or ...
         All column names in the WHERE clause are of the form i1 (two letters)
-        The first letter is 'i' if integer, 'r' if real, 't' if text, 'd' if date
+        The first letter is 'i' if integer, 'r' if real, 't' if text, 'd' if date.
     """
 
     def __init__(self, sqlStr=None):

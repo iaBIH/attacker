@@ -20,6 +20,43 @@ class aidManager:
             self.nextVal += 1
             return self.nextVal
 
+'''
+Building tables operates in two phases: first a base table is built that has
+multiple rows of every possible column/value combination (default numRowsPerCombination=10).
+Then rows are selectively added or deleted from the base table.
+
+The columns of the table are either AID columns or data columns. The AID columns are
+named `aid1`, `aid2`, ..., `aidN`. The data columns are named `xy` (two characters), 
+where `x` is 'i' if integer, 'r' if real, 't' if text, 'd' if date, and y is a single digit.
+
+The spec for building the base table is literally an SQL string. (This might be a
+dumb way to do it ... we'll see if that is the case when we get to more complex tables.)
+The SQL is of the form:
+    SELECT foo
+    FROM table
+    WHERE condition1 or condition2 or ...
+
+Each condition in the WHERE clause is one of the following:
+    col = val:
+    col IN (val1, val2, ...)
+These WHERE clauses cause the given values to be added to the base table. All possible
+combinations of columns and values are added to the base table. One additional value per
+column is also added. (These SQL strings are encoded in the `attacks` dict as 'conditionsSql'.)
+
+For deleting or adding rows, the methods `stripDf()` and `appendDf()` are used:
+    stripDf(): The argument to stripDf is literally a dataframes query. Everything matching
+        that query will be stripped from the base table. For example, "t2 == 'f'" will remove
+        all rows where column 't2' has value 'f'.
+    appendDf(): The argument to appendDf is a dict indexed by data column name (not AID columns).
+        For each column name, a list is supplied. The length of the list matches the number of
+        rows to add to the base table. Each entry in the list if the value that should be added.
+        The special sting 'unique' causes a unique value to be added. For example, the following
+        dict:
+            {'t1':['unique'],'i1':[100],'t2':['x']}
+        adds a single row with a unique value for column 't1', the value 100 for column 'i1', and
+        the value 'x' for column 't2'.
+
+'''
 
 class rowFiller:
     """Generates the rows and outputs the table as sqlite
