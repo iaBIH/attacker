@@ -20,45 +20,64 @@ class tally:
     def __init__(self):
         self.t = {}
 
-    def addResult(self,atk,numSucceed,numTries,doprint=True):
-        if doprint:
-            print(f"{atk.name}, {atk.attack['describe']}")
-            rate = int((numSucceed/numTries)*100)
-            print(f"    {numSucceed} of {numTries} ({rate} percent)")
+    def addResult(self,atk,numCorrect,numGuess,totalTrials,doprint=True):
         if atk.name not in self.t:
             self.t[atk.name] = {
                 'attacks': [atk.attack],
-                'numTries': numTries,
-                'successes': [numSucceed],
+                'numGuess': [numGuess],
+                'numCorrect': [numCorrect],
+                'totalTrials': [totalTrials],
             }
         else:
-            self.t[atk.name]['successes'].append(numSucceed)
+            self.t[atk.name]['numCorrect'].append(numCorrect)
+            self.t[atk.name]['numGuess'].append(numGuess)
+            self.t[atk.name]['totalTrials'].append(totalTrials)
             self.t[atk.name]['attacks'].append(atk.attack)
 
     def printResults(self):
         for atk.name,res in self.t.items():
-            print(f"{atk.name} ({res['numTries']} samples per attack):")
-            print(f"    {len(res['successes'])} attack variants")
-            print(f"    avg: {statistics.mean(res['successes'])}")
-            maxi = res['successes'].index(max(res['successes']))
-            print(f"    max: {res['successes'][maxi]}   ({res['attacks'][maxi]['describe']})")
-            mini = res['successes'].index(min(res['successes']))
-            print(f"    min: {res['successes'][mini]}   ({res['attacks'][mini]['describe']})")
+            print(f"{atk.name}: ({len(res['numCorrect'])} attack variants)")
+            print(atk.attack['long'])
+            confidences = []
+            guessProbs = []
+            for i in range(len(res['numCorrect'])):
+                if res['numGuess'][i]:
+                    confidences.append(res['numCorrect'][i]/res['numGuess'][i])
+                else:
+                    confidences.append(0)
+                guessProbs.append(res['numGuess'][i]/res['totalTrials'][i])
+            print("  Confidence:")
+            print(f"    avg: {statistics.mean(confidences)}")
+            maxi = confidences.index(max(confidences))
+            print(f"    max: {confidences[maxi]}   ({res['attacks'][maxi]['describe']})")
+            mini = confidences.index(min(confidences))
+            print(f"    min: {confidences[mini]}   ({res['attacks'][mini]['describe']})")
+            print("  Guess Probability:")
+            print(f"    avg: {statistics.mean(guessProbs)}")
+            maxi = guessProbs.index(max(guessProbs))
+            print(f"    max: {guessProbs[maxi]}   ({res['attacks'][maxi]['describe']})")
+            mini = guessProbs.index(min(guessProbs))
+            print(f"    min: {guessProbs[mini]}   ({res['attacks'][mini]['describe']})")
 
 class attackBase:
     '''
+        This is the base class for all attacks (which are sub-classes of this base)
     '''
+    long = ''
     def __init__(self,attack,tally,queryUrl='https://db-proto.probsteide.com/api',
                  fileUrl='https://db-proto.probsteide.com/api/upload-db'):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.name = self.__class__.__name__
         self.attack = attack
+        self.attack['long'] = self.long
         self.queryUrl = queryUrl
         self.fileUrl = fileUrl
         self.tally = tally
         dop = False
         if 'doprint' in self.attack:
             dop = self.attack['doprint']
+        # get Diffix parameters from reference
+        self.diffix = self.getDiffixParams()
         # build attack database
         self.sw = whereParser.simpleWhere(attack['table']['conditionsSql'])
         self.rf = rowFiller.rowFiller(self.sw,printIntermediateTables=False,dop=dop)
@@ -66,14 +85,27 @@ class attackBase:
         if len(self.rf.failedCombinations) > 0:
             print("Failed Combinations:")
             print(self.rf.failedCombinations)
+        # Strip, then append
+        for change in attack['table']['changes']:
+            if change['change'] == 'strip':
+                self.rf.stripDf(change['table'],change['query'])
         for change in attack['table']['changes']:
             if change['change'] == 'append':
                 self.rf.appendDf(change['table'],change['spec'])
-            elif change['change'] == 'strip':
-                self.rf.stripDf(change['table'],change['query'])
         self.rf.baseTablesToDb()
         self.postDb()
         self.makeAttackQueries()
+
+    def getDiffixParams(self):
+        diffix = {
+            'lcfMin':1.5,
+            'lcfMax':5.5,
+            'lcfDist':'uniform',
+        }
+        return diffix
+
+    def printRawTable(self):
+        print(self.rf.baseDf)
 
     def print(self):
         self.pp.pprint(self.attack)
@@ -186,25 +218,64 @@ class attackBase:
             s[row[0]] = row[1]
         return s
 
+    def _bucketIsSuppressed(self, bucketVal):
+        for bucket in self.answers[0][0][0]:
+            if bucket[0] == bucketVal:
+                return False
+        return True
+
 class simpleAveraging(attackBase):
-    name = 'simpleAveraging'
+    long = 'In the simple averaging attack, our goal is to remove noise by simply repeating ' + \
+           'the exact same query on the hope that the noise sample will be different each time, ' + \
+           'and the noise will average away. Diffix defeats this attack with sticky noise.'
     def runAttack(self,db='anon',seed=1):
+        print(self.attack['long'])
         self.runQueries(db,seed)
         sumCounts = 0
         for ansGroup in self.answers:
             sumCounts += ansGroup[0][0][0]
         averagedCount = sumCounts / len(self.answers)
         if averagedCount == self.exactCount:
-            return 'SUCCEED'
+            return 'CORRECT'
         else:
-            return 'FAIL'
+            return 'WRONG'
 
     def doCheck(self):
         sql1 = self._doSqlReplace(self.queries[0][0])
         self.exactCount = self.queryDb(sql1)[0][0]
 
+class simpleStrongSuppressDetect(attackBase):
+    long = "This attack exploits Diffix' suppression mechanism. " + \
+           'The idea here is that an attacker knows that there are N AIDs with a certain ' + \
+           'column value, and wants to figure out if the N+1th AID also has that value. ' + \
+           'In the "strong" case, N is equal to the maximum number of distinct AIDs that ' + \
+           'are always suppressed. Therefore if the bucket is not suppressed, the victim ' + \
+           'must be present.'
+    def runAttack(self,db='anon',seed=1):
+        if db == 'raw':
+            # We know the attack doesn't make sense on the raw DB, so return default 'CORRECT'
+            pass
+            #return 'CORRECT'
+        self.runQueries(db,seed)
+        suppressed = self._bucketIsSuppressed(self.check['bucketVal'])
+        # alwaysSuppressed is the max number of AIDs that is always suppressed
+        alwaysSuppressed = int(self.diffix['lcfMin'])
+        if self.check['numKnown'] == alwaysSuppressed:
+            # This is the case where, if the answer is not suppressed, then it MUST be
+            # that the victim is present
+            if not suppressed:
+                    return 'CORRECT'
+        else:
+            return 'NO GUESS'
+
 class splitAveraging(attackBase):
-    name = 'splitAveraging'
+    long = 'In the split averaging attack, the attacker attempts to defeat sticky noise by ' + \
+           'creating pairs of queries where each pair collectively has the same underlying ' + \
+           'set of AIDs, but the individual queries have different AIDs. This is done with ' + \
+           'a pair of WHERE clauses as "WHERE col = val" and "WHERE col <> val". These two ' + \
+           'taken together include all users. Each pair of queries uses a different val ' +\
+           'with the result that each individual bucket has different AIDs.  This attack ' +\
+           'works against Diffix Publish, but not the other Diffix variants.'
     def runAttack(self,db='anon',seed=1):
         self.runQueries(db,seed)
         sumCounts = 0
@@ -213,25 +284,36 @@ class splitAveraging(attackBase):
             sumCounts += ansGroup[1][0][0]
         averagedCount = sumCounts / len(self.answers)
         if averagedCount == self.exactCount:
-            return 'SUCCEED'
+            return 'CORRECT'
         else:
-            return 'FAIL'
+            return 'WRONG'
 
     def doCheck(self):
         sql = self._doSqlReplace(self.attack['checkQuery'])
         self.exactCount = self.queryDb(sql)[0][0]
 
-class simpleDifference(attackBase):
+class simpleSoftDifference(attackBase):
+    long = 'The difference attack attempts to learn if an AID is present or absent ' + \
+           'from whether there is a difference between a pair of queries whereby one query ' + \
+           '(the "left" query) ' + \
+           'definately includes or excludes the victim, and the other query (the "right" query) ' + \
+           'may or may not include the victim. This "soft" version of the attack simply looks ' + \
+           'to see if the right answer is above or below a threshold that falls in the middle of ' + \
+           'the true difference between the left and right counts. '
     def runAttack(self,db='anon',seed=1):
         self.runQueries(db,seed)
         diff = self.answers[0][0][0][0] - self.answers[0][1][0][0]
         if (self.check['correctIsLess'] and diff < self.check['threshold'] or
             self.check['correctIsLess']  is False and diff >= self.check['threshold']):
-            return 'SUCCEED'
+            return 'CORRECT'
         else:
-            return 'FAIL'
+            return 'WRONG'
 
 class simpleFirstDerivitiveDifference(attackBase):
+    long = 'In this variant of the difference attack, the attacker builds multiple pairs of ' + \
+           'queries, with the left and right query each being part of a left and right histogram. ' + \
+           'In this attack, left and right for each pair will differ, but the difference will be ' + \
+           'the same for all pairs except the one with the victim. '
     def runAttack(self,db='anon',seed=1):
         self.runQueries(db,seed)
         ans1 = self.answers[0][0]
@@ -248,29 +330,33 @@ class simpleFirstDerivitiveDifference(attackBase):
                     maxBucket = bucket
                     maxDiff = diff
         if maxBucket != self.check['victimBucket']:
-            return 'FAIL'
+            return 'WRONG'
         else:
-            return 'SUCCEED'
+            return 'CORRECT'
 
 class simpleListUsers(attackBase):
+    long = 'The simple list attack simply tries to list the individual rows of one or more ' + \
+           'columns. The "test" for whether the attack succeeded is simply to compare the number ' + \
+           'rows received against the true number '
     def runAttack(self,db='anon',seed=1):
         self.runQueries(db,seed)
         # Simply checking the number of rows in the answer against the raw data
         # query isn't a very thorough check, but I'm assuming that even this will
         # fail so no need to go further
         if len(self.answers[0][0]) == len(self.checkAns):
-            return 'SUCCEED'
+            return 'CORRECT'
         else:
-            return 'FAIL'
+            return 'WRONG'
 
     def doCheck(self):
         sql1 = self._doSqlReplace(self.queries[0][0])
         self.checkAns = self.queryDb(sql1)
 
 class justTesting(attackBase):
+    long = ''
     def runAttack(self,db='anon',seed=1):
         self.runQueries(db,seed)
-        return 'SUCCEED'
+        return 'CORRECT'
 
 if False: testControl = 'firstOnly'    # executes only the first test
 elif False: testControl = 'tagged'    # executes only tests so tagged
@@ -319,6 +405,31 @@ attacks = [
     {   
         'doprint': False,
         'tagAsRun': False,
+        'attackClass': simpleStrongSuppressDetect,
+        'describe': 'Simple strong detect suppression attack, one of two known, victim present',
+        'table': {
+            'conditionsSql': "select count(*) from tab where t1='i' and t2='j'",
+            # This adds two users, all with t1=k, and all with unique t2. The attacker
+            # knows that there are either two or three users with t1=k, and will use
+            # the suppression signal to guess which
+            'changes': [
+                {'change':'append', 'table':'tab','spec': {'t1':['k'],'t2':['unique']}},
+                {'change':'append', 'table':'tab','spec': {'t1':['k'],'t2':['unique']}},
+            ],
+        },
+        'attackQueries': {
+            'sqls': [
+                "select t1, count(distinct aid1) from tab",
+            ],
+        },
+        'check': {
+            'bucketVal': 'k',
+            'numKnown': 1,
+        },
+    },
+    {   
+        'doprint': False,
+        'tagAsRun': False,
         'attackClass': justTesting,
         'describe': 'Just testing a new conditionsSql',
         'table': {
@@ -344,7 +455,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': 'Simple difference attack with lone woman, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with t2 = 'f'. Want to learn t1
@@ -371,7 +482,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': "Simple difference attack with NAND'd AND group, victim does not have attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
@@ -397,7 +508,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': "Simple difference attack with NAND'd AND group, victim has attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
@@ -424,7 +535,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': 'Simple difference attack with single NAND, victim has attribute',
         'table': {
             # The attack here is where there is one user with a unique value in column i1
@@ -452,7 +563,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': 'Simple difference attack with single NAND, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with a unique i1. We want to know
@@ -479,7 +590,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': "Simple difference attack with OR'd AND group, victim does not have attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
@@ -506,7 +617,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': "Simple difference attack with OR'd AND group, victim has attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
@@ -533,7 +644,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': 'Simple difference attack with single OR, victim has attribute',
         'table': {
             # The attack here is where there is one user with a unique value in column i1
@@ -561,7 +672,7 @@ attacks = [
     },
     {   
         'tagAsRun': False,
-        'attackClass': simpleDifference,
+        'attackClass': simpleSoftDifference,
         'describe': 'Simple difference attack with single OR, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with a unique i1. We want to know
@@ -709,21 +820,26 @@ for attack in attacks:
         atk.doCheck()
         # Make sure the attack works with no anonymization
         result = atk.runAttackTest()
-        if result != 'SUCCEED':
+        if result != 'CORRECT':
             atk.print()
             print("FAIL: test attack failed")
             quit()
         if atk.attackQueriesDisallowed():
-            tally.addResult(atk,0,100)
+            tally.addResult(atk,0,100,100)
         else:
-            numSucceed = 0
+            numCorrect = 0
+            numTry = 0
             for i in range(defaultNumClaims):
                 result = atk.runAttack(seed=i)
-                if result == 'FAIL AND STOP':
-                    break
-                elif result == 'SUCCEED':
-                    numSucceed += 1
-            tally.addResult(atk,numSucceed,defaultNumClaims)
+                if result == 'FAIL':
+                    numGuess += 1
+                elif result == 'CORRECT':
+                    numGuess += 1
+                    numCorrect += 1
+                elif result == 'NO GUESS':
+                    # Do nothing on purpose
+                    pass
+            tally.addResult(atk,numCorrect,numGuess,defaultNumClaims)
     if testControl == 'firstOnly':
         break
 print("---- SUMMARY ----")
