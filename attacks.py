@@ -293,7 +293,7 @@ class splitAveraging(attackBase):
         self.exactCount = self.queryDb(sql)[0][0]
 
 class simpleSoftDifference(attackBase):
-    long = 'The difference attack attempts to learn if an AID is present or absent ' + \
+    long = 'The simple soft difference attack attempts to learn if an AID is present or absent ' + \
            'from whether there is a difference between a pair of queries whereby one query ' + \
            '(the "left" query) ' + \
            'definately includes or excludes the victim, and the other query (the "right" query) ' + \
@@ -305,6 +305,24 @@ class simpleSoftDifference(attackBase):
         diff = self.answers[0][0][0][0] - self.answers[0][1][0][0]
         if (self.check['correctIsLess'] and diff < self.check['threshold'] or
             self.check['correctIsLess']  is False and diff >= self.check['threshold']):
+            return 'CORRECT'
+        else:
+            return 'WRONG'
+
+class simpleHardDifference(attackBase):
+    long = 'The simple hard difference attack attempts to learn if an AID is present or absent ' + \
+           'from whether there is a difference between a pair of queries whereby one query ' + \
+           '(the "left" query) ' + \
+           'definately includes or excludes the victim, and the other query (the "right" query) ' + \
+           'may or may not include the victim. This "hard" version of the attack simply looks ' + \
+           'to see if right and left answers differ at all. Diffix Publish is vulnerable to this ' + \
+           'because it uses only a single AID noise layer. '
+    def runAttack(self,db='anon',seed=1):
+        self.runQueries(db,seed)
+        if ((self.check['correctIfDifferent'] and 
+                self.answers[0][0][0][0] != self.answers[0][1][0][0]) or
+            (not self.check['correctIfDifferent'] and 
+                self.answers[0][0][0][0] == self.answers[0][1][0][0])):
             return 'CORRECT'
         else:
             return 'WRONG'
@@ -403,6 +421,58 @@ correct or incorrect. Generally this involves some custom query to the raw datab
 '''
 attacks = [
     {   
+        'tagAsRun': False,
+        'attackClass': simpleHardDifference,
+        'describe': "Simple hard difference attack with NAND'd AND group, victim has attribute",
+        'table': {
+            # The attack here is where there is one user with a unique combination of i1 and t2
+            # values, though each individually is not unique
+            'conditionsSql': "select count(*) from tab where t1='y' or i1=100 or t2='x'",
+            'changes': [
+                {'change':'strip', 'table':'tab','query': "t2 == 'x' and i1 == 100"},
+                {'change':'append', 'table':'tab','spec': {'t1':['y'],'i1':[100],'t2':['x']}},
+            ],
+        },
+        'attackQueries': {
+            'sqls': [
+                # The first query definately excludes the victim
+                "select count(distinct aid1) from tab where t1 = 'y' and not (i1 = 100 and t2 = 'x')",
+                # The second query may or may not (but in this case also does).
+                "select count(distinct aid1) from tab where t1 = 'y'",
+            ],
+        },
+        'check': {
+            # If the second query has the victim, then the difference is 0
+            'correctIfDifferent': True,
+        },
+    },
+    {   
+        'tagAsRun': False,
+        'attackClass': simpleHardDifference,
+        'describe': 'Simple hard difference attack with lone woman, victim does not have attribute',
+        'table': {
+            # The attack here is where there is one user with t2 = 'f'. Want to learn t1
+            'conditionsSql': "select count(*) from tab where t1='y' or t2 in ('f','m')",
+            # Remove all t2='f' then add one back in
+            'changes': [
+                {'change':'strip', 'table':'tab','query': "t2 == 'f'"},
+                {'change':'strip', 'table':'tab','query': "t2 == 'zz'"},
+                {'change':'append', 'table':'tab','spec': {'t1':['unique'],'t2':['f']}},
+            ],
+        },
+        'attackQueries': {
+            'sqls': [
+                # The first query definately excludes the victim
+                "select count(distinct aid1) from tab where t1='y' and t2 = 'm'",
+                # The second query may or may not (in this case does not).
+                "select count(distinct aid1) from tab where t1='y'",
+            ],
+        },
+        'check': {
+            'correctIfDifferent': False,
+        },
+    },
+    {   
         'doprint': False,
         'tagAsRun': False,
         'attackClass': simpleStrongSuppressDetect,
@@ -456,7 +526,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': 'Simple difference attack with lone woman, victim does not have attribute',
+        'describe': 'Simple soft difference attack with lone woman, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with t2 = 'f'. Want to learn t1
             'conditionsSql': "select count(*) from tab where t1='y' or t2 in ('f','m')",
@@ -483,7 +553,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': "Simple difference attack with NAND'd AND group, victim does not have attribute",
+        'describe': "Simple soft difference attack with NAND'd AND group, victim does not have attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
             # values, though each individually is not unique
@@ -509,7 +579,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': "Simple difference attack with NAND'd AND group, victim has attribute",
+        'describe': "Simple soft difference attack with NAND'd AND group, victim has attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
             # values, though each individually is not unique
@@ -536,7 +606,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': 'Simple difference attack with single NAND, victim has attribute',
+        'describe': 'Simple soft difference attack with single NAND, victim has attribute',
         'table': {
             # The attack here is where there is one user with a unique value in column i1
             # We want to know if that user has value t1='y' or not.
@@ -564,7 +634,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': 'Simple difference attack with single NAND, victim does not have attribute',
+        'describe': 'Simple soft difference attack with single NAND, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with a unique i1. We want to know
             # if that user has value t1='y' or not.
@@ -591,7 +661,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': "Simple difference attack with OR'd AND group, victim does not have attribute",
+        'describe': "Simple soft difference attack with OR'd AND group, victim does not have attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
             # values, though each individually is not unique
@@ -618,7 +688,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': "Simple difference attack with OR'd AND group, victim has attribute",
+        'describe': "Simple soft difference attack with OR'd AND group, victim has attribute",
         'table': {
             # The attack here is where there is one user with a unique combination of i1 and t2
             # values, though each individually is not unique
@@ -645,7 +715,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': 'Simple difference attack with single OR, victim has attribute',
+        'describe': 'Simple soft difference attack with single OR, victim has attribute',
         'table': {
             # The attack here is where there is one user with a unique value in column i1
             # We want to know if that user has value t1='y' or not.
@@ -673,7 +743,7 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleSoftDifference,
-        'describe': 'Simple difference attack with single OR, victim does not have attribute',
+        'describe': 'Simple soft difference attack with single OR, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with a unique i1. We want to know
             # if that user has value t1='y' or not.
