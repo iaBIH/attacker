@@ -21,19 +21,21 @@ class tally:
     def __init__(self):
         self.t = {}
 
-    def addResult(self,atk,numCorrect,numGuess,totalTrials,doprint=True):
+    def addResult(self,atk,numCorrect,numGuess,totalTrials,reason='',doprint=True):
         if atk.name not in self.t:
             self.t[atk.name] = {
                 'attacks': [atk.attack],
                 'numGuess': [numGuess],
                 'numCorrect': [numCorrect],
                 'totalTrials': [totalTrials],
+                'reason': [reason],
             }
         else:
-            self.t[atk.name]['numCorrect'].append(numCorrect)
-            self.t[atk.name]['numGuess'].append(numGuess)
-            self.t[atk.name]['totalTrials'].append(totalTrials)
             self.t[atk.name]['attacks'].append(atk.attack)
+            self.t[atk.name]['numGuess'].append(numGuess)
+            self.t[atk.name]['numCorrect'].append(numCorrect)
+            self.t[atk.name]['totalTrials'].append(totalTrials)
+            self.t[atk.name]['reason'].append(reason)
 
     def printResults(self):
         for atk.name,res in self.t.items():
@@ -53,6 +55,8 @@ class tally:
             print(f"    max: {confidences[maxi]}   ({res['attacks'][maxi]['describe']})")
             mini = confidences.index(min(confidences))
             print(f"    min: {confidences[mini]}   ({res['attacks'][mini]['describe']})")
+            if len(res['reason'][mini]) > 0:
+                print(f"        reason: {res['reason'][mini]}")
             print("  Guess Probability:")
             print(f"    avg: {statistics.mean(guessProbs)}")
             maxi = guessProbs.index(max(guessProbs))
@@ -921,7 +925,7 @@ for attack in attacks:
         disallowedQuery = atk.attackQueriesDisallowed()
         if disallowedQuery:
             print(f'        Query rejected: "{disallowedQuery}"')
-            tally.addResult(atk,0,100,100)
+            tally.addResult(atk,0,100,100,reason='disallowed')
         else:
             numCorrect = 0
             numTry = 0
