@@ -65,7 +65,8 @@ class attackBase:
         This is the base class for all attacks (which are sub-classes of this base)
     '''
     long = ''
-    def __init__(self,attack,tally,queryUrl='https://db-proto.probsteide.com/api',
+    def __init__(self,attack,tally,defaultRef,
+                 queryUrl='https://db-proto.probsteide.com/api',
                  fileUrl='https://db-proto.probsteide.com/api/upload-db'):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.name = self.__class__.__name__
@@ -74,11 +75,10 @@ class attackBase:
         self.queryUrl = queryUrl
         self.fileUrl = fileUrl
         self.tally = tally
+        self.defaultRef = defaultRef
         dop = False
         if 'doprint' in self.attack:
             dop = self.attack['doprint']
-        # get Diffix parameters from reference
-        self.diffix = self.getDiffixParams()
         # build attack database
         self.sw = whereParser.simpleWhere(attack['table']['conditionsSql'])
         self.rf = rowFiller.rowFiller(self.sw,printIntermediateTables=False,dop=dop)
@@ -94,8 +94,9 @@ class attackBase:
             if change['change'] == 'append':
                 self.rf.appendDf(change['table'],change['spec'])
         self.rf.baseTablesToDb()
-        self.postDb()
         self.makeAttackQueries()
+        self.dr = diffixRef.diffixRef()
+        self.defaultAids=[{'table':'tab','aid':'aid1'}]
 
     def getDiffixParams(self):
         diffix = {
@@ -123,13 +124,52 @@ class attackBase:
         #print(r.text)
         fin.close()
 
-    def queryDb(self,sql):
+    def _updateParamsLoop(self,par,ref,keyStack):
+        for key,val in ref.items():
+            if key not in par:
+                self._error(f"ERROR: _updateParams: bad key {keyStack},{key}")
+            keyStack.append(key)
+            if type(val) is not dict:
+                par[key] = val
+                continue
+            else:
+                self._updateParamsLoop(par[key],ref[key],keyStack)
+
+    def _updateParams(self,refParams):
+        params = self.defaultRef.copy()
+        self._updateParamsLoop(params,refParams,[])
+        return params
+
+    def _queryDbRaw(self,sql):
         self.conn = sqlite3.connect(self.rf.getDbPath())
         self.cur = self.conn.cursor()
         self.cur.execute(sql)
         answer = self.cur.fetchall()
         self.conn.close()
         return answer
+
+    def _queryDbRef(self,sql,seed):
+        if 'refParams' in self.attack:
+            params = self._updateParams(self.attack['refParams'])
+        else:
+            params = self.defaultRef
+        if 'aids' in self.attack:
+            aids = self.attack[aids]
+        else:
+            aids = self.defaultAids
+        db = self.rf.getDbPath()
+        rtn = self.dr.query(sql,seed,aids,db,params)
+        if rtn['success']:
+            return rtn['answer']
+        else:
+            return None
+
+    def queryDb(self,dbType,sql,seed=1):
+        if dbType == 'raw':
+            return self._queryDbRaw(sql)
+        elif dbType == 'ref':
+            return self._queryDbRef(sql,seed)
+        self._error('''ERROR: queryDb: shouldn't get here''')
 
     def queryAnon(self,sql,seed=1,anon=True,db='testAttack.db'):
         aidCols = self.rf.getAidColumns()
@@ -171,23 +211,20 @@ class attackBase:
 
     def attackQueriesDisallowed(self):
         for query in self.queries[0]:
-            ans = self.queryAnon(query)
+            ans = self.queryDb('ref',query)
             if ans is None:
                 # At least one of the attack queries fails, so no need to continue
-                return True
-        return False
+                return query
+        return None
 
-    def runQueries(self,db,seed):
+    def runQueries(self,dbType,seed):
         # For each query in the query list of lists, we record an answer in
         # the same list of lists position
         self.answers = []
         for queryGroup in self.queries:
             ansGroup = []
             for query in queryGroup:
-                if db == 'raw':
-                    ansGroup.append(self.queryDb(query))
-                else:
-                    ansGroup.append(self.queryAnon(query,seed=seed))
+                ansGroup.append(self.queryDb(dbType,query,seed=seed))
             self.answers.append(ansGroup)
 
     def _doSqlReplace(self,sql):
@@ -229,8 +266,7 @@ class simpleAveraging(attackBase):
     long = 'In the simple averaging attack, our goal is to remove noise by simply repeating ' + \
            'the exact same query on the hope that the noise sample will be different each time, ' + \
            'and the noise will average away. Diffix defeats this attack with sticky noise.'
-    def runAttack(self,db='anon',seed=1):
-        print(self.attack['long'])
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         sumCounts = 0
         for ansGroup in self.answers:
@@ -243,7 +279,7 @@ class simpleAveraging(attackBase):
 
     def doCheck(self):
         sql1 = self._doSqlReplace(self.queries[0][0])
-        self.exactCount = self.queryDb(sql1)[0][0]
+        self.exactCount = self.queryDb('raw',sql1)[0][0]
 
 class simpleStrongSuppressDetect(attackBase):
     long = "This attack exploits Diffix' suppression mechanism. " + \
@@ -252,15 +288,14 @@ class simpleStrongSuppressDetect(attackBase):
            'In the "strong" case, N is equal to the maximum number of distinct AIDs that ' + \
            'are always suppressed. Therefore if the bucket is not suppressed, the victim ' + \
            'must be present.'
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         if db == 'raw':
-            # We know the attack doesn't make sense on the raw DB, so return default 'CORRECT'
-            pass
-            #return 'CORRECT'
+            # The attack doesn't make sense on the raw DB
+            return 'NOT APPLICABLE'
         self.runQueries(db,seed)
         suppressed = self._bucketIsSuppressed(self.check['bucketVal'])
         # alwaysSuppressed is the max number of AIDs that is always suppressed
-        alwaysSuppressed = int(self.diffix['lcfMin'])
+        alwaysSuppressed = int(self.attack['refParams']['low_count_threshold']['lower'])
         if self.check['numKnown'] == alwaysSuppressed:
             # This is the case where, if the answer is not suppressed, then it MUST be
             # that the victim is present
@@ -277,7 +312,7 @@ class splitAveraging(attackBase):
            'taken together include all users. Each pair of queries uses a different val ' +\
            'with the result that each individual bucket has different AIDs.  This attack ' +\
            'works against Diffix Publish, but not the other Diffix variants.'
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         sumCounts = 0
         for ansGroup in self.answers:
@@ -291,7 +326,7 @@ class splitAveraging(attackBase):
 
     def doCheck(self):
         sql = self._doSqlReplace(self.attack['checkQuery'])
-        self.exactCount = self.queryDb(sql)[0][0]
+        self.exactCount = self.queryDb('raw',sql)[0][0]
 
 class simpleSoftDifference(attackBase):
     long = 'The simple soft difference attack attempts to learn if an AID is present or absent ' + \
@@ -301,7 +336,7 @@ class simpleSoftDifference(attackBase):
            'may or may not include the victim. This "soft" version of the attack simply looks ' + \
            'to see if the right answer is above or below a threshold that falls in the middle of ' + \
            'the true difference between the left and right counts. '
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         diff = self.answers[0][0][0][0] - self.answers[0][1][0][0]
         if (self.check['correctIsLess'] and diff < self.check['threshold'] or
@@ -318,7 +353,7 @@ class simpleHardDifference(attackBase):
            'may or may not include the victim. This "hard" version of the attack simply looks ' + \
            'to see if right and left answers differ at all. Diffix Publish is vulnerable to this ' + \
            'because it uses only a single AID noise layer. '
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         if ((self.check['correctIfDifferent'] and 
                 self.answers[0][0][0][0] != self.answers[0][1][0][0]) or
@@ -333,7 +368,7 @@ class simpleFirstDerivitiveDifference(attackBase):
            'queries, with the left and right query each being part of a left and right histogram. ' + \
            'In this attack, left and right for each pair will differ, but the difference will be ' + \
            'the same for all pairs except the one with the victim. '
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         ans1 = self.answers[0][0]
         ans2 = self.answers[0][1]
@@ -357,7 +392,7 @@ class simpleListUsers(attackBase):
     long = 'The simple list attack simply tries to list the individual rows of one or more ' + \
            'columns. The "test" for whether the attack succeeded is simply to compare the number ' + \
            'rows received against the true number '
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         # Simply checking the number of rows in the answer against the raw data
         # query isn't a very thorough check, but I'm assuming that even this will
@@ -369,13 +404,21 @@ class simpleListUsers(attackBase):
 
     def doCheck(self):
         sql1 = self._doSqlReplace(self.queries[0][0])
-        self.checkAns = self.queryDb(sql1)
+        self.checkAns = self.queryDb('raw',sql1)
 
 class justTesting(attackBase):
     long = ''
-    def runAttack(self,db='anon',seed=1):
+    def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         return 'CORRECT'
+
+# Default reference anonymization parameters
+defaultRef = {
+    'low_count_threshold': {'lower': 2, 'upper': 5},
+    'noise': {'cutoff': 5.0, 'standard_dev': 1.0},
+    'outlier_count': {'lower': 1, 'upper': 2},
+    'top_count': {'lower': 2, 'upper': 3}
+}
 
 if False: testControl = 'firstOnly'    # executes only the first test
 elif False: testControl = 'tagged'    # executes only tests so tagged
@@ -424,32 +467,6 @@ attacks = [
     {   
         'tagAsRun': False,
         'attackClass': simpleHardDifference,
-        'describe': "Simple hard difference attack with NAND'd AND group, victim has attribute",
-        'table': {
-            # The attack here is where there is one user with a unique combination of i1 and t2
-            # values, though each individually is not unique
-            'conditionsSql': "select count(*) from tab where t1='y' or i1=100 or t2='x'",
-            'changes': [
-                {'change':'strip', 'table':'tab','query': "t2 == 'x' and i1 == 100"},
-                {'change':'append', 'table':'tab','spec': {'t1':['y'],'i1':[100],'t2':['x']}},
-            ],
-        },
-        'attackQueries': {
-            'sqls': [
-                # The first query definately excludes the victim
-                "select count(distinct aid1) from tab where t1 = 'y' and not (i1 = 100 and t2 = 'x')",
-                # The second query may or may not (but in this case also does).
-                "select count(distinct aid1) from tab where t1 = 'y'",
-            ],
-        },
-        'check': {
-            # If the second query has the victim, then the difference is 0
-            'correctIfDifferent': True,
-        },
-    },
-    {   
-        'tagAsRun': False,
-        'attackClass': simpleHardDifference,
         'describe': 'Simple hard difference attack with lone woman, victim does not have attribute',
         'table': {
             # The attack here is where there is one user with t2 = 'f'. Want to learn t1
@@ -472,6 +489,9 @@ attacks = [
         'check': {
             'correctIfDifferent': False,
         },
+        'refParams': {
+            'low_count_threshold': {'lower': 2, 'upper': 5},
+        }
     },
     {   
         'doprint': False,
@@ -497,6 +517,9 @@ attacks = [
             'bucketVal': 'k',
             'numKnown': 1,
         },
+        'refParams': {
+            'low_count_threshold': {'lower': 2, 'upper': 5},
+        }
     },
     {   
         'doprint': False,
@@ -886,16 +909,18 @@ for attack in attacks:
     if (testControl == 'firstOnly' or testControl == 'all' or
         (testControl == 'tagged' and attack['tagAsRun'])):
         print(attack['describe'])
-        atk = attack['attackClass'](attack,tally)
+        atk = attack['attackClass'](attack,tally,defaultRef)
         # Do any work to compute check information against which claim is determined
         atk.doCheck()
         # Make sure the attack works with no anonymization
         result = atk.runAttackTest()
-        if result != 'CORRECT':
+        if result != 'CORRECT' and result != 'NOT APPLICABLE':
             atk.print()
             print("FAIL: test attack failed")
             quit()
-        if atk.attackQueriesDisallowed():
+        disallowedQuery = atk.attackQueriesDisallowed()
+        if disallowedQuery:
+            print(f'        Query rejected: "{disallowedQuery}"')
             tally.addResult(atk,0,100,100)
         else:
             numCorrect = 0
