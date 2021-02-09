@@ -3,6 +3,7 @@ import subprocess
 import csv
 import json
 import os.path
+import ast
 
 class diffixRef:
     """
@@ -11,6 +12,8 @@ class diffixRef:
         self.pp = pprint.PrettyPrinter(indent=4)
         self.cmd = cmd
         self.params = None
+        self.queryRes = None
+        self.answerList = []
         if os.path.isfile(cmd):
             self.isReady = True
         else:
@@ -57,6 +60,61 @@ class diffixRef:
             self.params = params['anonymization_parameters']
         return rtn
 
+    def iterAnswers(self):
+        for answer in self.answerList:
+            yield answer
+
+    def is_number(self,n):
+        try:
+            float(n)
+            return True
+        except ValueError:
+            return False
+
+    def buildAnswers(self):
+        self.answerList = []
+        for res in self.queryRes['query_results']:
+            if res['success']:
+                ans = res['result']['rows']
+                for i in range(len(ans)):
+                    for j in range(len(ans[i])):
+                        if self.is_number(ans[i][j]):
+                            ans[i][j] = ast.literal_eval(ans[i][j])
+                self.answerList.append(ans)
+            else:
+                self.answerList.append(None)
+
+    def queryAll(self,sqlList,numSeeds,aids,db,params):
+        # prepare the query file
+        queryFile = os.path.join('tables','queries.json')
+        queries = []
+        for seed in range(numSeeds):
+            for sql in sqlList:
+                query = {}
+                query['query'] = sql
+                query['db_path'] = db
+                params['seed'] = seed
+                params['table_settings'] = aids
+                query['anonymization_parameters'] = params
+                queries.append(query)
+        with open(queryFile, 'w') as outfile:
+            json.dump(queries, outfile, indent=4)
+        # prepare the command line
+        command = []
+        command.append(self.cmd)
+        command.append('--queries-path')
+        command.append(queryFile)
+        result = subprocess.run(command, stdout=subprocess.PIPE)
+        out = result.stdout.decode("utf-8")
+        try:
+            self.queryRes = json.loads(out)
+        except ValueError as e:
+            print(f"diffixRef: queryAll: json parser error: '{e}'")
+            print("Output from query:")
+            print(out)
+            quit()
+        self.buildAnswers()
+
     def query(self,sql,seed,aids,db,params):
         command = []
         command.append(self.cmd)
@@ -66,7 +124,8 @@ class diffixRef:
         # aid columns
         command.append('--aid-columns')
         for tabAid in aids:
-            command.append(tabAid['table'] + '.' + tabAid['aid'])
+            for aid in aids[tabAid]['aid_columns']:
+                command.append(tabAid + '.' + aid)
         # query
         command.append('-q')
         command.append(sql)
@@ -96,8 +155,11 @@ class diffixRef:
             rtn['success'] = True
             # Turn result bytes into a string
             outList = str.splitlines(out)
-            reader = csv.reader(iter(outList),delimiter=';')
-            rtn['answer'] = list(reader)
+            ans = list(csv.reader(iter(outList),delimiter=';'))
+            for i in range(len(ans)):
+                for j in range(len(ans[i])):
+                    ans[i][j] = ast.literal_eval(ans[i][j])
+            rtn['answer'] = ans
         return rtn
         
 

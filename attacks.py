@@ -100,7 +100,7 @@ class attackBase:
         self.rf.baseTablesToDb()
         self.makeAttackQueries()
         self.dr = diffixRef.diffixRef()
-        self.defaultAids=[{'table':'tab','aid':'aid1'}]
+        self.defaultAids={'tab':{'aid_columns':['aid1']}}
 
     def getDiffixParams(self):
         diffix = {
@@ -191,6 +191,17 @@ class attackBase:
             return None
         return ans
 
+    def runAllRefQueries(self,defaultNumClaims):
+        # This makes a query list for one seed
+        queryList = []
+        for queryGroup in self.queries:
+            for query in queryGroup:
+                queryList.append(query)
+        # Now run queries for `defaultNumClaims` seeds
+        aids,db,params = self._getRefStuff()
+        self.dr.queryAll(queryList,defaultNumClaims,aids,db,params)
+        self.ansIter = iter(self.dr.iterAnswers())
+
     def makeAttackQueries(self):
         ''' Makes a list of query groups, each group having one or more queries
         '''
@@ -214,12 +225,26 @@ class attackBase:
             self._error('''ERROR: makeAttackQueries: missing label''')
 
     def attackQueriesDisallowed(self):
-        for query in self.queries[0]:
-            ans = self.queryDb('ref',query)
-            if ans is None:
-                # At least one of the attack queries fails, so no need to continue
-                return query
+        aids,db,params = self._getRefStuff()
+        self.dr.queryAll(self.queries[0],1,aids,db,params)
+        i = 0
+        for answer in self.dr.iterAnswers():
+            if answer is None:
+                return self.queries[0][i]
+            i += 1
         return None
+
+    def _getRefStuff(self):
+        if 'refParams' in self.attack:
+            params = self._updateParams(self.attack['refParams'])
+        else:
+            params = self.defaultRef
+        if 'aids' in self.attack:
+            aids = self.attack[aids]
+        else:
+            aids = self.defaultAids
+        db = self.rf.getDbPath()
+        return aids,db,params
 
     def runQueries(self,dbType,seed):
         # For each query in the query list of lists, we record an answer in
@@ -228,7 +253,10 @@ class attackBase:
         for queryGroup in self.queries:
             ansGroup = []
             for query in queryGroup:
-                ansGroup.append(self.queryDb(dbType,query,seed=seed))
+                if dbType != 'ref':
+                    ansGroup.append(self.queryDb(dbType,query,seed=seed))
+                else:
+                    ansGroup.append(next(self.ansIter))
             self.answers.append(ansGroup)
 
     def _doSqlReplace(self,sql):
@@ -261,7 +289,7 @@ class attackBase:
         return s
 
     def _bucketIsSuppressed(self, bucketVal):
-        for bucket in self.answers[0][0][0]:
+        for bucket in self.answers[0][0]:
             if bucket[0] == bucketVal:
                 return False
         return True
@@ -514,7 +542,7 @@ attacks = [
         },
         'attackQueries': {
             'sqls': [
-                "select t1, count(distinct aid1) from tab",
+                "select t1, count(distinct aid1) from tab group by 1",
             ],
         },
         'check': {
@@ -927,7 +955,10 @@ for attack in attacks:
             print(f'        Query rejected: "{disallowedQuery}"')
             tally.addResult(atk,0,100,100,reason='disallowed')
         else:
+            # start by running all the queries for all the seeds
+            atk.runAllRefQueries(defaultNumClaims)
             numCorrect = 0
+            numGuess = 0
             numTry = 0
             for i in range(defaultNumClaims):
                 result = atk.runAttack(seed=i)
