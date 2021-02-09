@@ -14,51 +14,24 @@ class diffixRef:
         self.params = None
         self.queryRes = None
         self.answerList = []
-        if os.path.isfile(cmd):
-            self.isReady = True
-        else:
-            self.isReady = False
 
-    def getNoiseParams(self):
-        return self.params['noise']
+    def getVersion(self):
+        if not self.queryRes:
+            return None,None
+        vStr = self.queryRes['version']['version']['version']
+        vList = vStr.split('.')
+        mult = 100000
+        vNum = 0
+        for v in reversed(vList):
+            vNum += mult * int(v)
+            mult *= 100
+        return vStr,vNum
 
-    def ready(self):
-        return self.isReady
-    
-    def getOutlierParams(self):
-        return self.params['outlier_count']
-
-    def getTopParams(self):
-        return self.params['top_count']
-
-    def getParams(self,db='tables/testAttack.db',force=False):
-        rtn = {}
-        if not force and self.params:
-            rtn['success'] = True
-            rtn['params'] = self.params
-            return rtn
-        command = []
-        command.append(self.cmd)
-        # database
-        command.append('-d')
-        command.append(db)
-        command.append('--aid-columns')
-        command.append('a.b')
-        # query
-        command.append('-q')
-        command.append('select aid1 from tab')
-        command.append('--dry-run')
-        result = subprocess.run(command, stdout=subprocess.PIPE)
-        out = result.stdout.decode("utf-8")
-        if result.returncode != 0:
-            rtn['success'] = False
-            rtn['error'] = out
-        else:
-            rtn['success'] = True
-            params = json.loads(out)
-            rtn['params'] = params['anonymization_parameters']
-            self.params = params['anonymization_parameters']
-        return rtn
+    def getDate(self):
+        if not self.queryRes:
+            return None
+        dStr = self.queryRes['time']
+        return dStr
 
     def iterAnswers(self):
         for answer in self.answerList:
@@ -116,6 +89,7 @@ class diffixRef:
         self.buildAnswers()
 
     def query(self,sql,seed,aids,db,params):
+        ''' unused '''
         command = []
         command.append(self.cmd)
         # database
@@ -185,14 +159,20 @@ if __name__ == "__main__":
         pp.pprint(rtn['answer'])
     else:
         print(f"ERROR: {rtn['error']}")
-    rtn = dr.getParams()
-    if rtn['success']:
-        pp.pprint(rtn['params'])
-    else:
-        print(f"ERROR: {rtn['error']}")
-    print("Noise")
-    pp.pprint(dr.getNoiseParams())
-    print("Outliers")
-    pp.pprint(dr.getOutlierParams())
-    print("Top")
-    pp.pprint(dr.getTopParams())
+
+
+'''
+{
+  "version": {
+    "name": "OpenDiffix Reference implementation",
+    "version": {
+      "version": "0.0.356",
+      "commit_number": 355,
+      "branch": "sebastian/batch-mode-for-CLI",
+      "sha": "b7a8b49",
+      "dirty_build": false
+    }
+  },
+  "time": "Friday, February 4, 2021",
+  "query_results": [
+  '''

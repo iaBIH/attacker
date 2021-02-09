@@ -8,6 +8,9 @@ import re
 import requests
 import pandas as pd
 import numpy as np
+from datetime import date,datetime
+import os.path
+import shutil
 
 defaultNumClaims = 100               # number of times each test should repeat (for average)
 
@@ -21,7 +24,14 @@ class tally:
     def __init__(self):
         self.t = {}
 
-    def addResult(self,atk,numCorrect,numGuess,totalTrials,reason='',doprint=True):
+    def addResult(self,sysType,atk,numCorrect,numGuess,totalTrials,reason='',doprint=True):
+        today = date.today()
+        runDate = today.strftime("%Y-%m-%d")
+        atk.attack['runDate'] = runDate
+        atk.attack['sysType'] = sysType
+        vStr,vNum = atk.dr.getVersion()
+        atk.attack['version'] = vStr
+        atk.attack['versionOrder'] = vNum
         if atk.name not in self.t:
             self.t[atk.name] = {
                 'attacks': [atk.attack],
@@ -36,6 +46,34 @@ class tally:
             self.t[atk.name]['numCorrect'].append(numCorrect)
             self.t[atk.name]['totalTrials'].append(totalTrials)
             self.t[atk.name]['reason'].append(reason)
+
+    def updateTable(self):
+        resDir = 'results'
+        dbPath = os.path.join(resDir,'current.db')
+        # This is the basic table definition. Adding to this will cause new
+        # columns to be inserted into the table (default NULL)
+        self.colDef = [
+            {'atk_type','text'},
+            {'atk_sub_type','text'},
+            {'sys_type','text'},
+            {'sys_ver','text'},
+            {'sys_ver_num','integer'},
+            {'atk_date','text'},
+            {'num_guess','integer'},
+            {'num_right','integer'},
+            {'total_trials','integer'},
+        ]
+        # First make a backup of the data results
+        now = datetime.now()
+        bkName = now.strftime("%d_%m_%Y_%H_%M_%S") + '.backup'
+        bkPath = os.path.join(resDir,bkName)
+        if os.path.exists(dbPath):
+            shutil.copyfile(dbPath,bkPath)
+        # Now open database (or create it, if this is the first time)
+        conn = sqlite3.connect(dbPath)
+        cur = conn.cursor()
+        quit()
+        pass
 
     def printResults(self):
         for atk.name,res in self.t.items():
@@ -453,7 +491,7 @@ defaultRef = {
 }
 
 if False: testControl = 'firstOnly'    # executes only the first test
-elif False: testControl = 'tagged'    # executes only tests so tagged
+elif True: testControl = 'tagged'    # executes only tests so tagged
 else: testControl = 'all'             # executes all tests
 '''
 The `testControl` parameter is used to determine which tests are run.
@@ -857,7 +895,7 @@ attacks = [
         },
     },
     {   
-        'tagAsRun': False,
+        'tagAsRun': True,
         'attackClass': simpleListUsers,
         'describe': 'Select star',
         'table': {
@@ -953,7 +991,7 @@ for attack in attacks:
         disallowedQuery = atk.attackQueriesDisallowed()
         if disallowedQuery:
             print(f'        Query rejected: "{disallowedQuery}"')
-            tally.addResult(atk,0,100,100,reason='disallowed')
+            tally.addResult("reference",atk,0,100,100,reason='disallowed')
         else:
             # start by running all the queries for all the seeds
             atk.runAllRefQueries(defaultNumClaims)
@@ -970,8 +1008,9 @@ for attack in attacks:
                 elif result == 'NO GUESS':
                     # Do nothing on purpose
                     pass
-            tally.addResult(atk,numCorrect,numGuess,defaultNumClaims)
+            tally.addResult("reference",atk,numCorrect,numGuess,defaultNumClaims)
     if testControl == 'firstOnly':
         break
 print("---- SUMMARY ----")
 tally.printResults()
+tally.updateTable()
