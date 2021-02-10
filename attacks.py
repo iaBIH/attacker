@@ -22,6 +22,7 @@ class tally:
         tally keeps stats on how well each of the variants does
     '''
     def __init__(self):
+        self.pp = pprint.PrettyPrinter(indent=4)
         self.t = {}
 
     def addResult(self,sysType,atk,numCorrect,numGuess,totalTrials,reason='',doprint=True):
@@ -48,32 +49,112 @@ class tally:
             self.t[atk.name]['reason'].append(reason)
 
     def updateTable(self):
+        # Set to True if duplicate attack rows should replace current ones
+        # (Do this when some code change is likely to produce a different result)
+        doReplace = False
         resDir = 'results'
         dbPath = os.path.join(resDir,'current.db')
         # This is the basic table definition. Adding to this will cause new
-        # columns to be inserted into the table (default NULL)
-        self.colDef = [
-            {'atk_type','text'},
-            {'atk_sub_type','text'},
-            {'sys_type','text'},
-            {'sys_ver','text'},
-            {'sys_ver_num','integer'},
-            {'atk_date','text'},
-            {'num_guess','integer'},
-            {'num_right','integer'},
-            {'total_trials','integer'},
-        ]
-        # First make a backup of the data results
-        now = datetime.now()
-        bkName = now.strftime("%d_%m_%Y_%H_%M_%S") + '.backup'
-        bkPath = os.path.join(resDir,bkName)
-        if os.path.exists(dbPath):
-            shutil.copyfile(dbPath,bkPath)
+        # columns to be inserted into the table (default NULL). Must add new
+        # column to _makeDictFromAttack
+        self.colDef = {
+            'atk_type':'text',
+            'atk_sub_type':'text',
+            'sys_type':'text',
+            'sys_ver':'text',
+            'sys_ver_num':'integer',
+            'atk_date':'text',
+            'num_guess':'integer',
+            'num_right':'integer',
+            'total_trials':'integer',
+            'reason':'text',
+        }
+        self.table = 'results'
         # Now open database (or create it, if this is the first time)
         conn = sqlite3.connect(dbPath)
         cur = conn.cursor()
-        quit()
-        pass
+        sql = f'''create table if not exists {self.table} ( '''
+        for col,typ in self.colDef.items():
+            sql += f'''{col} {typ}, '''
+        sql = sql[:-2]
+        sql += ''')'''
+        cur.execute(sql)
+        conn.commit()
+        # Read in the sql database as a dataframe
+        dfRes = pd.read_sql('select * from results',conn)
+        # After this, we jus work with the dataframe, and write it back to sql when done
+        conn.close()
+        updated = False
+        # See if there are any new columns defined since the last store, and if so add them
+        columns = list(dfRes)
+        for col in self.colDef.keys():
+            if col not in columns:
+                print(f"Adding new column {col}")
+                updated = True
+                doReplace = True
+                dfRes[col] = np.nan
+        # Now we want to add rows for any new data, but not if data is already in the df
+        for atk.name,res in self.t.items():
+            for i in range(len(res['attacks'])):
+                attack = res['attacks'][i]
+                # The following attributes uniquely define the attack
+                dfMatch = dfRes.loc[(dfRes['atk_type'] == attack['atk_type']) &
+                                    (dfRes['atk_sub_type'] == attack['describe']) &
+                                    (dfRes['sys_type'] == attack['sysType']) &
+                                    (dfRes['sys_ver'] == attack['version']) ]
+                lenMatch = len(dfMatch.index)
+                if lenMatch == 0:
+                    # make a dataframe from the new row and append it to the existing one
+                    row = self._makeDictFromAttack(i,atk.name,res)
+                    dfNew = pd.DataFrame.from_dict(row)
+                    print("Adding following row to results:")
+                    print(dfNew)
+                    dfRes = dfRes.append(dfNew,ignore_index=True)
+                    updated = True
+                elif lenMatch > 1:
+                    print("ERROR: updateTable: should not have multiple matches")
+                    print(atk.name,i)
+                    self.pp.pprint(res)
+                    print(dfMatch)
+                    quit()
+                elif doReplace:
+                    row = self._makeDictFromAttack(i,atk.name,res)
+                    dfNew = pd.DataFrame.from_dict(row)
+                    print("Replacing following results row:")
+                    print(dfMatch)
+                    print("With this row:")
+                    print(dfNew)
+                    index = dfMatch.index[0]
+                    print(index)
+                    dfRes = dfRes.drop([index])
+                    dfRes = dfRes.append(dfNew,ignore_index=True)
+                    updated = True
+        if updated:
+            # write new sql table
+            # First make a backup of the data results
+            now = datetime.now()
+            bkName = now.strftime("%d_%m_%Y_%H_%M_%S") + '.backup'
+            bkPath = os.path.join(resDir,bkName)
+            if os.path.exists(dbPath):
+                shutil.copyfile(dbPath,bkPath)
+            # Then make new table
+            conn = sqlite3.connect(dbPath)
+            dfRes.to_sql(self.table,conn,if_exists='replace',index=False)
+            conn.close()
+
+    def _makeDictFromAttack(self,i,atk_type,res):
+        return {
+            'atk_type':[atk_type],
+            'atk_sub_type':[res['attacks'][i]['describe']],
+            'sys_type':[res['attacks'][i]['sysType']],
+            'sys_ver':[res['attacks'][i]['version']],
+            'sys_ver_num':[res['attacks'][i]['versionOrder']],
+            'atk_date':[res['attacks'][i]['runDate']],
+            'num_guess':[res['numGuess'][i]],
+            'num_right':[res['numCorrect'][i]],
+            'total_trials':[res['totalTrials'][i]],
+            'reason':[res['reason'][i]],
+        }
 
     def printResults(self):
         for atk.name,res in self.t.items():
@@ -114,6 +195,7 @@ class attackBase:
         self.name = self.__class__.__name__
         self.attack = attack
         self.attack['long'] = self.long
+        self.attack['atk_type'] = self.name
         self.queryUrl = queryUrl
         self.fileUrl = fileUrl
         self.tally = tally
@@ -491,7 +573,7 @@ defaultRef = {
 }
 
 if False: testControl = 'firstOnly'    # executes only the first test
-elif True: testControl = 'tagged'    # executes only tests so tagged
+elif False: testControl = 'tagged'    # executes only tests so tagged
 else: testControl = 'all'             # executes all tests
 '''
 The `testControl` parameter is used to determine which tests are run.
