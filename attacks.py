@@ -49,7 +49,7 @@ class tally:
     def updateTable(self):
         # Set to True if duplicate attack rows should replace current ones
         # (Do this when some code change is likely to produce a different result)
-        doReplace = False
+        doReplace = True
         resDir = 'results'
         dbPath = os.path.join(resDir,'current.db')
         # This is the basic table definition. Adding to this will cause new
@@ -66,6 +66,8 @@ class tally:
             'num_right':'integer',
             'total_trials':'integer',
             'reason':'text',
+            'confidence':'real',
+            'probability':'real',
         }
         self.table = 'results'
         # Now open database (or create it, if this is the first time)
@@ -141,6 +143,11 @@ class tally:
             conn.close()
 
     def _makeDictFromAttack(self,i,atk_type,res):
+        if res['numGuess'][i]:
+            confidence = res['numCorrect'][i] / res['numGuess'][i]
+        else:
+            confidence = None
+        probability = res['numGuess'][i] / res['totalTrials'][i]
         return {
             'atk_type':[atk_type],
             'atk_sub_type':[res['attacks'][i]['describe']],
@@ -152,6 +159,8 @@ class tally:
             'num_right':[res['numCorrect'][i]],
             'total_trials':[res['totalTrials'][i]],
             'reason':[res['reason'][i]],
+            'confidence':confidence,
+            'probability':probability,
         }
 
     def printResults(self):
@@ -598,7 +607,7 @@ correct or incorrect. Generally this involves some custom query to the raw datab
 '''
 attacks = [
     {   
-        'tagAsRun': False,
+        'tagAsRun': True,
         'attackClass': simpleHardDifference,
         'describe': 'Simple hard difference attack with lone woman, victim does not have attribute',
         'table': {
@@ -622,8 +631,11 @@ attacks = [
         'check': {
             'correctIfDifferent': False,
         },
-        'refParams': {
-            'low_count_threshold': {'lower': 2, 'upper': 5},
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':0.0,'max':1.0},
+            },
         }
     },
     {   
@@ -1013,7 +1025,7 @@ attacks = [
         },
     },
     {   
-        'tagAsRun': True,
+        'tagAsRun': False,
         'attackClass': simpleFirstDerivitiveDifference,
         'describe': 'First derivitive difference attack with single NAND, victim does not have attribute',
         'table': {
