@@ -12,8 +12,6 @@ from datetime import date,datetime
 import os.path
 import shutil
 
-defaultNumClaims = 100               # number of times each test should repeat (for average)
-
 class tally:
     ''' Used to tally up and report overall results.
         Each class of attack has multiple variants.
@@ -188,24 +186,20 @@ class attackBase:
         This is the base class for all attacks (which are sub-classes of this base)
     '''
     long = ''
-    def __init__(self,attack,tally,defaultRef,
-                 queryUrl='https://db-proto.probsteide.com/api',
-                 fileUrl='https://db-proto.probsteide.com/api/upload-db'):
+    def __init__(self,attack,tally,defaultRef,doPrint=False):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.name = self.__class__.__name__
         self.attack = attack
         self.attack['long'] = self.long
         self.attack['atk_type'] = self.name
-        self.queryUrl = queryUrl
-        self.fileUrl = fileUrl
         self.tally = tally
         self.defaultRef = defaultRef
-        dop = False
-        if 'doprint' in self.attack:
-            dop = self.attack['doprint']
+        self.dop = False
+        if doPrint or ('doprint' in self.attack and self.attack['doprint'] is True):
+            self.dop = True
         # build attack database
         self.sw = whereParser.simpleWhere(attack['table']['conditionsSql'])
-        self.rf = rowFiller.rowFiller(self.sw,printIntermediateTables=False,dop=dop)
+        self.rf = rowFiller.rowFiller(self.sw,printIntermediateTables=False,dop=self.dop)
         self.rf.makeBaseTables()
         if len(self.rf.failedCombinations) > 0:
             print("Failed Combinations:")
@@ -236,18 +230,6 @@ class attackBase:
     def print(self):
         self.pp.pprint(self.attack)
     
-    def postDb(self):
-        fin = open(self.rf.getDbPath(), 'rb')
-        data = fin.read()
-        headers = {
-            'db-name':self.rf.getDbName(),
-            'password':'great success',
-            'Content-Type': 'application/octet-stream',
-        }
-        r = requests.post(url=self.fileUrl, data=data, headers=headers)
-        #print(r.text)
-        fin.close()
-
     def _updateParamsLoop(self,par,ref,keyStack):
         for key,val in ref.items():
             if key not in par:
@@ -295,31 +277,15 @@ class attackBase:
             return self._queryDbRef(sql,seed)
         self._error('''ERROR: queryDb: shouldn't get here''')
 
-    def queryAnon(self,sql,seed=1,anon=True,db='testAttack.db'):
-        aidCols = self.rf.getAidColumns()
-        req = {'Anonymize':anon,
-               'database':db,
-               'query':sql,
-               'seed':seed,
-               'aid_columns':aidCols,
-               }
-        response = requests.post(self.queryUrl, json=req)
-        ans = response.json()
-        if ans['success'] == False:
-            #print("Query Error")
-            #self.pp.pprint(ans)
-            return None
-        return ans
-
-    def runAllRefQueries(self,defaultNumClaims):
+    def runAllRefQueries(self,numClaims):
         # This makes a query list for one seed
         queryList = []
         for queryGroup in self.queries:
             for query in queryGroup:
                 queryList.append(query)
-        # Now run queries for `defaultNumClaims` seeds
+        # Now run queries for `numClaims` seeds
         aids,db,params = self._getRefStuff()
-        self.dr.queryAll(queryList,defaultNumClaims,aids,db,params)
+        self.dr.queryAll(queryList,numClaims,aids,db,params)
         self.ansIter = iter(self.dr.iterAnswers())
 
     def makeAttackQueries(self):
@@ -370,13 +336,18 @@ class attackBase:
         # For each query in the query list of lists, we record an answer in
         # the same list of lists position
         self.answers = []
+        if self.dop: print(f"DB type {dbType} (seed {seed})")
         for queryGroup in self.queries:
             ansGroup = []
             for query in queryGroup:
                 if dbType != 'ref':
-                    ansGroup.append(self.queryDb(dbType,query,seed=seed))
+                    ans = self.queryDb(dbType,query,seed=seed)
                 else:
-                    ansGroup.append(next(self.ansIter))
+                    ans = next(self.ansIter)
+                if self.dop:
+                    print(query)
+                    self.pp.pprint(ans)
+                ansGroup.append(ans)
             self.answers.append(ansGroup)
 
     def _doSqlReplace(self,sql):
@@ -526,19 +497,23 @@ class simpleFirstDerivitiveDifference(attackBase):
         ans2 = self.answers[0][1]
         sort1 = self._sortAnsByBucket(ans1)
         sort2 = self._sortAnsByBucket(ans2)
-        maxDiff = float('-inf')
-        maxBucket = None
+        diffs = {}
         for bucket,count1 in sort1.items():
             if bucket in sort2:
                 count2 = sort2[bucket]
                 diff = count2 - count1
-                if diff > maxDiff:
-                    maxBucket = bucket
-                    maxDiff = diff
-        if maxBucket != self.check['victimBucket']:
-            return 'WRONG'
-        else:
-            return 'CORRECT'
+                if diff in diffs:
+                    diffs[diff].append(bucket)
+                else:
+                    diffs[diff] = [bucket]
+        if len(diffs) == 2:
+            for diff,buckets in diffs.items():
+                if len(buckets) == 1:
+                    if buckets[0] != self.check['victimBucket']:
+                        return 'WRONG'
+                    else:
+                        return 'CORRECT'
+        return 'NO GUESS'
 
 class simpleListUsers(attackBase):
     long = 'The simple list attack simply tries to list the individual rows of one or more ' + \
@@ -572,6 +547,12 @@ defaultRef = {
     'top_count': {'lower': 2, 'upper': 3}
 }
 
+defaultNumClaims = 100               # number of times each test should repeat (for average)
+onlyShow = False                      # Display results, but don't add to database
+if onlyShow:
+    numClaims = 5
+else:
+    numClaims = defaultNumClaims
 if False: testControl = 'firstOnly'    # executes only the first test
 elif False: testControl = 'tagged'    # executes only tests so tagged
 else: testControl = 'all'             # executes all tests
@@ -977,7 +958,7 @@ attacks = [
         },
     },
     {   
-        'tagAsRun': True,
+        'tagAsRun': False,
         'attackClass': simpleListUsers,
         'describe': 'Select star',
         'table': {
@@ -991,7 +972,7 @@ attacks = [
         },
     },
     {   
-        'tagAsRun': True,
+        'tagAsRun': False,
         'attackClass': simpleListUsers,
         'describe': 'Select AID column',
         'table': {
@@ -1032,7 +1013,7 @@ attacks = [
         },
     },
     {   
-        'tagAsRun': False,
+        'tagAsRun': True,
         'attackClass': simpleFirstDerivitiveDifference,
         'describe': 'First derivitive difference attack with single NAND, victim does not have attribute',
         'table': {
@@ -1061,7 +1042,7 @@ for attack in attacks:
     if (testControl == 'firstOnly' or testControl == 'all' or
         (testControl == 'tagged' and attack['tagAsRun'])):
         print(attack['describe'])
-        atk = attack['attackClass'](attack,tally,defaultRef)
+        atk = attack['attackClass'](attack,tally,defaultRef,doPrint=onlyShow)
         # Do any work to compute check information against which claim is determined
         atk.doCheck()
         # Make sure the attack works with no anonymization
@@ -1076,11 +1057,11 @@ for attack in attacks:
             tally.addResult("reference",atk,0,100,100,reason='disallowed')
         else:
             # start by running all the queries for all the seeds
-            atk.runAllRefQueries(defaultNumClaims)
+            atk.runAllRefQueries(numClaims)
             numCorrect = 0
             numGuess = 0
             numTry = 0
-            for i in range(defaultNumClaims):
+            for i in range(numClaims):
                 result = atk.runAttack(seed=i)
                 if result == 'FAIL':
                     numGuess += 1
@@ -1090,9 +1071,10 @@ for attack in attacks:
                 elif result == 'NO GUESS':
                     # Do nothing on purpose
                     pass
-            tally.addResult("reference",atk,numCorrect,numGuess,defaultNumClaims)
+            tally.addResult("reference",atk,numCorrect,numGuess,numClaims)
     if testControl == 'firstOnly':
         break
 print("---- SUMMARY ----")
 tally.printResults()
-tally.updateTable()
+if not onlyShow:
+    tally.updateTable()

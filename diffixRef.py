@@ -66,9 +66,10 @@ class diffixRef:
                 query = {}
                 query['query'] = sql
                 query['db_path'] = db
-                params['seed'] = seed
-                params['table_settings'] = aids
-                query['anonymization_parameters'] = params
+                qp = params.copy()
+                qp['seed'] = seed
+                qp['table_settings'] = aids
+                query['anonymization_parameters'] = qp
                 queries.append(query)
         with open(queryFile, 'w') as outfile:
             json.dump(queries, outfile, indent=4)
