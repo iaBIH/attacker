@@ -428,7 +428,7 @@ class simpleStrongSuppressDetect(attackBase):
         suppressed = self._bucketIsSuppressed(self.check['bucketVal'])
         # alwaysSuppressed is the max number of AIDs that is always suppressed
         alwaysSuppressed = int(self.attack['refParams']['low_count_threshold']['lower'])
-        if self.check['numKnown'] == alwaysSuppressed:
+        if self.check['numKnown'] == alwaysSuppressed - 1:
             # This is the case where, if the answer is not suppressed, then it MUST be
             # that the victim is present
             if not suppressed:
@@ -467,7 +467,9 @@ class simpleSoftDifference(attackBase):
            'definately includes or excludes the victim, and the other query (the "right" query) ' + \
            'may or may not include the victim. This "soft" version of the attack simply looks ' + \
            'to see if the right answer is above or below a threshold that falls in the middle of ' + \
-           'the true difference between the left and right counts. '
+           'the true difference between the left and right counts. ' + \
+           'The attack is not perfect against Diffix Publish because sometimes a difference ' + \
+           'in noise will produce the same noisy count. '
     def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         diff = self.answers[0][0][0][0] - self.answers[0][1][0][0]
@@ -499,7 +501,8 @@ class simpleFirstDerivitiveDifference(attackBase):
     long = 'In this variant of the difference attack, the attacker builds multiple pairs of ' + \
            'queries, with the left and right query each being part of a left and right histogram. ' + \
            'In this attack, left and right for each pair will differ, but the difference will be ' + \
-           'the same for all pairs except the one with the victim. '
+           'the same for all pairs except the one with the victim. In Publish, this sometimes ' + \
+           'fails to allow a guess because different noise will produce identical noisy counts '
     def runAttack(self,db='ref',seed=1):
         self.runQueries(db,seed)
         ans1 = self.answers[0][0]
@@ -563,7 +566,7 @@ if onlyShow:
 else:
     numClaims = defaultNumClaims
 if False: testControl = 'firstOnly'    # executes only the first test
-elif False: testControl = 'tagged'    # executes only tests so tagged
+elif True: testControl = 'tagged'    # executes only tests so tagged
 else: testControl = 'all'             # executes all tests
 '''
 The `testControl` parameter is used to determine which tests are run.
@@ -607,7 +610,7 @@ correct or incorrect. Generally this involves some custom query to the raw datab
 '''
 attacks = [
     {   
-        'tagAsRun': True,
+        'tagAsRun': False,
         'attackClass': simpleHardDifference,
         'describe': 'Simple hard difference attack with lone woman, victim does not have attribute',
         'table': {
@@ -634,9 +637,9 @@ attacks = [
         'expected': {
             'publish': {
                 'confidence': {'min':1.0,'max':1.0},
-                'probability': {'min':0.0,'max':1.0},
+                'probability': {'min':1.0,'max':1.0},
             },
-        }
+        },
     },
     {   
         'doprint': False,
@@ -646,8 +649,9 @@ attacks = [
         'table': {
             'conditionsSql': "select count(*) from tab where t1='i' and t2='j'",
             # This adds two users, all with t1=k, and all with unique t2. The attacker
-            # knows that there are either two or three users with t1=k, and will use
-            # the suppression signal to guess which
+            # knows that there are either one or two users with t1=k, and will use
+            # the suppression signal to guess which. If not suppressed, then the attacker
+            # knows that the second user is there.
             'changes': [
                 {'change':'append', 'table':'tab','spec': {'t1':['k'],'t2':['unique']}},
                 {'change':'append', 'table':'tab','spec': {'t1':['k'],'t2':['unique']}},
@@ -661,6 +665,12 @@ attacks = [
         'check': {
             'bucketVal': 'k',
             'numKnown': 1,
+        },
+        'expected': {
+            'publish': {
+                'confidence': {'min':111.0,'max':111.0},
+                'probability': {'min':111.0,'max':111.0},
+            },
         },
         'refParams': {
             'low_count_threshold': {'lower': 2, 'upper': 5},
@@ -691,6 +701,12 @@ attacks = [
         'check': {
             'difference': 0
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':111.0,'max':111.0},
+                'probability': {'min':111.0,'max':111.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -718,6 +734,12 @@ attacks = [
             'threshold': 0.5,
             'correctIsLess': True,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':1.0,'max':1.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -744,9 +766,15 @@ attacks = [
             'threshold': 0.5,
             'correctIsLess': True,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':1.0,'max':1.0},
+            },
+        },
     },
     {   
-        'tagAsRun': False,
+        'tagAsRun': True,
         'attackClass': simpleSoftDifference,
         'describe': "Simple soft difference attack with NAND'd AND group, victim has attribute",
         'table': {
@@ -770,6 +798,12 @@ attacks = [
             # If the second query has the victim, then the difference is 0
             'threshold': -0.5,
             'correctIsLess': True,
+        },
+        'expected': {
+            'publish': {
+                'confidence': {'min':0.5,'max':0.8},
+                'probability': {'min':1.0,'max':1.0},
+            },
         },
     },
     {   
@@ -799,6 +833,12 @@ attacks = [
             'threshold': -0.5,
             'correctIsLess': True,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':111.0,'max':111.0},
+                'probability': {'min':111.0,'max':111.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -825,6 +865,12 @@ attacks = [
             # If the second query does not have the victim, then the difference is 1
             'threshold': 0.5,
             'correctIsLess': True,
+        },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':1.0,'max':1.0},
+            },
         },
     },
     {   
@@ -853,6 +899,12 @@ attacks = [
             'threshold': 0.5,
             'correctIsLess': False,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':0.5,'max':0.8},
+                'probability': {'min':1.0,'max':1.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -879,6 +931,12 @@ attacks = [
         # If the second query has the victim, then the difference is 0
             'threshold': 0.5,
             'correctIsLess': True,
+        },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':1.0,'max':1.0},
+            },
         },
     },
     {   
@@ -908,6 +966,12 @@ attacks = [
             'threshold': 0.5,
             'correctIsLess': True,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':1.0,'max':1.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -935,6 +999,12 @@ attacks = [
             'threshold': 0.5,
             'correctIsLess': False,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':0.5,'max':0.8},
+                'probability': {'min':1.0,'max':1.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -953,6 +1023,12 @@ attacks = [
             ],
             'attackVals': [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':111.0,'max':111.0},
+                'probability': {'min':111.0,'max':111.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -968,6 +1044,12 @@ attacks = [
             ],
             'repeats': 100,
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':0.3,'max':0.5},
+                'probability': {'min':1.0,'max':1.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -982,6 +1064,12 @@ attacks = [
                 "select * from tab",
             ],
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':111.0,'max':111.0},
+                'probability': {'min':111.0,'max':111.0},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -995,6 +1083,12 @@ attacks = [
             'sqls': [
                 "select aid1 from tab",
             ],
+        },
+        'expected': {
+            'publish': {
+                'confidence': {'min':111.0,'max':111.0},
+                'probability': {'min':111.0,'max':111.0},
+            },
         },
     },
     {   
@@ -1023,6 +1117,12 @@ attacks = [
         'check':{
             'victimBucket': 'a',
         },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':0.7,'max':0.9},
+            },
+        },
     },
     {   
         'tagAsRun': False,
@@ -1045,6 +1145,12 @@ attacks = [
         },
         'check':{
             'victimBucket': 'a',
+        },
+        'expected': {
+            'publish': {
+                'confidence': {'min':1.0,'max':1.0},
+                'probability': {'min':0.7,'max':0.9},
+            },
         },
     },
 ]
@@ -1075,7 +1181,7 @@ for attack in attacks:
             numTry = 0
             for i in range(numClaims):
                 result = atk.runAttack(seed=i)
-                if result == 'FAIL':
+                if result == 'WRONG':
                     numGuess += 1
                 elif result == 'CORRECT':
                     numGuess += 1
@@ -1083,6 +1189,9 @@ for attack in attacks:
                 elif result == 'NO GUESS':
                     # Do nothing on purpose
                     pass
+                else:
+                    print(f"Should never get here ({result})")
+                    quit()
             tally.addResult("reference",atk,numCorrect,numGuess,numClaims)
     if testControl == 'firstOnly':
         break
