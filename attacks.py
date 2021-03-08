@@ -46,10 +46,9 @@ class tally:
             self.t[atk.name]['totalTrials'].append(totalTrials)
             self.t[atk.name]['reason'].append(reason)
 
-    def updateTable(self):
+    def updateTable(self,doReplace=True):
         # Set to True if duplicate attack rows should replace current ones
         # (Do this when some code change is likely to produce a different result)
-        doReplace = True
         resDir = 'results'
         dbPath = os.path.join(resDir,'current.db')
         # This is the basic table definition. Adding to this will cause new
@@ -421,9 +420,6 @@ class simpleStrongSuppressDetect(attackBase):
            'are always suppressed. Therefore if the bucket is not suppressed, the victim ' + \
            'must be present.'
     def runAttack(self,db='ref',seed=1):
-        if db == 'raw':
-            # The attack doesn't make sense on the raw DB
-            return 'NOT APPLICABLE'
         self.runQueries(db,seed)
         suppressed = self._bucketIsSuppressed(self.check['bucketVal'])
         # alwaysSuppressed is the max number of AIDs that is always suppressed
@@ -432,9 +428,8 @@ class simpleStrongSuppressDetect(attackBase):
             # This is the case where, if the answer is not suppressed, then it MUST be
             # that the victim is present
             if not suppressed:
-                    return 'CORRECT'
-        else:
-            return 'NO GUESS'
+                return 'CORRECT'
+        return 'NO GUESS'
 
 class splitAveraging(attackBase):
     long = 'In the split averaging attack, the attacker attempts to defeat sticky noise by ' + \
@@ -559,14 +554,17 @@ defaultRef = {
     'top_count': {'lower': 2, 'upper': 3}
 }
 
+# ------------------- CONTROL CENTRAL ---------------------- #
 defaultNumClaims = 100               # number of times each test should repeat (for average)
+doReplace = True                      # Replace duplicate entries in DB (used to capture
+                                      # changes in attack code)
 onlyShow = False                      # Display results, but don't add to database
 if onlyShow:
-    numClaims = 5
+    numClaims = 50
 else:
     numClaims = defaultNumClaims
 if False: testControl = 'firstOnly'    # executes only the first test
-elif True: testControl = 'tagged'    # executes only tests so tagged
+elif False: testControl = 'tagged'    # executes only tests so tagged
 else: testControl = 'all'             # executes all tests
 '''
 The `testControl` parameter is used to determine which tests are run.
@@ -643,7 +641,7 @@ attacks = [
     },
     {   
         'doprint': False,
-        'tagAsRun': False,
+        'tagAsRun': True,
         'attackClass': simpleStrongSuppressDetect,
         'describe': 'Simple strong detect suppression attack, one of two known, victim present',
         'table': {
@@ -774,7 +772,7 @@ attacks = [
         },
     },
     {   
-        'tagAsRun': True,
+        'tagAsRun': False,
         'attackClass': simpleSoftDifference,
         'describe': "Simple soft difference attack with NAND'd AND group, victim has attribute",
         'table': {
@@ -1198,4 +1196,4 @@ for attack in attacks:
 print("---- SUMMARY ----")
 tally.printResults()
 if not onlyShow:
-    tally.updateTable()
+    tally.updateTable(doReplace)
