@@ -13,16 +13,11 @@ import os.path
 import shutil
 import hashlib
 
-
-class ledBase:
-    '''
-        This is the base class for all tests (which are sub-classes of this base)
-    '''
-    def __init__(self,test,side,doPrint=False):
+class buildTable:
+    def __init__(self,test,doPrint=False):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.name = self.__class__.__name__
         self.test = test
-        self.side = side
         self.dop = False
         if doPrint or ('doPrint' in self.test and self.test['doPrint'] is True):
             self.dop = True
@@ -36,14 +31,32 @@ class ledBase:
         if len(self.rf.failedCombinations) > 0:
             print("Failed Combinations:")
             print(self.rf.failedCombinations)
-        # Strip, then append
+        # Strip, then random drop, then append
         for change in test['table']['changes']:
             if change['change'] == 'strip':
                 self.rf.stripDf(change['table'],change['query'])
         for change in test['table']['changes']:
+            if change['change'] == 'random_drop':
+                self.rf.randomDropDf(change['table'],change['numDrop'])
+        for change in test['table']['changes']:
             if change['change'] == 'append':
                 self.rf.appendDf(change['table'],change['spec'])
         self.rf.baseTablesToDb()
+
+class ledBase:
+    '''
+        This is the base class for all tests (which are sub-classes of this base)
+    '''
+    def __init__(self,test,bt,side,doPrint=False):
+        self.pp = pprint.PrettyPrinter(indent=4)
+        self.name = self.__class__.__name__
+        self.test = test
+        self.side = side
+        self.dop = False
+        if doPrint or ('doPrint' in self.test and self.test['doPrint'] is True):
+            self.dop = True
+        self.dfFull = bt.dfFull
+        self.rf = bt.rf
 
     def doTest(self):
         # This is the original experiment table (with victim isolated)
@@ -446,6 +459,7 @@ tests = [
             'conditionsSql': "select count(*) from tab where t1 in ('a','b') or i1 = 1 or i2 = 1",
             'changes': [
                 {'change':'strip', 'table':'tab','query': "i1 == 1 and i2 == 1"},
+                {'change':'random_drop', 'table':'tab','numDrop': 5},
                 {'change':'append', 'table':'tab','spec': {'t1':['b'],'i1':[1],'i2':[1]}},
             ],
         },
@@ -467,6 +481,7 @@ tests = [
             'conditionsSql': "select count(*) from tab where t1 in ('a','b') or i1 = 1 or i2 = 1",
             'changes': [
                 {'change':'strip', 'table':'tab','query': "i1 == 1 and i2 == 1"},
+                {'change':'random_drop', 'table':'tab','numDrop': 5},
                 {'change':'append', 'table':'tab','spec': {'t1':['a'],'i1':[1],'i2':[1]}},
             ],
         },
@@ -482,10 +497,12 @@ tests = [
 ]
 
 for test in tests:
+    bt = buildTable(test)
+    tst = {}
     for side in ['left','right']:
         if (testControl == 'firstOnly' or testControl == 'all' or
             (testControl == 'tagged' and test['tagAsRun'])):
             print(test['describe'])
-            tst = ledBase(test,side,doPrint=False)
+            tst[side] = ledBase(test,bt,side,doPrint=False)
             #tst = test['testClass'](test,doPrint=False)
-            tst.doTest()
+            tst[side].doTest()

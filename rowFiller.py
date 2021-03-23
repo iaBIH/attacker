@@ -43,7 +43,7 @@ These WHERE clauses cause the given values to be added to the base table. All po
 combinations of columns and values are added to the base table. One additional value per
 column is also added. (These SQL strings are encoded in the `attacks` dict as 'conditionsSql'.)
 
-For deleting or adding rows, the methods `stripDf()` and `appendDf()` are used:
+For deleting or adding rows, the methods `stripDf()`, `appendDf()`, and `randomDropDf()` are used:
     stripDf(): The argument to stripDf is literally a dataframes query. Everything matching
         that query will be stripped from the base table. For example, "t2 == 'f'" will remove
         all rows where column 't2' has value 'f'.
@@ -55,6 +55,7 @@ For deleting or adding rows, the methods `stripDf()` and `appendDf()` are used:
             {'t1':['unique'],'i1':[100],'t2':['x']}
         adds a single row with a unique value for column 't1', the value 100 for column 'i1', and
         the value 'x' for column 't2'.
+    randomDropDf(): Drops X random rows
 
 '''
 
@@ -156,6 +157,13 @@ class rowFiller:
         df = pd.DataFrame(dfSpec)
         self._addToNewRows(dfSpec)
         self.baseDf[table] = self.baseDf[table].append(df)
+    
+    def randomDropDf(self,table,numDrop):
+        ''' This removes random rows
+        '''
+        dropCandidates = list(self.baseDf[table].index.values)
+        drops = random.sample(dropCandidates, numDrop)
+        self.baseDf[table] = self.baseDf[table].drop(drops)
 
     def stripDf(self,table,query):
         ''' This removes the rows that match the dataframe query
