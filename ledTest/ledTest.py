@@ -79,6 +79,7 @@ class ledBase:
             boo = 0
             self.recurseConditions(tt,stk,comb,combIndex,boo)
             tt.findDontCares(comb)
+            #tt.getSeedBasis(comb,method='M1')
         print("\n\nFINAL TRUTH TABLES:")
         print(f"    {self.test['describe']}")
         tt.print()
@@ -172,6 +173,7 @@ class truthTablesManager():
         self.dop = doPrint
         self.truthTables = {}
         self.aidsLists = {}
+        self.seedBasis = {}
         self.aidCols = aidCols
         self.numAids = {}
         self.seeds = {}
@@ -367,6 +369,46 @@ class truthTablesManager():
         dig = hashlib.sha224(bytes(aidStr,'utf-8')).hexdigest()
         return(dig[0:4])
 
+    def getSeedBasisM1(self,comb):
+        ''' Method 1 for determining the seed basis 
+            comb contains the column names ('A','I', etc.)
+        '''
+        if 'M1' not in self.seedBasis:
+            self.seedBasis['M1'] = {}
+        self.seedBasis['M1'][comb] = []
+        sb = self.seedBasis['M1'][comb]
+        tt = self.truthTables[comb]
+        self.pp.pprint(tt)
+        print(comb)
+        # We want to test each column (in comb), for both 0 and 1. We are looking for cases
+        # where, for NLE combinations:
+        #    the TT value is not '-' (don't care)
+        #    for all combinations where col=boo, the outcome is the same (either boo or not boo),
+        #        where boo is the boolean 0 or 1
+        for col in comb:
+            for boo in ['0','1']:
+                isSeedBasis = True
+                out = None
+                for i in range(len(tt[col])):
+                    if tt['effect'][i] == 'LE':
+                        continue
+                    if tt[col][i] == '-':
+                        # is a don't care, so can't be a seed basis
+                        isSeedBasis = False
+                        break
+                    if tt[col][i] != boo:
+                        continue
+                    pass
+        quit()
+        pass
+
+    def getSeedBasis(self,comb,method='M1'):
+        if method == 'M1':
+            self.getSeedBasisM1(comb)
+        else:
+            print(f"bad method {method}")
+            quit()
+
     def printTruthTable(self,comb,exceptTT=None):
         if exceptTT:
             df = pd.DataFrame.from_dict(exceptTT)
@@ -454,7 +496,51 @@ tests = [
         'doPrint': False,
         'tagAsRun': False,
         #'testClass': a_or_i_and_j,
-        'describe': 'left: A or (I and J), right: A, victim does not have A',
+        'describe': 'left: A or I, right: A, victim does not have A \n    We want to remove victim.',
+        'table': {
+            'conditionsSql': "select count(*) from tab where t1 in ('a','b') or i1 = 1",
+            'changes': [
+                {'change':'strip', 'table':'tab','query': "i1 == 1"},
+                {'change':'random_drop', 'table':'tab','numDrop': 5},
+                {'change':'append', 'table':'tab','spec': {'t1':['a'],'i1':[1],}},
+            ],
+        },
+        'left': {
+            'fullExp': "t1 == 'a' or i1 == 1",
+            'expList': { 'A':"t1 == 'a'", 'I':"i1 == 1", },
+        },
+        'right': {
+            'fullExp': "t1 == 'a'",
+            'expList': { 'A':"t1 == 'a'" }
+        },
+    },
+    {   
+        'doPrint': False,
+        'tagAsRun': False,
+        #'testClass': a_or_i_and_j,
+        'describe': 'left: A or I, right: A, victim does not have A \n    We want to remove victim.',
+        'table': {
+            'conditionsSql': "select count(*) from tab where t1 in ('a','b') or i1 = 1",
+            'changes': [
+                {'change':'strip', 'table':'tab','query': "i1 == 1"},
+                {'change':'random_drop', 'table':'tab','numDrop': 5},
+                {'change':'append', 'table':'tab','spec': {'t1':['b'],'i1':[1],}},
+            ],
+        },
+        'left': {
+            'fullExp': "t1 == 'a' or i1 == 1",
+            'expList': { 'A':"t1 == 'a'", 'I':"i1 == 1", },
+        },
+        'right': {
+            'fullExp': "t1 == 'a'",
+            'expList': { 'A':"t1 == 'a'" }
+        },
+    },
+    {   
+        'doPrint': False,
+        'tagAsRun': False,
+        #'testClass': a_or_i_and_j,
+        'describe': 'left: A or (I and J), right: A, victim does not have A \n    We want to remove victim.',
         'table': {
             'conditionsSql': "select count(*) from tab where t1 in ('a','b') or i1 = 1 or i2 = 1",
             'changes': [
@@ -476,7 +562,7 @@ tests = [
         'doPrint': False,
         'tagAsRun': False,
         #'testClass': a_or_i_and_j,
-        'describe': 'left: A or (I and J), right: A, victim has A',
+        'describe': 'left: A or (I and J), right: A, victim has A \n   We want to remove victim',
         'table': {
             'conditionsSql': "select count(*) from tab where t1 in ('a','b') or i1 = 1 or i2 = 1",
             'changes': [
@@ -497,6 +583,7 @@ tests = [
 ]
 
 for test in tests:
+    print("----------------------------------------------------------------")
     bt = buildTable(test)
     tst = {}
     for side in ['left','right']:
