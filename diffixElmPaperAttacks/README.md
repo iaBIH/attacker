@@ -1,0 +1,1 @@
+This folder contains software for the attacks described in the Diffix Elm paper.
