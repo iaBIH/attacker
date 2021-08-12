@@ -31,7 +31,7 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
             victimHas = False
             trueCount = N
         noise = random.gauss(0,sd)
-        noisyCount = trueCount + noise
+        noisyCount = round(trueCount + noise)
         # We need to decide if we want to make a claim at all.
         # We do so only if the noisyCount falls outside of a range
         # around the center point
@@ -56,9 +56,9 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
         s.attempt(makesClaim,claimHas,claimCorrect)
         if numTries >= tries and numClaimHas >= atLeast:
             break
-    _,_,_ = s.computeScore()
-    claimRate,confImprove,confidence = s.prettyScore()
-    return claimRate,confImprove,confidence
+    claimRate,confImprove,confidence = s.computeScore()
+    cr,ci,c = s.prettyScore()
+    return claimRate,confImprove,confidence,cr,ci,c
         
 if __name__ == "__main__":
     tries=1000000
@@ -67,8 +67,8 @@ if __name__ == "__main__":
     headers = ['Stat','SD','CR','CI','C']
     print("The following are for full claim rate (CR=1.0)")
     for sd,probHas in [(x,y) for x in [1.0,2.0,3.0] for y in [0.1,0.5,0.9]]:
-        cr,ci,c = basicAttack(probHas,sd,claimThresh,tries=tries)
-        results.append([probHas,sd,cr,ci,c,])
+        _,_,_,pcr,pci,pc = basicAttack(probHas,sd,claimThresh,tries=tries)
+        results.append([probHas,sd,pcr,pci,pc,])
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
     print(tabulate(results,headers,tablefmt='github'))
     # Now we compute claim rate given goal of CI=0.95
@@ -79,11 +79,11 @@ if __name__ == "__main__":
         claimThresh = 0.0
         while True:
             claimThresh += 0.5
-            cr,ci,c = basicAttack(probHas,sd,claimThresh,tries=tries)
+            cr,ci,c,pcr,pci,pc = basicAttack(probHas,sd,claimThresh,tries=tries)
             # We want to achieve a CI of at least 95%, but we won't go
             # beyond CR of 0.0001 to get it.
             if ci >= 0.95 or cr < 0.0001:
-                results.append([probHas,sd,cr,ci,c,])
+                results.append([probHas,sd,pcr,pci,pc,])
                 break
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
     print(tabulate(results,headers,tablefmt='github'))

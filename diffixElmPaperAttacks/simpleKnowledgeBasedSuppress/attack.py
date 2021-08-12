@@ -102,7 +102,7 @@ def lowThreshAttack(lowThresh,lowsds,sd,probHas,
         
 if __name__ == "__main__":
     tries=1000000
-    headers = ['Stat','MGSD','SDsp','CR','CI','C']
+    headers = ['Stat','LMG','SDsp','CR','CI','C']
     sdLs = [[1.0,2],[1.5,3],[2.0,4]]
     pbs = [0.1,0.5,0.9]
     lowThresh = 2
