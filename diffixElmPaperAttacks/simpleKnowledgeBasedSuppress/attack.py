@@ -11,22 +11,17 @@ def getMean(lowThresh, lowsds, sd):
     mean = lowThresh + (lowsds * sd)
     return mean
 
-def doSuppress(count,lowThresh,lowsds,highsds,sd):
-    #print(f"count {count},lowThresh {lowThresh},lowsds {lowsd}, highsds {highsds}, sd {sd}")
+def doSuppress(count,lowThresh,lowsds,sd):
     if count < lowThresh:
         return True
     mean = getMean(lowThresh, lowsds, sd)
-    highThresh = mean + (highsds * sd)
-    #print(f"mean {mean},highThresh {highThresh}")
-    if count > highThresh:
-        return False
     cutoff = random.gauss(mean,sd)
     #print(f"cutoff {cutoff}")
     if count < cutoff:
         return True
     return False
 
-def meanAttack(lowThresh,lowsds,highsds,sd,probHas,
+def meanAttack(lowThresh,lowsds,sd,probHas,
                 tries=10000,atLeast=100):
     s = scores.score.score(probHas)
 
@@ -44,7 +39,7 @@ def meanAttack(lowThresh,lowsds,highsds,sd,probHas,
         else:
             victimHas = False
             trueCount = N
-        suppress = doSuppress(trueCount,lowThresh,lowsds,highsds,sd)
+        suppress = doSuppress(trueCount,lowThresh,lowsds,sd)
         # In attacking the mean, there is a 50/50 chance of
         # suppression or not, so we can effectively make a claim
         # with every attack
@@ -66,7 +61,7 @@ def meanAttack(lowThresh,lowsds,highsds,sd,probHas,
     claimRate,confImprove,confidence = s.prettyScore()
     return claimRate,confImprove,confidence
         
-def lowThreshAttack(lowThresh,lowsds,highsds,sd,probHas,
+def lowThreshAttack(lowThresh,lowsds,sd,probHas,
                 tries=10000,atLeast=100):
     s = scores.score.score(probHas)
     N = lowThresh - 1       # definitely suppress if N
@@ -82,7 +77,7 @@ def lowThreshAttack(lowThresh,lowsds,highsds,sd,probHas,
         else:
             victimHas = False
             trueCount = N
-        suppress = doSuppress(trueCount,lowThresh,lowsds,highsds,sd)
+        suppress = doSuppress(trueCount,lowThresh,lowsds,sd)
         if suppress:
             # In attacking low_thresh, suppression is the norm regardless of
             # whether the victim has the attribute or not, so we
@@ -111,7 +106,6 @@ if __name__ == "__main__":
     sdLs = [[1.0,2],[1.5,3],[2.0,4]]
     pbs = [0.1,0.5,0.9]
     lowThresh = 2
-    highsds = 2
 
     print('''
 The following attacks the mean threshold value. The count is known
@@ -120,13 +114,12 @@ or equal to the mean (victim does have attribute). If the output
 is not suppressed, then we guess that the victim has the attribute.
 The following results are for:
     low_thresh = 2
-    hishsd = 2.0 (though this has no effect on the attack)
     ''')
     results = []
     for sdlsTup,probHas in [(x,y) for x in sdLs for y in pbs]:
         sd = sdlsTup[0]
         lowsds = sdlsTup[1]
-        cr,ci,c = meanAttack(lowThresh,lowsds,highsds,sd,probHas,
+        cr,ci,c = meanAttack(lowThresh,lowsds,sd,probHas,
                               tries=tries)
         results.append([probHas,lowsds,sd,cr,ci,c,])
 
@@ -140,13 +133,12 @@ or equal to low_thresh (victim does have attribute). If the output
 is not suppressed, then the victim definitely has the attribute.
 The following results are for:
     low_thresh = 2
-    hishsd = 2.0 (though this has no effect on the attack)
     ''')
     results = []
     for sdlsTup,probHas in [(x,y) for x in sdLs for y in pbs]:
         sd = sdlsTup[0]
         lowsds = sdlsTup[1]
-        cr,ci,c = lowThreshAttack(lowThresh,lowsds,highsds,sd,probHas,
+        cr,ci,c = lowThreshAttack(lowThresh,lowsds,sd,probHas,
                               tries=tries)
         results.append([probHas,lowsds,sd,cr,ci,c,])
 
