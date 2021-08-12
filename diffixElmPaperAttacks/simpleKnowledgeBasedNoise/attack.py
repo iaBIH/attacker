@@ -56,7 +56,8 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
         s.attempt(makesClaim,claimHas,claimCorrect)
         if numTries >= tries and numClaimHas >= atLeast:
             break
-    claimRate,confImprove,confidence = s.computeScore()
+    _,_,_ = s.computeScore()
+    claimRate,confImprove,confidence = s.prettyScore()
     return claimRate,confImprove,confidence
         
 if __name__ == "__main__":

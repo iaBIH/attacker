@@ -31,17 +31,23 @@ class score:
             self.claimCorrect += 1
 
     def computeScore(self):
-        claimRate = self.totalClaims / self.attempts
+        self.claimRate = self.totalClaims / self.attempts
         if self.claimHas == 0:
-            confidence = 0
+            self.confidence = 0
         else:
-            confidence = self.claimCorrect / self.claimHas
+            self.confidence = self.claimCorrect / self.claimHas
 
         if self.statGuess == 1.0:
             # really this should never happen (statistical guess always right)
-            if confidence == 1.0:
-                return claimRate,1.0
+            if self.confidence == 1.0:
+                return self.claimRate,1.0
             else:
-                return claimRate,-1.0
-        confImprove = (confidence-self.statGuess)/(1.0-self.statGuess)
-        return round(claimRate,5),round(confImprove,2),round(confidence,2)
+                return self.claimRate,-1.0
+        self.confImprove = (self.confidence-self.statGuess)/(1.0-self.statGuess)
+        return self.claimRate, self.confImprove, self.confidence
+
+    def prettyScore(self):
+        cr = str(f"{self.claimRate:.2}")
+        ci = str(f"{self.confImprove:.2}")
+        c = str(f"{self.confidence:.2}")
+        return cr,ci,c
