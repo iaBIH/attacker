@@ -13,7 +13,7 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
     # get it right when the answer is N+1 (i.e. victim has
     # the attribute) with 50% probability
     s = scores.score.score(probHas)
-    anon = anonymize.anonAlgs.anon()
+    anon = anonymize.anonAlgs.anon(0,0,0,sd)
     N = 25          # arbitrary
     # Noisy counts above the threshold, victim probably has attribute
     threshold = N + 0.5
@@ -32,7 +32,7 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
         else:
             victimHas = False
             trueCount = N
-        _,noisyCount = anon.getNoise(trueCount,0,sd)
+        _,noisyCount = anon.getNoise(trueCount)
         # We need to decide if we want to make a claim at all.
         # We do so only if the noisyCount falls outside of a range
         # around the center point
@@ -81,6 +81,7 @@ if __name__ == "__main__":
         while True:
             claimThresh += 0.5
             cr,ci,c,pcr,pci,pc = basicAttack(probHas,sd,claimThresh,tries=tries)
+            print(f"claimThresh {claimThresh}, cr {pcr}, ci {pci}, c {pc}")
             # We want to achieve a CI of at least 95%, but we won't go
             # beyond CR of 0.0001 to get it.
             if ci >= 0.95 or cr < 0.0001:

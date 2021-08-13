@@ -9,14 +9,41 @@ def doAttackThread(params):
     tid = threading.get_ident()
     doAttack(params,tid=tid)
 
+def getAnonParamsFromLabel(label):
+    # These are the preset anonymization parameters
+    if label == 'None':
+        # No anonymization of any kind (used to validate models)
+        return {'label':'None','lowThresh':0, 'gap':0, 'sdSupp':0, 'standardDeviation':0}
+    elif label == 'SP':
+        # Suppression only, private (used to test case where noise has been eliminated)
+        return {'label':'SP','lowThresh':2, 'gap':2, 'sdSupp':1, 'standardDeviation':0}
+    elif label == 'SXP':
+        # Suppression only, extra private (used to test case where noise has been eliminated)
+        return {'label':'SXP','lowThresh':2, 'gap':3, 'sdSupp':1.5, 'standardDeviation':0}
+    elif label == 'SXXP':
+        # Suppression only, extra extra private (used to test case where noise has been eliminated)
+        return {'label':'SXXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':0}
+    elif label == 'P':
+        # Suppression and noise, private
+        return {'label':'P','lowThresh':2, 'gap':2, 'sdSupp':1, 'standardDeviation':1}
+    elif label == 'XP':
+        # Suppression and noise, extra private
+        return {'label':'XP','lowThresh':2, 'gap':3, 'sdSupp':1.5, 'standardDeviation':2}
+    elif label == 'XXP':
+        # Suppression and noise, extra extra private
+        return {'label':'XXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':3}
+    return None
+
 def doAttack(params,tid=None):
     tableParams = {
         'tabType': None,
         'numValsPerColumn': None,
     }
     anonymizerParams = {
-        'lcfMin': None,
-        'lcfMax': None,
+        'label': None,
+        'lowThresh': None,
+        'gap': None,
+        'sdSupp': None,
         'standardDeviation': None,
     }
     solveParams = {
@@ -24,23 +51,21 @@ def doAttack(params,tid=None):
         'elasticNoise': None,
         'numSDs': None,
     }
-    seed,numValsPerColumn,tabType,lcf,sd,elastic,numSDs = params['attack']
+    seed,numValsPerColumn,tabType,anonLabel,elastic,numSDs = params['attack']
     lg.info(f"    {tid}: {params['passType']}")
-    lg.info(f"    {tid}: {numValsPerColumn},{seed},{tabType},{lcf},{sd},{elastic},{numSDs}")
+    lg.info(f"    {tid}: {numValsPerColumn},{seed},{tabType},{anonLabel},{elastic},{numSDs}")
     tableParams['tabType'] = tabType
     tableParams['numValsPerColumn'] = numValsPerColumn
-    anonymizerParams['lcfMin'] = lcf[0]
-    anonymizerParams['lcfMax'] = lcf[1]
-    anonymizerParams['standardDeviation'] = sd
+    anonymizerParams = getAnonParamsFromLabel(anonLabel)
     solveParams['elasticLcf'] = elastic[0]
     solveParams['elasticNoise'] = elastic[1]
     solveParams['numSDs'] = numSDs
 
-    if (anonymizerParams['lcfMin'] == 0 and anonymizerParams['lcfMax'] == 0 and
-        solveParams['elasticLcf'] != 1.0):
-        lg.info(f"    {tid}:     Skip because elastic LCF parameter without LCF")
+    if (anonymizerParams['lowThresh'] == 0 and solveParams['elasticLcf'] != 1.0):
+        lg.info(f"    {tid}:     Skip because elastic suppress parameter without suppression")
         return
     lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
+    return
     if not forceSolution and lra.problemAlreadySolved():
         lg.info(f"    {tid}: Attack {lra.fileName} already solved")
         if forceMeasure:
@@ -73,207 +98,23 @@ def attackIterator():
         one or more parameter values are set for each parameter. All combinations of
         all parameters for each group are run.
     '''
-    # This group tests increasing the number of columns
+    # This group tests base set, without large networks
     prod = []
     seeds = ['a','b','c','d','e','f','g','h','i','j']
     prod.append(seeds)
-    numColumnVals = [[2,2],[2,2,2],[2,2,2,2],[2,2,2,2,2],[2,2,2,2,2,2]]
+    numColumnVals = [[3,3],[5,5],[3,3,3],[5,5,5],[3,3,3,3]]
     prod.append(numColumnVals)
     tabTypes = ['random']
     prod.append(tabTypes)
-    lcf = [[2,6]]
-    prod.append(lcf)
-    sf = [2]
-    prod.append(sf)
+    anonLabels = ['None','SP','SXP','SXXP','P','XP','XXP']
+    prod.append(anonLabels)
     elastic = [[1.0,1.0]]
     prod.append(elastic)
     numSDs = [2]
     prod.append(numSDs)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
     for things in itertools.product(*prod):
         yield things
     return
-
-    # This group tests increasing the number of values per column
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[3,3,3],[4,4,4],[5,5,5],[6,6,6],[7,7,7]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    lcf = [[2,6]]
-    prod.append(lcf)
-    sf = [2]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    numSDs = [2]
-    prod.append(numSDs)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    return
-
-    # This group tests the solving time and accuracy of large numSDs values
-    # Note that LCF is turned off because we don't yet have a way to increase the
-    # constraint range for LCF
-    prod = []
-    seeds = ['a']
-    prod.append(seeds)
-    numColumnVals = [[10,10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    lcf = [[0,0]]
-    prod.append(lcf)
-    sf = [2]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    numSDs = [256,128,64,32,16,8,4]
-    prod.append(numSDs)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    return
-
-    # This group tests with both noise and LCF, larger tables
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[5,5,5,5],[10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    lcf = [[2,6]]
-    prod.append(lcf)
-    sf = [2]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    numSDs = [3]
-    prod.append(numSDs)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    return
-
-    # This group tests with both noise and LCF
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[3,3,3],[5,5,5],[3,3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[2,6]]
-    prod.append(lcf)
-    sf = [2]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    numSDs = [2]
-    prod.append(numSDs)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    return
-
-    # This group tests noise without lcf
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[3,3,3],[5,5,5],[3,3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[0,0]]
-    prod.append(lcf)
-    sf = [1,2]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    numSDs = [1,2,3]
-    prod.append(numSDs)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    return
-    
-    # This group gets the bigger network shapes across the desired parameters
-    prod = []
-    seeds = ['a','b','c','d','e']
-    prod.append(seeds)
-    numColumnVals = [[5,5,5,5],[10,10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[0,0],[2,2],[4,4],[2,6],[2,10]]
-    prod.append(lcf)
-    sf = [0]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-
-    # The following already done or in progress
-    return
-    # This first group is for testing different seeds with elastic constraints
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']
-    prod.append(seeds)
-    numColumnVals = [[3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[4,4],[2,6]]
-    prod.append(lcf)
-    sf = [0]
-    prod.append(sf)
-    elastic = [[0.1,1.0],[0.25,1.0],[0.5,1.0],[0.75,1.0],[1.0,1.0]]
-    prod.append(elastic)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    
-    # This group gets the other smallish network shapes across the desired parameters
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[5,5,5],[3,3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random','complete']
-    prod.append(tabTypes)
-    lcf = [[0,0],[2,2],[4,4],[2,6],[2,10]]
-    prod.append(lcf)
-    sf = [0]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
-    
-    # This group gets [10,10,10]
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    lcf = [[4,4],[2,6],[2,10]]
-    prod.append(lcf)
-    sf = [0]
-    prod.append(sf)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    #for numValsPerColumn,seed,tabType,lcf,sd,elastic in itertools.product(*prod):
-    for things in itertools.product(*prod):
-        yield things
 
 def getEmptyThreadIndex(threads):
     for i in range(len(threads)):

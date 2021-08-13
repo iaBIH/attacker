@@ -2,17 +2,16 @@
 Simulates whatever anonymizing mechanisms are in place
 '''
 
-# Import PuLP modeler functions
-import pulp
-import json
 import pandas as pd
-import numpy as np
 import pprint
-import time
-import bucketHandler
 import itertools
 import random
-import os.path
+import os
+import sys
+filePath = __file__
+parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
+sys.path.append(parDir)
+import anonymize.anonAlgs
 pp = pprint.PrettyPrinter(indent=4)
 doprint = False
 
@@ -20,13 +19,15 @@ class anonymizer:
     def __init__(self, seed, anonymizerParams, tableParams):
         '''
             anonymizerParams:
-                lcfMin = lowest possible threshold
-                lcfMax = highest possible threshold
+                lowThresh = lowest possible threshold
+                sdSupp = standard deviation used for suppression noise
+                gap = number of sdSupp deviations between lowThresh and mean
                 standardDeviation = noise standard deviation
             tableParams:
                 tabType = 'random' or 'complete'
                 numValsPerColumn = [5,5,5]
         '''
+
         # Makes random thread-safe
         self.loc_random = random.Random()
         self.loc_random.seed(seed)
@@ -51,6 +52,9 @@ class anonymizer:
             self.ap['sdSupp'] = 0
         if not self.ap['standardDeviation']:
             self.ap['standardDeviation'] = 0
+        self.anon = anonymize.anonAlgs.anon(self.ap['lowThresh'],self.ap['gap'],
+                                            self.ap['sdSupp'],self.ap['standardDeviation'],
+                                            self.loc_random)
         self.numCols = len(self.tp['numValsPerColumn'])
         self.cols = []
         for i in range(self.numCols):
@@ -65,21 +69,14 @@ class anonymizer:
         if doprint: pp.pprint(self.colVals)
 
     def queryForCount(self, query):
-        ''' Returns two values. If suppressed, the first value is -1 and the second is
-            the maximum possible true count.
-            If not suppressed, the first value is the rounded noisy count, and the second is the
-            standard deviation of the noise. The noisy count is never less than 0.
-        '''
         trueCount = self.df.query(query).shape[0]
-        zzzz
-        lcfThresh = self.loc_random.randrange(self.ap['lcfMin'],self.ap['lcfMax']+1)
-        if trueCount < lcfThresh:
-            maxTrueValue = self.ap['lcfMax'] - 1
-            return trueCount,-1,maxTrueValue
-        noise = self.loc_random.gauss(0,self.ap['standardDeviation'])
-        noisyCount = round(trueCount + noise)
-        noisyCount = max(0,noisyCount)
-        return trueCount,noisyCount,self.ap['standardDeviation']
+        suppress = self.anon.doSuppress(trueCount)
+        minPossible = self.anon.lowThresh
+        if suppress:
+            mean = self.anon.getMean()
+            return suppress,trueCount,self.ap['sdSupp'],minPossible,mean
+        _,noisyCount = self.anon.getNoise(trueCount)
+        return suppress,trueCount,self.ap['standardDeviation'],minPossible,noisyCount
 
     def colNames(self):
         return list(self.df.columns)
@@ -122,6 +119,3 @@ class anonymizer:
         self.df = pd.DataFrame.from_dict(data)
         self.df.sort_values(by=self.cols,inplace=True)
         self.df.reset_index(drop=True,inplace=True)
-
-    def getColumnsValues(self):
-        return

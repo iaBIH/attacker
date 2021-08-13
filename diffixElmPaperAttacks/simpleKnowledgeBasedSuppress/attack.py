@@ -8,26 +8,12 @@ sys.path.append(parDir)
 import scores.score
 import anonymize.anonAlgs
 
-def getMean(lowThresh, lowsds, sd):
-    mean = lowThresh + (lowsds * sd)
-    return mean
-
-def doSuppress(count,lowThresh,lowsds,sd):
-    if count < lowThresh:
-        return True
-    mean = getMean(lowThresh, lowsds, sd)
-    cutoff = random.gauss(mean,sd)
-    #print(f"cutoff {cutoff}")
-    if count < cutoff:
-        return True
-    return False
-
-def meanAttack(lowThresh,lowsds,sd,probHas,
+def meanAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
     s = scores.score.score(probHas)
-    anon = anonymize.anonAlgs.anon()
+    anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,0)
 
-    mean = anon.getMean(lowThresh, lowsds, sd)
+    mean = anon.getMean()
     # N is known number of individuals with the attribute
     N = mean - 1
     numTries = 0
@@ -41,7 +27,7 @@ def meanAttack(lowThresh,lowsds,sd,probHas,
         else:
             victimHas = False
             trueCount = N
-        suppress = anon.doSuppress(trueCount,lowThresh,lowsds,sd)
+        suppress = anon.doSuppress(trueCount)
         # In attacking the mean, there is a 50/50 chance of
         # suppression or not, so we can effectively make a claim
         # with every attack
@@ -63,10 +49,10 @@ def meanAttack(lowThresh,lowsds,sd,probHas,
     claimRate,confImprove,confidence = s.prettyScore()
     return claimRate,confImprove,confidence
         
-def lowThreshAttack(lowThresh,lowsds,sd,probHas,
+def lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
     s = scores.score.score(probHas)
-    anon = anonymize.anonAlgs.anon()
+    anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,0)
     N = lowThresh - 1       # definitely suppress if N
 
     numTries = 0
@@ -80,7 +66,7 @@ def lowThreshAttack(lowThresh,lowsds,sd,probHas,
         else:
             victimHas = False
             trueCount = N
-        suppress = anon.doSuppress(trueCount,lowThresh,lowsds,sd)
+        suppress = anon.doSuppress(trueCount)
         if suppress:
             # In attacking low_thresh, suppression is the norm regardless of
             # whether the victim has the attribute or not, so we
@@ -120,11 +106,11 @@ The following results are for:
     ''')
     results = []
     for sdlsTup,probHas in [(x,y) for x in sdLs for y in pbs]:
-        sd = sdlsTup[0]
-        lowsds = sdlsTup[1]
-        cr,ci,c = meanAttack(lowThresh,lowsds,sd,probHas,
+        sdSupp = sdlsTup[0]
+        gap = sdlsTup[1]
+        cr,ci,c = meanAttack(lowThresh,gap,sdSupp,probHas,
                               tries=tries)
-        results.append([probHas,lowsds,sd,cr,ci,c,])
+        results.append([probHas,gap,sdSupp,cr,ci,c,])
 
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
     print(tabulate(results,headers,tablefmt='github'))
@@ -139,11 +125,11 @@ The following results are for:
     ''')
     results = []
     for sdlsTup,probHas in [(x,y) for x in sdLs for y in pbs]:
-        sd = sdlsTup[0]
-        lowsds = sdlsTup[1]
-        cr,ci,c = lowThreshAttack(lowThresh,lowsds,sd,probHas,
+        sdSupp = sdlsTup[0]
+        gap = sdlsTup[1]
+        cr,ci,c = lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                               tries=tries)
-        results.append([probHas,lowsds,sd,cr,ci,c,])
+        results.append([probHas,gap,sdSupp,cr,ci,c,])
 
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
     print(tabulate(results,headers,tablefmt='github'))

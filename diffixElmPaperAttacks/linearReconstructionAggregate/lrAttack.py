@@ -18,13 +18,11 @@ Constraints:
 import pulp
 import json
 import pandas as pd
-import numpy as np
 import pprint
 import time
 import bucketHandler
 import anonymizer
 import itertools
-import random
 import statistics
 import os.path
 pp = pprint.PrettyPrinter(indent=4)
@@ -399,12 +397,12 @@ class lrAttack:
                 combVals.append(entry[1])
             query = query[:-5]
             varName = varName[:-1]
-            trueCount,noisyCount,cmax_sd = self.an.queryForCount(query)
-            if noisyCount == -1:
+            suppress,trueCount,sd,minPossible,noisyCount_mean = self.an.queryForCount(query)
+            if suppress:
                 # bucket is suppressed
                 numSuppressedBuckets += 1
                 cmin = 0
-                cmax = cmax_sd
+                cmax = noisyCount_mean + (self.sp['numSDs'] * sd)
                 if cmax == 0:
                     # Bucket couldn't hold any aids anyway, so can ignore
                     numIgnoredBuckets += 1
@@ -415,12 +413,12 @@ class lrAttack:
                 # Compute the possible range of values
                 # These are the hard constraints. cmax_sd = 0 if no noise at all.
                 # noisyCount is an integer. cmax_sd is float.
-                cmin = noisyCount - (self.sp['numSDs'] * cmax_sd)
-                cmax = noisyCount + (self.sp['numSDs'] * cmax_sd)
-                # We know we can't have a negative count. We also can't have a count of zero
+                cmin = noisyCount_mean - (self.sp['numSDs'] * sd)
+                cmax = noisyCount_mean + (self.sp['numSDs'] * sd)
+                # We know we can't have count lower than the suppression lowThresh
                 # because that would be suppressed
-                cmin = max(1,cmin)
-                cmax = max(1,cmax)
+                cmin = max(minPossible,cmin)
+                cmax = max(minPossible,cmax)
                 # Make elastic constraints
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
             self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd)
