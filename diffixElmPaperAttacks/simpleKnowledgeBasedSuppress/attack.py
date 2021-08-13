@@ -6,6 +6,7 @@ filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
 import scores.score
+import anonymize.anonAlgs
 
 def getMean(lowThresh, lowsds, sd):
     mean = lowThresh + (lowsds * sd)
@@ -24,8 +25,9 @@ def doSuppress(count,lowThresh,lowsds,sd):
 def meanAttack(lowThresh,lowsds,sd,probHas,
                 tries=10000,atLeast=100):
     s = scores.score.score(probHas)
+    anon = anonymize.anonAlgs.anon()
 
-    mean = getMean(lowThresh, lowsds, sd)
+    mean = anon.getMean(lowThresh, lowsds, sd)
     # N is known number of individuals with the attribute
     N = mean - 1
     numTries = 0
@@ -39,7 +41,7 @@ def meanAttack(lowThresh,lowsds,sd,probHas,
         else:
             victimHas = False
             trueCount = N
-        suppress = doSuppress(trueCount,lowThresh,lowsds,sd)
+        suppress = anon.doSuppress(trueCount,lowThresh,lowsds,sd)
         # In attacking the mean, there is a 50/50 chance of
         # suppression or not, so we can effectively make a claim
         # with every attack
@@ -64,6 +66,7 @@ def meanAttack(lowThresh,lowsds,sd,probHas,
 def lowThreshAttack(lowThresh,lowsds,sd,probHas,
                 tries=10000,atLeast=100):
     s = scores.score.score(probHas)
+    anon = anonymize.anonAlgs.anon()
     N = lowThresh - 1       # definitely suppress if N
 
     numTries = 0
@@ -77,7 +80,7 @@ def lowThreshAttack(lowThresh,lowsds,sd,probHas,
         else:
             victimHas = False
             trueCount = N
-        suppress = doSuppress(trueCount,lowThresh,lowsds,sd)
+        suppress = anon.doSuppress(trueCount,lowThresh,lowsds,sd)
         if suppress:
             # In attacking low_thresh, suppression is the norm regardless of
             # whether the victim has the attribute or not, so we

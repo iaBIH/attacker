@@ -6,12 +6,14 @@ filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
 import scores.score
+import anonymize.anonAlgs
 
 def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
     # Here we use midpoint between N and N+1 and see how often we
     # get it right when the answer is N+1 (i.e. victim has
     # the attribute) with 50% probability
     s = scores.score.score(probHas)
+    anon = anonymize.anonAlgs.anon()
     N = 25          # arbitrary
     # Noisy counts above the threshold, victim probably has attribute
     threshold = N + 0.5
@@ -30,8 +32,7 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
         else:
             victimHas = False
             trueCount = N
-        noise = random.gauss(0,sd)
-        noisyCount = round(trueCount + noise)
+        _,noisyCount = anon.getNoise(trueCount,0,sd)
         # We need to decide if we want to make a claim at all.
         # We do so only if the noisyCount falls outside of a range
         # around the center point
