@@ -1,0 +1,322 @@
+{
+    "buckets": {
+        "Ci0V0": {
+            "bkt": "Ci0V0",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 1,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 2
+        },
+        "Ci0V0.Ci1V10": {
+            "bkt": "Ci0V0.Ci1V10",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 0
+        },
+        "Ci0V0.Ci1V11": {
+            "bkt": "Ci0V0.Ci1V11",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 1
+        },
+        "Ci0V0.Ci1V12": {
+            "bkt": "Ci0V0.Ci1V12",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 1
+        },
+        "Ci0V1": {
+            "bkt": "Ci0V1",
+            "cmax": 8.0,
+            "cmin": 4.0,
+            "dim": 1,
+            "emax": 8.0,
+            "emin": 4.0,
+            "minPossible": 2,
+            "noisyCountMean": 6,
+            "sd": 2,
+            "suppress": false,
+            "trueCount": 6
+        },
+        "Ci0V1.Ci1V10": {
+            "bkt": "Ci0V1.Ci1V10",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 3
+        },
+        "Ci0V1.Ci1V11": {
+            "bkt": "Ci0V1.Ci1V11",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 1
+        },
+        "Ci0V1.Ci1V12": {
+            "bkt": "Ci0V1.Ci1V12",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 2
+        },
+        "Ci0V2": {
+            "bkt": "Ci0V2",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 1,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 1
+        },
+        "Ci0V2.Ci1V10": {
+            "bkt": "Ci0V2.Ci1V10",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 0
+        },
+        "Ci0V2.Ci1V11": {
+            "bkt": "Ci0V2.Ci1V11",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 0
+        },
+        "Ci0V2.Ci1V12": {
+            "bkt": "Ci0V2.Ci1V12",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 2,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 1
+        },
+        "Ci1V10": {
+            "bkt": "Ci1V10",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 1,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 3
+        },
+        "Ci1V11": {
+            "bkt": "Ci1V11",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 1,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 2
+        },
+        "Ci1V12": {
+            "bkt": "Ci1V12",
+            "cmax": 8.0,
+            "cmin": 0,
+            "dim": 1,
+            "emax": 8.0,
+            "emin": 0,
+            "minPossible": 2,
+            "noisyCountMean": 6.5,
+            "sd": 1.5,
+            "suppress": true,
+            "trueCount": 4
+        }
+    },
+    "originalTable": {
+        "i0": {
+            "0": 0,
+            "1": 0,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1,
+            "6": 1,
+            "7": 1,
+            "8": 2
+        },
+        "i1": {
+            "0": 11,
+            "1": 12,
+            "2": 10,
+            "3": 10,
+            "4": 10,
+            "5": 11,
+            "6": 12,
+            "7": 12,
+            "8": 12
+        }
+    },
+    "params": {
+        "anonymizerParams": {
+            "gap": 3,
+            "label": "XP",
+            "lowThresh": 2,
+            "sdSupp": 1.5,
+            "standardDeviation": 2
+        },
+        "colVals": {
+            "i0": [
+                0,
+                1,
+                2
+            ],
+            "i1": [
+                10,
+                11,
+                12
+            ]
+        },
+        "columns": [
+            "i0",
+            "i1"
+        ],
+        "numAids": 9,
+        "seed": "h",
+        "solveParams": {
+            "elasticLcf": 1.0,
+            "elasticNoise": 1.0,
+            "numSDs": 1.0
+        },
+        "tableParams": {
+            "numValsPerColumn": [
+                3,
+                3
+            ],
+            "tabType": "random"
+        }
+    },
+    "reconstructedTable": {
+        "i0": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 2,
+            "5": 2,
+            "6": 2,
+            "7": 2,
+            "8": 2
+        },
+        "i1": {
+            "0": 10,
+            "1": 11,
+            "2": 11,
+            "3": 12,
+            "4": 11,
+            "5": 12,
+            "6": 12,
+            "7": 12,
+            "8": 12
+        }
+    },
+    "solution": {
+        "aggregateErrorAvg": 1.4666666666666666,
+        "aggregateErrorTargetAvg": 2.6,
+        "attackableAndRightFrac": 0.0,
+        "attackableButWrongFrac": 0.778,
+        "claimRate": 0.3333333333333333,
+        "confidenceImprovement": -0.22727272727272732,
+        "elapsedTime": 0.07,
+        "explain": [
+            "numBuckets: Total number of buckets, all dimensions",
+            "numSuppressedBuckets: Buckets suppressed by anonymizer",
+            "numIgnoredBuckets: Buckets ignored when making constraints",
+            "numStripped: Rows stripped away because all rows for a dimension were suppressed",
+            "numChoices: Total number of variables for the solver",
+            "numConstraints: Total number of constraints for the solver",
+            "confidenceImprovement: GDA Score, precent correct claims over statistical guess",
+            "claimRage: GDA Score, percent individuals for which claim is made",
+            "matchFraction: Fraction of correctly reconstructed rows",
+            "nonAttackableFrac: Fraction of reconstructed rows that could not be singled out or inferred",
+            "attackableAndRightFrac: Fraction of attackable rows where the attack is correct",
+            "attackableButWrongFrac: Fraction of attackable rows where the attack is not correct",
+            "matchImprove: Improvement in reconstructed table over random table",
+            "aggregateErrorAvg: Average of absolute errors in bucket counts, original versus reconstructed",
+            "aggregateErrorTargetAvg: Average of absolute errors in elastic target, original versus reconstructed"
+        ],
+        "matchFraction": 0.444,
+        "matchImprove": -0.6696696696696698,
+        "nonAttackableFrac": 0.222,
+        "numBuckets": 15,
+        "numChoices": 54,
+        "numConstraints": 29,
+        "numIgnoredBuckets": 0,
+        "numStripped": 9,
+        "numSuppressedBuckets": 14,
+        "solveStatus": "Optimal"
+    }
+}

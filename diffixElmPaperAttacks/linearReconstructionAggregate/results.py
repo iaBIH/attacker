@@ -17,8 +17,10 @@ class resultGatherer:
             'numValsPerColumn': 't_shape',
         }
         self.anonymizerParams = {
-            'lcfMin': 'a_lcfL',
-            'lcfMax': 'a_lcfH',
+            'gap': 'a_gap',
+            'lowThresh': 'a_low',
+            'sdSupp': 'a_sds',
+            'label': 'a_lab',
             'standardDeviation': 'a_sd',
         }
         self.solveParams = {
@@ -42,11 +44,14 @@ class resultGatherer:
             'numStripped': 's_str',
             'numSuppressedBuckets': 's_sup',
             'solveStatus': 's_sol',
+            'claimRate': 's_cr',
+            'confidenceImprovement': 's_ci',
             # These are out of date or should otherwise be ignored
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
         }
-        self.pCols = ['a_lcfH','a_lcfL','a_sd','t_shape','t_tab','v_lcf','v_nse','v_nsds','l_lcf']
+        self.pCols = ['a_lab','a_low','a_gap','a_sds','a_sd',
+                      't_shape','t_tab','v_lcf','v_nse']
     
     def makeColumns(self,result):
         columns = ['seed']
@@ -61,7 +66,6 @@ class resultGatherer:
             columns.append(self.solveParams[k])
         for k,v in result['params']['tableParams'].items():
             columns.append(self.tableParams[k])
-        columns.append('l_lcf')
         return columns
     
     def loadRowWork(self,data,res,check,columns):
@@ -83,10 +87,6 @@ class resultGatherer:
             numAppend += 1
         return numAppend
 
-    def addLcfLabel(self,data,ap,columns):
-        data['l_lcf'].append(f"LCF({ap['lcfMin']},{ap['lcfMax']})")
-        return 1
-
     def loadRow(self,data,columns,result,path,doprint):
         data['seed'].append(result['params']['seed'])
         data['t_aids'].append(result['params']['numAids'])
@@ -95,7 +95,6 @@ class resultGatherer:
         numAppend += self.loadRowWork(data,result['params']['anonymizerParams'],self.anonymizerParams,columns)
         numAppend += self.loadRowWork(data,result['params']['solveParams'],self.solveParams,columns)
         numAppend += self.loadRowWork(data,result['params']['tableParams'],self.tableParams,columns)
-        numAppend += self.addLcfLabel(data,result['params']['anonymizerParams'],columns)
         if numAppend != len(columns):
             print(f"Wrong number of values ({numAppend} vs. {len(columns)} on {path}")
             print(columns)
@@ -137,6 +136,8 @@ class resultGatherer:
                 self.loadRow(data,self.columns,result,path,doprint)
         df = pd.DataFrame.from_dict(data)
         if doprint: print(df)
+        if doprint: pp.pprint(data)
+        if doprint: print(df.columns)
         # This dataframe `df` contains all of the individual attack runs (each seed)
         # Now we want to take summary results for the multiple seeds of the same attack
         # Start with a dataframe containing only the parameters columns (distinct values)
@@ -159,7 +160,10 @@ class resultGatherer:
         for rowi, s in dfParams.iterrows():
             query = ''
             for col in dfParams.columns:
-                query += f'({col} == "{s[col]}") and '
+                if type(s[col]) == str:
+                    query += f'({col} == "{s[col]}") and '
+                else:
+                    query += f'({col} == {s[col]}) and '
             query = query[:-5]
             dfTemp = df.query(query)
             agg['num'].append(dfTemp.shape[0])
@@ -179,7 +183,7 @@ class resultGatherer:
 if __name__ == "__main__":
     print("Example of resultGatherer")
     rg = resultGatherer()
-    df,dfAgg = rg.gatherResults(doprint=True)
+    df,dfAgg = rg.gatherResults(doprint=False)
     print(df)
     print(list(df.columns))
     print(df[['s_sol','s_str', 's_sup', 's_tim', 's_choi', 's_cons']])

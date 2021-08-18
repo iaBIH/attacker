@@ -1,0 +1,1 @@
+{"objective": {"name": null, "coefficients": [{"name": "__dummy", "value": 1}]}, "constraints": [], "variables": [{"lowBound": 0, "upBound": 0, "cat": "Continuous", "varValue": null, "dj": null, "name": "__dummy"}], "parameters": {"name": "Attack-Problem", "sense": 1, "status": 1, "sol_status": 1}, "sos1": [], "sos2": []}

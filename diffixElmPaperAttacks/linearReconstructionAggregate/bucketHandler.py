@@ -23,8 +23,10 @@ class bucketHandler:
         self.dfCols.append('emin')    # min elastic range
         self.dfCols.append('emax')    # max elastic range
         self.dfCols.append('trueCount')
-        self.dfCols.append('noisyCount')
-        self.dfCols.append('cmax_sd')
+        self.dfCols.append('noisyCount_mean')
+        self.dfCols.append('suppress')
+        self.dfCols.append('sd')
+        self.dfCols.append('minPossible')
         self.dfCols.append('dim')     # bucket dimension
         self.dfCols.append('bkt')     # the bucket name
         self.df = pd.DataFrame(columns=self.dfCols)
@@ -149,7 +151,8 @@ class bucketHandler:
             pass
         quit()
 
-    def addBucket(self,cols,vals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd):
+    def addBucket(self,cols,vals,cmin,cmax,emin,emax,
+                  trueCount,noisyCount_mean,suppress,sd,minPossible):
         # Make a row with empty lists
         df2 = pd.DataFrame(columns=self.dfCols)
         init = [[] for _ in range(len(self.dfCols))]
@@ -160,16 +163,20 @@ class bucketHandler:
         s['emin'] = emin
         s['emax'] = emax
         s['trueCount'] = trueCount
-        s['noisyCount'] = noisyCount
-        s['cmax_sd'] = cmax_sd
+        s['noisyCountMean'] = noisyCount_mean
+        s['suppress'] = suppress
+        s['sd'] = sd
+        s['minPossible'] = minPossible
         bucket = {}
         bucket['cmin'] = cmin
         bucket['cmax'] = cmax
         bucket['emin'] = emin
         bucket['emax'] = emax
         bucket['trueCount'] = trueCount
-        bucket['noisyCount'] = noisyCount
-        bucket['cmax_sd'] = cmax_sd
+        bucket['noisyCountMean'] = noisyCount_mean
+        bucket['suppress'] = suppress
+        bucket['sd'] = sd
+        bucket['minPossible'] = minPossible
         dim = 0
         bkt = ''
         for col,val in zip(cols,vals):

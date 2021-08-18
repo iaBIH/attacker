@@ -25,6 +25,11 @@ import anonymizer
 import itertools
 import statistics
 import os.path
+import sys
+filePath = __file__
+parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
+sys.path.append(parDir)
+import scores.score
 pp = pprint.PrettyPrinter(indent=4)
 doprint = False
 useSolver = 'gurobi'
@@ -35,6 +40,7 @@ class lrAttack:
         pp.pprint(tableParams)
         self.seed = seed
         self.an = anonymizer.anonymizer(seed, anonymizerParams, tableParams)
+        self.cols = self.an.cols
         self.sp = solveParams
         self.results = {'params':{}}
         self.results['params']['seed'] = seed
@@ -96,8 +102,46 @@ class lrAttack:
         dfNew.reset_index(drop=True,inplace=True)
         self.results['reconstructedTable'] = dfNew.to_dict()
 
+    def getTrueCountStatGuess(self,cols,vals,df):
+        # We want to know the fraction of rows in df that have these vals
+        query = ''
+        for col,val in zip(cols,vals):
+            query += f"({col} == {val}) and "
+        query = query[:-5]
+        dfC = df.query(query)
+        numMatchRows = len(dfC.index)
+        totalRows = len(df.index)
+        return numMatchRows, numMatchRows/totalRows
+
+    def measureGdaScore(self,dfOrig,dfRecon):
+        s = scores.score.score()
+        # This is the number of individuals that we can attack
+        totalAnonRows = len(dfRecon.index)
+        cols = dfOrig.columns.tolist()
+        sAggr = dfRecon.groupby(cols).size()
+        for (vals,cnt) in sAggr.iteritems():
+            if cnt == 1:
+                # We can make a singling out attack on this individual
+                trueCount,statGuess = self.getTrueCountStatGuess(cols,vals,dfOrig)
+                makesClaim = True  # We are making a claim
+                claimHas = True    # We are claiming that victim has attributes
+                if trueCount == 1:
+                    claimCorrect = True
+                else:
+                    claimCorrect = False
+                s.attempt(makesClaim,claimHas,claimCorrect,statGuess)
+            else:
+                makesClaim = False
+                claimHas = None      # don't care
+                claimCorrect = None     # don't care
+                statGuess = None
+                for _ in range(cnt):
+                    s.attempt(makesClaim,claimHas,claimCorrect,statGuess)
+        cr,ci,_ = s.computeScore()
+        return cr,ci
+
     def measureMatchDf(self,dfOrig,dfRecon):
-        ''' Measures two things:
+        ''' Measures four things:
             1. The reconstuction quality (how many rows from dfOrig match rows in dfRecon,
                using each row in dfRecon at most once) as a fraction from 0 to 1
             2. The fraction of rows in the reconstructed that are considered non-attackable
@@ -198,6 +242,8 @@ class lrAttack:
             self.results['solution']['matchImprove'] = None
             self.results['solution']['aggregateErrorAvg'] = None
             self.results['solution']['aggregateErrorTargetAvg'] = None
+            self.results['solution']['confidenceImprovement'] = None
+            self.results['solution']['claimRate'] = None
             return
         if 'reconstructedTable' in self.results:
             res = self.results
@@ -211,6 +257,11 @@ class lrAttack:
                 return None
         dfOrig = pd.DataFrame.from_dict(res['originalTable'])
         dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
+        cr,ci = self.measureGdaScore(dfOrig,dfRe)
+        self.results['solution']['confidenceImprovement'] = ci
+        self._addExplain("confidenceImprovement: GDA Score, precent correct claims over statistical guess")
+        self.results['solution']['claimRate'] = cr
+        self._addExplain("claimRage: GDA Score, percent individuals for which claim is made")
         # First row-level reconstruction
         matchFraction, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac = self.measureMatchDf(dfOrig, dfRe)
         res['solution']['matchFraction'] = matchFraction
@@ -232,8 +283,9 @@ class lrAttack:
             print("Wow, random table matches original table!")
             print(dfOrig)
             print(dfRan)
-            quit()
-        res['solution']['matchImprove'] = (matchFraction - matchRandom) / (1.0 - matchRandom)
+            res['solution']['matchImprove'] = 0
+        else:
+            res['solution']['matchImprove'] = (matchFraction - matchRandom) / (1.0 - matchRandom)
         self._addExplain("matchImprove: Improvement in reconstructed table over random table")
         # Then aggregates
         errsTrue,errsTarget = self.measureAggregatesDf(dfOrig, dfRe)
@@ -345,7 +397,6 @@ class lrAttack:
         # problem runs in rounds, where each new solution generates more constraints to prevent
         # the prior solution
         self.an.makeTable()
-        self.cols = self.an.cols
         self.results['params']['columns'] = self.cols
         self.results['params']['numAids'] = self.an.numAids
         self.results['params']['colVals'] = self.an.colVals
@@ -411,8 +462,6 @@ class lrAttack:
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticLcf'])
             else:
                 # Compute the possible range of values
-                # These are the hard constraints. cmax_sd = 0 if no noise at all.
-                # noisyCount is an integer. cmax_sd is float.
                 cmin = noisyCount_mean - (self.sp['numSDs'] * sd)
                 cmax = noisyCount_mean + (self.sp['numSDs'] * sd)
                 # We know we can't have count lower than the suppression lowThresh
@@ -421,7 +470,8 @@ class lrAttack:
                 cmax = max(minPossible,cmax)
                 # Make elastic constraints
                 emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
-            self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,trueCount,noisyCount,cmax_sd)
+            self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,
+                              trueCount,noisyCount_mean,suppress,sd,minPossible)
             numBuckets += 1
         self.results['solution']['numBuckets'] = numBuckets
         self._addExplain("numBuckets: Total number of buckets, all dimensions")
@@ -615,8 +665,8 @@ class lrAttack:
                 status = solver.actualSolve(prob)
                 print(status)
             else:
-                #prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
-                prob.solve(pulp.GUROBI_CMD(timeLimit=1))
+                prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
+                #prob.solve(pulp.GUROBI_CMD(timeLimit=1))
         else:
             print("Using Pulp default solver")
             prob.solve()
