@@ -650,23 +650,10 @@ class lrAttack:
         pulp.LpSolverDefault.msg = 1
         if useSolver == 'gurobi':
             print("Using GUROBI_CMD solver")
-            if False:
-                #Build the solverModel for your preferred
-                solver = pulp.apis.GUROBI_CMD(timeLimit=10.0, gapRel=0.9, mip=True)
-                print(solver.getOptions())
-                #solver = pulp.GUROBI_CMD(timeLimit=60.0,gapRel=0.9,options={'TimeLimit':10})
-                #solver.buildSolverModel(prob)
-
-                #Modify the solvermodel
-                #solver.solverModel.parameters.timelimit.set(60)
-
-                #Solve P
-                #solver.callSolver(prob)
-                status = solver.actualSolve(prob)
-                print(status)
-            else:
-                prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
-                #prob.solve(pulp.GUROBI_CMD(timeLimit=1))
+            # no time limit defaults to infinity
+            #prob.solve(pulp.GUROBI_CMD())
+            prob.solve(pulp.GUROBI_CMD(timeLimit=1200))
+            #prob.solve(pulp.GUROBI_CMD(timeLimit=1))
         else:
             print("Using Pulp default solver")
             prob.solve()
