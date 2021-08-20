@@ -1,6 +1,7 @@
 import random
 import sys
 import os
+import json
 from tabulate import tabulate
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
@@ -88,13 +89,25 @@ def lowThreshAttack(lowThresh,gap,sdSupp,probHas,
     _,_,_ = s.computeScore()
     claimRate,confImprove,confidence = s.prettyScore()
     return claimRate,confImprove,confidence
-        
+
+def dataInit():
+    return {'Stat Guess':[],'LMG':[],'SDsp':[],'CR':[],'CI':[]}
+
+def dataUpdate(data,vals):
+    data['Stat Guess'].append(vals[0])
+    data['LMG'].append(vals[1])
+    data['SDsp'].append(vals[2])
+    data['CR'].append(vals[3])
+    data['CI'].append(vals[4])
+               
 if __name__ == "__main__":
     tries=1000000
     headers = ['Stat','LMG','SDsp','CR','CI','C']
     sdLs = [[1.0,2],[1.5,3],[2.0,4]]
     pbs = [0.1,0.5,0.9]
     lowThresh = 2
+   # Following is for plotting
+    data = dataInit()
 
     print('''
 The following attacks the mean threshold value. The count is known
@@ -111,6 +124,7 @@ The following results are for:
         cr,ci,c = meanAttack(lowThresh,gap,sdSupp,probHas,
                               tries=tries)
         results.append([probHas,gap,sdSupp,cr,ci,c,])
+        dataUpdate(data,[probHas,gap,sdSupp,cr,ci,c,])
 
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
     print(tabulate(results,headers,tablefmt='github'))
@@ -130,6 +144,10 @@ The following results are for:
         cr,ci,c = lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                               tries=tries)
         results.append([probHas,gap,sdSupp,cr,ci,c,])
+        dataUpdate(data,[probHas,gap,sdSupp,cr,ci,c,])
 
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
     print(tabulate(results,headers,tablefmt='github'))
+
+    with open('data.json', 'w') as f:
+        json.dump(data, f, indent=4, sort_keys=True)
