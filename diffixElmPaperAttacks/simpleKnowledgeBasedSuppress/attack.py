@@ -46,9 +46,9 @@ def meanAttack(lowThresh,gap,sdSupp,probHas,
         s.attempt(makesClaim,claimHas,claimCorrect)
         if numTries >= tries and numClaimHas >= atLeast:
             break
-    _,_,_ = s.computeScore()
-    claimRate,confImprove,confidence = s.prettyScore()
-    return claimRate,confImprove,confidence
+    cr,ci,c = s.computeScore()
+    pcr,pci,pc = s.prettyScore()
+    return cr,ci,c,pcr,pci,pc
         
 def lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
@@ -86,9 +86,9 @@ def lowThreshAttack(lowThresh,gap,sdSupp,probHas,
         s.attempt(makesClaim,claimHas,claimCorrect)
         if numTries >= tries and numClaimHas >= atLeast:
             break
-    _,_,_ = s.computeScore()
-    claimRate,confImprove,confidence = s.prettyScore()
-    return claimRate,confImprove,confidence
+    cr,ci,c = s.computeScore()
+    pcr,pci,pc = s.prettyScore()
+    return cr,ci,c,pcr,pci,pc
 
 def dataInit():
     return {'Stat Guess':[],'LMG':[],'SDsp':[],'CR':[],'CI':[]}
@@ -121,9 +121,9 @@ The following results are for:
     for sdlsTup,probHas in [(x,y) for x in sdLs for y in pbs]:
         sdSupp = sdlsTup[0]
         gap = sdlsTup[1]
-        cr,ci,c = meanAttack(lowThresh,gap,sdSupp,probHas,
+        cr,ci,c,pcr,pci,pc = meanAttack(lowThresh,gap,sdSupp,probHas,
                               tries=tries)
-        results.append([probHas,gap,sdSupp,cr,ci,c,])
+        results.append([probHas,gap,sdSupp,pcr,pci,pc,])
         dataUpdate(data,[probHas,gap,sdSupp,cr,ci,c,])
 
     print(tabulate(results,headers,tablefmt='latex_booktabs'))
@@ -141,9 +141,9 @@ The following results are for:
     for sdlsTup,probHas in [(x,y) for x in sdLs for y in pbs]:
         sdSupp = sdlsTup[0]
         gap = sdlsTup[1]
-        cr,ci,c = lowThreshAttack(lowThresh,gap,sdSupp,probHas,
+        cr,ci,c,pcr,pci,pc = lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                               tries=tries)
-        results.append([probHas,gap,sdSupp,cr,ci,c,])
+        results.append([probHas,gap,sdSupp,pcr,pci,pc,])
         dataUpdate(data,[probHas,gap,sdSupp,cr,ci,c,])
 
     print(tabulate(results,headers,tablefmt='latex_booktabs'))

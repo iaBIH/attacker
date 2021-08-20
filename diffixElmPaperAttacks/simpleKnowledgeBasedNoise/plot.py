@@ -16,7 +16,7 @@ df['SD'] = df['SD'].replace([1.0,2.0,3.0],['1.0 (P)','2.0 (XP)','3.0 (XXP)'])
 plt.figure(figsize=(6, 3))
 ax = sns.scatterplot(data=df, x="CR", y="CI",style='Value Freq.',hue='SD',s=80)
 ax.set(xscale='log')
-left, bottom, width, height = (0.0001, 0.5, 2, 2)
+left, bottom, width, height = (0.001, 0.5, 2, 2)
 rect=patches.Rectangle((left,bottom),width,height, 
                         alpha=0.2,
                        facecolor="grey")
