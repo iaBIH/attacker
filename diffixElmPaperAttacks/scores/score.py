@@ -40,6 +40,8 @@ class score:
             self.claimCorrect += 1
 
     def computeScore(self):
+        if self.attempts == 0:
+            return 0,0,0
         self.claimRate = self.totalClaims / self.attempts
         if self.totalClaims == 0:
             return 0,0,0

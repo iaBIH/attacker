@@ -22,6 +22,7 @@ class resultGatherer:
             'sdSupp': 'a_sds',
             'label': 'a_lab',
             'standardDeviation': 'a_sd',
+            'priorKnowledge': 'a_pri',
         }
         self.solveParams = {
             'elasticLcf': 'v_lcf',
@@ -46,11 +47,12 @@ class resultGatherer:
             'solveStatus': 's_sol',
             'claimRate': 's_cr',
             'confidenceImprovement': 's_ci',
+            'numSkippedBecauseKnown': 's_skp',
             # These are out of date or should otherwise be ignored
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
         }
-        self.pCols = ['a_lab','a_low','a_gap','a_sds','a_sd',
+        self.pCols = ['a_lab','a_low','a_gap','a_sds','a_sd','a_pri',
                       't_shape','t_tab','v_lcf','v_nse']
     
     def makeColumns(self,result):

@@ -24,6 +24,7 @@ import bucketHandler
 import anonymizer
 import itertools
 import statistics
+import random
 import os.path
 import sys
 filePath = __file__
@@ -49,6 +50,7 @@ class lrAttack:
         self.results['params']['solveParams'] = self.sp
         self.results['solution'] = {'explain': []}
         self.results['buckets'] = None
+        self.priorKnowledge = self.an.ap['priorKnowledge']
         self.force = force
         self.fileName = self.makeFileName(seed)
         if 'numSDs' not in self.sp:
@@ -115,11 +117,17 @@ class lrAttack:
 
     def measureGdaScore(self,dfOrig,dfRecon):
         s = scores.score.score()
-        # This is the number of individuals that we can attack
-        totalAnonRows = len(dfRecon.index)
         cols = dfOrig.columns.tolist()
         sAggr = dfRecon.groupby(cols).size()
+        numSkipped = 0
+        i = 0
         for (vals,cnt) in sAggr.iteritems():
+            # We only want to consider individuals for whom we don't have prior knowledge
+            aid = f"a{i}"
+            i += 1
+            if aid in self.aidsKnown:
+                numSkipped += 1
+                continue
             if cnt == 1:
                 # We can make a singling out attack on this individual
                 trueCount,statGuess = self.getTrueCountStatGuess(cols,vals,dfOrig)
@@ -138,7 +146,7 @@ class lrAttack:
                 for _ in range(cnt):
                     s.attempt(makesClaim,claimHas,claimCorrect,statGuess)
         cr,ci,_ = s.computeScore()
-        return cr,ci
+        return cr,ci,numSkipped
 
     def measureMatchDf(self,dfOrig,dfRecon):
         ''' Measures four things:
@@ -244,6 +252,7 @@ class lrAttack:
             self.results['solution']['aggregateErrorTargetAvg'] = None
             self.results['solution']['confidenceImprovement'] = None
             self.results['solution']['claimRate'] = None
+            self.results['solution']['numSkippedBecauseKnown'] = None
             return
         if 'reconstructedTable' in self.results:
             res = self.results
@@ -257,7 +266,9 @@ class lrAttack:
                 return None
         dfOrig = pd.DataFrame.from_dict(res['originalTable'])
         dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
-        cr,ci = self.measureGdaScore(dfOrig,dfRe)
+        cr,ci,numSkipped = self.measureGdaScore(dfOrig,dfRe)
+        self.results['solution']['numSkippedBecauseKnown'] = numSkipped
+        self._addExplain("numSkippedBecauseKnown: Individuals not part of GDA score because known")
         self.results['solution']['confidenceImprovement'] = ci
         self._addExplain("confidenceImprovement: GDA Score, precent correct claims over statistical guess")
         self.results['solution']['claimRate'] = cr
@@ -392,6 +403,24 @@ class lrAttack:
         emin = max(cmin,emin)
         return emin,emax
 
+    def aidInBucket(self,aid,bucket,origTab):
+        cols,vals = self.bh.getColsValsFromBkt(bucket)
+        for col,val in zip(cols,vals):
+            if str(origTab[col][aid]) != val:
+                return False
+        return True
+
+    def makePriorKnowledge(self,aids):
+        if self.priorKnowledge == 'none':
+            return []
+        if self.priorKnowledge == 'all':
+            return aids.copy()
+        if self.priorKnowledge == 'all-but-one':
+            numKnown = len(aids) - 1
+        else:
+            numKnown = int(len(aids)/2)
+        return random.sample(aids, k=numKnown)
+
     def makeProblem(self):
         # First check to see if there is already an LpProblem to read in. Note that the
         # problem runs in rounds, where each new solution generates more constraints to prevent
@@ -416,6 +445,21 @@ class lrAttack:
         if doprint: print("Here are the users")
         aids = [f"a{i}" for i in range(numAids)]
         if doprint: print(aids)
+        if doprint: print("Here is the original table")
+        # The original table is a dict of dicts, first key column ('i0'), second key
+        # The index of the aid (0, 1, ...)
+        if doprint: pp.pprint(self.results['originalTable'])
+        # But since I'm using 'aXX' to denote AID, I want to re-key the original table
+        origTab = {}
+        for colKey,colVals in self.results['originalTable'].items():
+            origTab[colKey] = {}
+            for aidKey,aidVal in colVals.items():
+                newKey = f"a{aidKey}"
+                origTab[colKey][newKey] = aidVal
+        if doprint: pp.pprint(origTab)
+        self.aidsKnown = self.makePriorKnowledge(aids)
+        if doprint: print("Here are the prior known aids:")
+        if doprint: print(self.aidsKnown)
         
         # I'm going to make a dict that has all the column/bucket combinations and associated counts
         # The counts are min and max expected given noise assignment
@@ -432,7 +476,7 @@ class lrAttack:
         
         # This probably not the most efficient, but I'm going to determine the count range
         # of every combination of columns and values (buckets) individually. However, some
-        # buckets may be suppressed, in which case the returned counts are -1
+        # buckets may be suppressed, in which case the suppress variable is True
         self.bh = bucketHandler.bucketHandler(cols,self.an)
         for fullComb in self.combColIterator():
             # Now we make a dataframe query out of the combination
@@ -484,15 +528,17 @@ class lrAttack:
         
         '''
         At this point, `aids` contains a list of all "users", and bh.df contains
-        all possible buckets and associated count ranges. If the bucket was suppressed by
-        the anonymizer, then the counts are in the possible suppressed min/max range
+        all possible buckets and associated count ranges.
         '''
         # Strip away any rows from bh.df where ALL rows for a given dimension (number of
         # columns) are suppressed.
         # TODO: This is to shrink the number of constraints, but we could also try skipping
         # this step because then the constraints will ensure that the suppressed buckets don't
         # have a greater than suppressed number of users
-        self.results['solution']['numStripped'] = self.bh.stripAwaySuppressedDimensions()
+        if False:
+            self.results['solution']['numStripped'] = self.bh.stripAwaySuppressedDimensions()
+        else:
+            self.results['solution']['numStripped'] = 0
         self._addExplain("numStripped: Rows stripped away because all rows for a dimension were suppressed")
         if doprint: print("Bucket table after stripping suppressed dimensions:")
         if doprint: print(self.bh.df)
@@ -503,21 +549,37 @@ class lrAttack:
         cnum = 0
 
         print("The decision variables are created")
+        # allCounts is a dict keyed by bucket (i.e. 'Ci0V0.Ci1V10', which means the
+        # 2d bucket where column 0 has value 0 and column 1 has value 10), and whose
+        # values contain the count ranges
         allCounts = self.bh.getAllCounts()
         if doprint: pp.pprint(allCounts)
+        # The following builds the variables for all combinations of aids and buckets
+        # in spite of the fact that we may know some of them. (That knowledge is later
+        # captured in constraints.)
         self.choices = pulp.LpVariable.dicts("Choice", (aids, allCounts.keys()), cat='Binary')
         self.results['solution']['numChoices'] = len(aids) * len(allCounts)
         self._addExplain("numChoices: Total number of variables for the solver")
-        if doprint: pp.pprint(prob)
         if doprint: pp.pprint(self.choices)
+        if doprint: pp.pprint(prob)
         
         print("We do not define an objective function since none is needed")
-        # The following dummy object is a work-around for a bug in the
+        # The following dummy object was a work-around for a bug in the
         # to_json call.
         if False:
             dummy=pulp.LpVariable("dummy",0,0,pulp.LpInteger)
             prob += 0.0*dummy
         
+        # Now we need to add to self.choices the variables for the prior known aids
+        print("Constraints for the prior-known AIDs")
+        for (aid,bkt) in [(x,y) for x in self.aidsKnown for y in allCounts.keys()]:
+            if self.aidInBucket(aid,bkt,origTab):
+                prob += pulp.lpSum([self.choices[aid][bkt]]) == 1, f"{cnum}_prior_known_aid"
+            else:
+                prob += pulp.lpSum([self.choices[aid][bkt]]) == 0, f"{cnum}_prior_known_aid"
+            cnum += 1
+        if doprint: pp.pprint(prob)
+
         print("Constraints ensuring that each bucket has sum in range of the number of its users")
         for bkt,cnts in allCounts.items():
             if cnts['cmin'] == cnts['cmax']:

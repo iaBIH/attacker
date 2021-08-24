@@ -52,6 +52,8 @@ class anonymizer:
             self.ap['sdSupp'] = 0
         if not self.ap['standardDeviation']:
             self.ap['standardDeviation'] = 0
+        if not self.ap['priorKnowledge']:
+            self.ap['priorKnowledge'] = 'none'
         self.anon = anonymize.anonAlgs.anon(self.ap['lowThresh'],self.ap['gap'],
                                             self.ap['sdSupp'],self.ap['standardDeviation'],
                                             self.loc_random)

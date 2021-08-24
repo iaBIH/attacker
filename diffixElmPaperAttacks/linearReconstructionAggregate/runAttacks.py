@@ -29,7 +29,7 @@ def getAnonParamsFromLabel(label):
         return {'label':'XXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':3}
     return None
 
-def doAttack(params,tid=None):
+def doAttack(params):
     tableParams = {
         'tabType': None,
         'numValsPerColumn': None,
@@ -40,56 +40,69 @@ def doAttack(params,tid=None):
         'gap': None,
         'sdSupp': None,
         'standardDeviation': None,
+        'priorKnowledge': None
     }
     solveParams = {
         'elasticLcf': None,
         'elasticNoise': None,
         'numSDs': None,
     }
-    seed,numValsPerColumn,tabType,anonLabel,elastic = params['attack']
-    lg.info(f"    {tid}: {params['passType']}")
-    lg.info(f"    {tid}: {numValsPerColumn},{seed},{tabType},{anonLabel},{elastic}")
+    numValsPerColumn,tabType,anonLabel,elastic,priorSeeds = params['attack']
+    prior = priorSeeds[0]
+    numSeeds = priorSeeds[1]
+    lg.info(f"    {params['passType']}")
+    lg.info(f"    {numValsPerColumn},{numSeeds},{tabType},{anonLabel},{elastic}")
     tableParams['tabType'] = tabType
     tableParams['numValsPerColumn'] = numValsPerColumn
     anonymizerParams = getAnonParamsFromLabel(anonLabel)
+    anonymizerParams['priorKnowledge'] = prior
     solveParams['elasticLcf'] = elastic[0]
     solveParams['elasticNoise'] = elastic[1]
 
     numSDsList = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0]
     # First we need to decide if we need to run the attack
-    problemAlreadySolved = False
-    for numSDs in numSDsList:
-        # numSds is the number of noise standard deviations within which the
-        # solution is constrained. Smaller number means more accurate solution,
-        # but greater chance of not finding a solution. So we start with more
-        # accurate, and increase until we get a solution.
-        solveParams['numSDs'] = numSDs
-        if (anonymizerParams['lowThresh'] == 0 and solveParams['elasticLcf'] != 1.0):
-            lg.info(f"    {tid}:     Skip because elastic suppress parameter without suppression")
-            return
-        lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
-        if not forceSolution and lra.problemAlreadySolved():
-            lg.info(f"    {tid}: Attack {lra.fileName} already solved")
-            return
+    for seedNum in range(numSeeds):
+        seed = f"{seedNum:03d}"
+        skip = False
+        for numSDs in numSDsList:
+            # numSds is the number of noise standard deviations within which the
+            # solution is constrained. Smaller number means more accurate solution,
+            # but greater chance of not finding a solution. So we start with more
+            # accurate, and increase until we get a solution.
+            solveParams['numSDs'] = numSDs
+            if (anonymizerParams['lowThresh'] == 0 and solveParams['elasticLcf'] != 1.0):
+                lg.info(f"        Skip because elastic suppress parameter without suppression")
+                skip = True
+                break
+            lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
+            if not forceSolution and lra.problemAlreadySolved():
+                lg.info(f"    Attack {lra.fileName} already solved")
+                skip = True
+                break
+        if skip:
+            continue
 
-    # Ok, we need to solve it
-    for numSDs in numSDsList:
-        solveParams['numSDs'] = numSDs
-        lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
-        if params['passType'] == 'solve':
-            lg.info(f"    {tid}: Running attack {lra.fileName}")
-            prob = lra.makeProblem()
-            if (doStoreProblem):
-                lra.storeProblem(prob)
-            lg.info(f"    {tid}: Solving problem")
-            solveStatus = lra.solve(prob)
-            lg.info(f"    {tid}: Solve Status: {solveStatus}")
-            if solveStatus == 'Optimal':
-                lra.solutionToTable(prob)
-                lra.measureMatch(force=False)
-                lra.saveResults()
-                return
-    lg.info(f"    {tid}: Unable to solve")
+        # Ok, we need to solve it
+        solved = False
+        for numSDs in numSDsList:
+            solveParams['numSDs'] = numSDs
+            lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
+            if params['passType'] == 'solve':
+                lg.info(f"    Running attack {lra.fileName}")
+                prob = lra.makeProblem()
+                if (doStoreProblem):
+                    lra.storeProblem(prob)
+                lg.info(f"    Solving problem")
+                solveStatus = lra.solve(prob)
+                lg.info(f"    Solve Status: {solveStatus}")
+                if solveStatus == 'Optimal':
+                    lra.solutionToTable(prob)
+                    lra.measureMatch(force=False)
+                    lra.saveResults()
+                    solved = True
+                    break
+        if not solved:
+            lg.info(f"    Unable to solve")
 
 def attackIterator():
     ''' This routine contains multiple sets of attack parameters. For each such set,
@@ -98,9 +111,7 @@ def attackIterator():
     '''
     # This group tests base set, without large networks
     prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t']
-    prod.append(seeds)
-    numColumnVals = [[3,3],[5,5],[3,3,3],[5,5,5],[3,3,3,3],[3,3,3,3,3]]
+    numColumnVals = [[3,3],[5,5],[3,3,3],[5,5,5],[3,3,3,3]]
     prod.append(numColumnVals)
     tabTypes = ['random']
     prod.append(tabTypes)
@@ -108,22 +119,8 @@ def attackIterator():
     prod.append(anonLabels)
     elastic = [[1.0,1.0]]
     prod.append(elastic)
-    for things in itertools.product(*prod):
-        yield things
-    return
-
-    # This group tests base set, with large networks
-    prod = []
-    seeds = ['a','b','c','d','e','f','g','h','i','j']
-    prod.append(seeds)
-    numColumnVals = [[5,5,5,5],[10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    anonLabels = ['None','SP','SXP','SXXP','P','XP','XXP']
-    prod.append(anonLabels)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
+    priorSeeds = [['half',20],['none',20],['all-but-one',20],['all',2]]
+    prod.append(priorSeeds)
     for things in itertools.product(*prod):
         yield things
 
