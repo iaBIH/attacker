@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # Following are for plotting
     data = dataInit()
     print("The following are for full claim rate (CR=1.0)")
-    for sd,probHas in [(x,y) for x in [0.5,1.0,2.0,3.0] for y in [0.1,0.5,0.9]]:
+    for sd,probHas in [(x,y) for x in [0.5,1.0,2.0,3.0] for y in [0.01,0.1,0.5,0.9]]:
         cr,ci,c,pcr,pci,pc = basicAttack(probHas,sd,claimThresh,tries=tries,atLeast=atLeast)
         results.append([probHas,sd,pcr,pci,pc,])
         dataUpdate(data,[probHas,sd,cr,ci,c,])
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     results = []
 
     print("\nThe following attempts to find the Claim Rate when CI is high (> 0.95)")
-    for sd,probHas in [(x,y) for x in [0.5,1.0,2.0,3.0] for y in [0.1,0.5,0.9]]:
+    for sd,probHas in [(x,y) for x in [0.5,1.0,2.0,3.0] for y in [0.01,0.1,0.5,0.9]]:
         claimThresh = 0.0
         while True:
             claimThresh += 0.5

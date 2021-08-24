@@ -104,7 +104,7 @@ if __name__ == "__main__":
     tries=1000000
     headers = ['Stat','LMG','SDsp','CR','CI','C']
     sdLs = [[1.0,2],[1.5,3],[2.0,4]]
-    pbs = [0.1,0.5,0.9]
+    pbs = [0.01,0.1,0.5,0.9]
     lowThresh = 2
    # Following is for plotting
     data = dataInit()
