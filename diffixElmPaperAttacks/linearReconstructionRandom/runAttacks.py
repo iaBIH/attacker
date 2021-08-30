@@ -31,8 +31,12 @@ def getAnonParamsFromLabel(label):
 
 def doAttack(params):
     tableParams = {
-        'tabType': None,
-        'numValsPerColumn': None,
+        'numAIDs': None,
+        'numSymbols': None,
+        'valueFreqs': None,
+        'aidLen': None,
+        'valueFreqs': None,
+        'attackerType': None,
     }
     anonymizerParams = {
         'label': None,
@@ -47,13 +51,15 @@ def doAttack(params):
         'elasticNoise': None,
         'numSDs': None,
     }
-    numValsPerColumn,tabType,anonLabel,elastic,priorSeeds = params['attack']
+    numAIDs,numSymbols,aidLen,valueFreqs,attackerType,anonLabel,elastic,priorSeeds = params['attack']
     prior = priorSeeds[0]
     numSeeds = priorSeeds[1]
     lg.info(f"    {params['passType']}")
-    lg.info(f"    {numValsPerColumn},{numSeeds},{tabType},{anonLabel},{elastic}")
-    tableParams['tabType'] = tabType
-    tableParams['numValsPerColumn'] = numValsPerColumn
+    tableParams['numSymbols'] = numSymbols
+    tableParams['numAIDs'] = numAIDs
+    tableParams['aidLen'] = aidLen
+    tableParams['valueFreqs'] = valueFreqs
+    tableParams['attackerType'] = attackerType
     anonymizerParams = getAnonParamsFromLabel(anonLabel)
     anonymizerParams['priorKnowledge'] = prior
     solveParams['elasticLcf'] = elastic[0]
@@ -109,81 +115,49 @@ def attackIterator():
         one or more parameter values are set for each parameter. All combinations of
         all parameters for each group are run.
     '''
-    # This group allows us to get some quick results on one network
+    # This group tests base set, without large networks
     prod = []
-    numColumnVals = [[3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
+    numAIDs = [50]
+    prod.append(numAIDs)
+    numSymbols = [2]
+    prod.append(numSymbols)
+    aidLen = [20]
+    prod.append(aidLen)
+    valueFreqs = [0.5]
+    prod.append(valueFreqs)
+    attackerType = ['trusted']
+    prod.append(attackerType)
     anonLabels = ['XP']
     prod.append(anonLabels)
     elastic = [[1.0,1.0]]
     prod.append(elastic)
-    priorSeeds = [['half',1]]
-    prod.append(priorSeeds)
-    for things in itertools.product(*prod):
-        yield things
-
-    # This group allows us to get some quick results on one network
-    prod = []
-    numColumnVals = [[3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    anonLabels = ['P','XP','XXP']
-    prod.append(anonLabels)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    priorSeeds = [['half',20],['none',20],['all-but-one',20],['all',2]]
-    prod.append(priorSeeds)
-    for things in itertools.product(*prod):
-        yield things
-
-    # This group tests base set, without large networks, with Sxxx
-    prod = []
-    numColumnVals = [[3,3],[5,5],[3,3,3],[5,5,5],[3,3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    anonLabels = ['None','SP','SXP','SXXP','P','XP','XXP']
-    prod.append(anonLabels)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    priorSeeds = [['half',20],['none',20],['all-but-one',20],['all',2]]
-    prod.append(priorSeeds)
-    for things in itertools.product(*prod):
-        yield things
-
-    # This group gets more seeds with main group
-    prod = []
-    numColumnVals = [[3,3],[5,5],[3,3,3],[5,5,5],[3,3,3,3]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    anonLabels = ['P','XP','XXP']
-    prod.append(anonLabels)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    priorSeeds = [['half',30],['none',30],['all-but-one',100],['all',2]]
+    priorSeeds = [['none',1]]
     prod.append(priorSeeds)
     for things in itertools.product(*prod):
         yield things
     return
 
-    # This group tests base set, large networks only
+    # This group tests base set, without large networks
     prod = []
-    numColumnVals = [[5,5,5,5],[10,10,10]]
-    prod.append(numColumnVals)
-    tabTypes = ['random']
-    prod.append(tabTypes)
-    anonLabels = ['P','XP','XXP']
+    numAIDs = [10,50,100]
+    prod.append(numAIDs)
+    numSymbols = [2,8,32]
+    prod.append(numSymbols)
+    aidLen = [120]
+    prod.append(aidLen)
+    valueFreqs = [0.1,0.5]
+    prod.append(valueFreqs)
+    attackerType = ['trusted','untrusted']
+    prod.append(attackerType)
+    anonLabels = ['None','P','XP','XXP']
     prod.append(anonLabels)
     elastic = [[1.0,1.0]]
     prod.append(elastic)
-    priorSeeds = [['half',30],['none',30],['all-but-one',50]]
+    priorSeeds = [['half',30],['none',30],['all-but-one',50],['all',2]]
     prod.append(priorSeeds)
     for things in itertools.product(*prod):
         yield things
+
 # This is used to force experimental measurement based on the reconstructed table. It is
 # used when we want to add a new measure, but don't need to rerun the solutions
 forceMeasure = False

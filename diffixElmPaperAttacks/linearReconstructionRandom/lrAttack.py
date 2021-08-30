@@ -1,6 +1,14 @@
 '''
+Setup:
+    One column with AIDs (individual IDs)
+        AID itself is a long random string
+    One column with two values
+        In one setup, each value at 50%
+        In another setup, one value 10%, one value 90%
+    Attacker knows all AID values, so knows which AIDs are
+    in each bucket.
 Variables: 
-    one per user per column-bucket combination
+    one per user per dictinct value
         Each variable is a Binary (0/1)
 Constraints:
     Each column has sum equal to number of users
@@ -33,7 +41,7 @@ import tools.score
 import tools.bucketHandler
 import tools.anonymizer
 pp = pprint.PrettyPrinter(indent=4)
-doprint = False
+doprint = True
 useSolver = 'gurobi'
 #useSolver = 'default'
 
@@ -54,8 +62,6 @@ class lrAttack:
         self.priorKnowledge = self.an.ap['priorKnowledge']
         self.force = force
         self.fileName = self.makeFileName(seed)
-        if 'numSDs' not in self.sp:
-            self.sp['numSDs'] = 3.0
 
     def _makeFileNameWork(self, fileName, params):
         for key in sorted(list(params.keys())):
@@ -132,6 +138,7 @@ class lrAttack:
             self.results['solution']['aggregateErrorTargetAvg'] = None
             self.results['solution']['confidenceImprovement'] = None
             self.results['solution']['claimRate'] = None
+            self.results['solution']['numSkippedBecauseKnown'] = None
             return
         if 'reconstructedTable' in self.results:
             res = self.results
@@ -145,7 +152,9 @@ class lrAttack:
                 return None
         dfOrig = pd.DataFrame.from_dict(res['originalTable'])
         dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
-        cr,ci = self.an.measureGdaScore(dfOrig,dfRe,self.aidsKnown)
+        cr,ci,numSkipped = self.an.measureGdaScore(dfOrig,dfRe,self.aidsKnown)
+        self.results['solution']['numSkippedBecauseKnown'] = numSkipped
+        self._addExplain("numSkippedBecauseKnown: Individuals not part of GDA score because known")
         self.results['solution']['confidenceImprovement'] = ci
         self._addExplain("confidenceImprovement: GDA Score, precent correct claims over statistical guess")
         self.results['solution']['claimRate'] = cr
@@ -186,7 +195,7 @@ class lrAttack:
         errsTrue = []
         errsTarget = []
         # loop through all aggregates for all dimensions
-        for fullComb in self.combColIterator():
+        for fullComb in self.substringIterator():
             # Now we make a dataframe query out of the combination
             query = ''
             for entry in fullComb:
@@ -254,18 +263,20 @@ class lrAttack:
         with open(path, 'w') as f:
             json.dump(results, f, indent=4, sort_keys=True)
 
-    def combColIterator(self):
-        for i in range(len(self.cols)):
-            # Get all combinations with i columns
-            for colComb in itertools.combinations(self.cols,i+1):
-                prod = []
-                for col in colComb:
-                    tups = []
-                    for bkt in self.an.df[col].unique():
-                        tups.append((col,bkt))
-                    prod.append(tups)
-                for fullComb in itertools.product(*prod):
-                    yield fullComb
+    def substringIterator(self):
+        if self.an.tp['attackerType'] == 'untrusted':
+            offsets = [0]
+            lens = []
+            length = 1
+            for _ in range(self.an.tp['aidLen']):
+                lens.append(length)
+                length += 1
+        else:
+            offsets = list(range(self.an.tp['aidLen']))
+            lens = [1]
+
+        for (offset,length) in [(x, y) for x in offsets for y in lens]:
+            yield offset,length
     
     def makeElastic(self,cmin,cmax,penaltyFreeFrac):
         if cmin == cmax:
@@ -298,6 +309,35 @@ class lrAttack:
             numKnown = int(len(aids)/2)
         return random.sample(aids, k=numKnown)
 
+    def offLenGroupsIter(self,offLenGroups):
+        for offset in offLenGroups.keys():
+            for length in offLenGroups[offset].keys():
+                for substr in offLenGroups[offset][length].keys():
+                    blob = offLenGroups[offset][length][substr]
+                    # If both entries are suppressed, then we wouldn't anyway have
+                    # known about the substring, so we can just ignore it
+                    if blob[0]['suppress'] and blob[1]['suppress']:
+                        continue
+                    yield offset,length,substr,offLenGroups[offset][length][substr]
+
+    def getBoundsFromEntry(self,entry):
+        if entry['suppress']:
+            cmin = 0
+            cmax = entry['noisyCount_mean'] + (self.sp['numSDs'] * entry['sd'])
+            # Make elastic constraints
+            emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticLcf'])
+        else:
+            # Compute the possible range of values
+            cmin = entry['noisyCount_mean'] - (self.sp['numSDs'] * entry['sd'])
+            cmax = entry['noisyCount_mean'] + (self.sp['numSDs'] * entry['sd'])
+            # We know we can't have count lower than the suppression lowThresh
+            # because that would be suppressed
+            cmin = max(entry['minPossible'],cmin)
+            cmax = max(entry['minPossible'],cmax)
+            # Make elastic constraints
+            emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
+        return cmin,cmax,emin,emax
+
     def makeProblem(self):
         # First check to see if there is already an LpProblem to read in. Note that the
         # problem runs in rounds, where each new solution generates more constraints to prevent
@@ -305,7 +345,10 @@ class lrAttack:
         self.an.makeTable()
         self.results['params']['columns'] = self.cols
         self.results['params']['numAids'] = self.an.numAids
-        self.results['params']['colVals'] = self.an.colVals
+        self.results['params']['valueFreqs'] = self.an.valueFreqs
+        self.results['params']['numSymbols'] = self.an.numSymbols
+        self.results['params']['aidLen'] = self.an.aidLen
+        self.results['params']['attackerType'] = self.an.attackerType
         self.results['originalTable'] = self.an.df.to_dict()
         numBuckets = 0
         numSuppressedBuckets = 0
@@ -315,8 +358,6 @@ class lrAttack:
             if prob:
                 return prob
 
-        # TODO: For now, I'm using the correct number of AIDs. In practice, this might be
-        # noisy, so later maybe we'll accommodate that
         numAids = self.an.numAids
         # I want a variable for every user / column / bucket combination.
         if doprint: print("Here are the users")
@@ -326,87 +367,145 @@ class lrAttack:
         # The original table is a dict of dicts, first key column ('i0'), second key
         # The index of the aid (0, 1, ...)
         if doprint: pp.pprint(self.results['originalTable'])
-        # But since I'm using 'aXX' to denote AID, I want to re-key the original table
+        # Since I'm using 'aXX' to denote AID, I want to re-key the original table
+        # and also make a reverse mapping
         origTab = {}
         for colKey,colVals in self.results['originalTable'].items():
             origTab[colKey] = {}
             for aidKey,aidVal in colVals.items():
                 newKey = f"a{aidKey}"
                 origTab[colKey][newKey] = aidVal
+        if doprint: print('origTab')
         if doprint: pp.pprint(origTab)
+        longAIDtoShortAID = {}
+        for shortAID,longAID in origTab['aids'].items():
+            longAIDtoShortAID[longAID] = shortAID
+        if doprint: print('longAIDtoShortAID')
+        if doprint: pp.pprint(longAIDtoShortAID)
+        # self.aidsKnown here means that the attacker knows the column value associated
+        # with the AID
         self.aidsKnown = self.makePriorKnowledge(aids)
         if doprint: print("Here are the prior known aids:")
         if doprint: print(self.aidsKnown)
+
+        # In this attack, the attacker queries for different substrings of the
+        # AID. In the untrusted case, the offset is always 1 (i.e. the substring
+        # is always from the first character.) In the untrusted case, the substring
+        # can be anywhere and any length (we expect this attack to succeed, sometimes).
+
+        # Given this, we want to make a dict that has all of the substring combinations
+        # and associated noisy count ranges.
         
-        # I'm going to make a dict that has all the column/bucket combinations and associated counts
-        # The counts are min and max expected given noise assignment
-        buckets = {}
         cols = self.an.colNames()
-        if doprint: print(cols)
-        for col in cols:
-            buckets[col] = self.an.distinctVals(col)
-            buckets[col] = list(self.an.df[col].unique())
-        if doprint: pp.pprint(buckets)
-        # At this point, `buckets` contains a list of distinct values per column
-        # We are presuming that the anonymization is such that such a list can be
-        # obtained by the attacker. (In practice this could be done with bucketization.)
-        
-        # This probably not the most efficient, but I'm going to determine the count range
-        # of every combination of columns and values (buckets) individually. However, some
-        # buckets may be suppressed, in which case the suppress variable is True
         self.bh = tools.bucketHandler.bucketHandler(cols,self.an)
-        for fullComb in self.combColIterator():
-            # Now we make a dataframe query out of the combination
-            query = ''
-            varName = ''
-            combCols = []
-            combVals = []
-            for entry in fullComb:
-                # entry[0] is the column name, entry[1] is the bucket value
-                query += f"{entry[0]} == {entry[1]} and "
-                varName += f"{entry[0]}.v{entry[1]}."
-                combCols.append(entry[0])
-                combVals.append(entry[1])
-            query = query[:-5]
-            varName = varName[:-1]
-            suppress,trueCount,sd,minPossible,noisyCount_mean = self.an.queryForCount(query)
-            if suppress:
-                # bucket is suppressed
-                numSuppressedBuckets += 1
-                cmin = 0
-                cmax = noisyCount_mean + (self.sp['numSDs'] * sd)
-                if cmax == 0:
-                    # Bucket couldn't hold any aids anyway, so can ignore
-                    numIgnoredBuckets += 1
-                    continue
-                # Make elastic constraints
-                emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticLcf'])
-            else:
-                # Compute the possible range of values
-                cmin = noisyCount_mean - (self.sp['numSDs'] * sd)
-                cmax = noisyCount_mean + (self.sp['numSDs'] * sd)
-                # We know we can't have count lower than the suppression lowThresh
-                # because that would be suppressed
-                cmin = max(minPossible,cmin)
-                cmax = max(minPossible,cmax)
-                # Make elastic constraints
-                emin,emax = self.makeElastic(cmin,cmax,self.sp['elasticNoise'])
-            self.bh.addBucket(combCols,combVals,cmin,cmax,emin,emax,
-                              trueCount,noisyCount_mean,suppress,sd,minPossible)
-            numBuckets += 1
-        self.results['solution']['numBuckets'] = numBuckets
-        self._addExplain("numBuckets: Total number of buckets, all dimensions")
-        self.results['solution']['numSuppressedBuckets'] = numSuppressedBuckets
-        self._addExplain("numSuppressedBuckets: Buckets suppressed by anonymizer")
-        self.results['solution']['numIgnoredBuckets'] = numIgnoredBuckets
-        self._addExplain("numIgnoredBuckets: Buckets ignored when making constraints")
-        if doprint: print("Initial bucket table:")
-        if doprint: print(self.bh.df)
+        self.an.sqlInit('orig')
+        suppress,trueCount,sd,minPossible,noisyCount_mean = self.an.getDiffixAnswer(0)
+        defaultSuppresedEntry = {
+            'suppress': suppress,
+            'trueCount': trueCount,
+            'sd': sd,
+            'minPossible': minPossible,
+            'noisyCount_mean': noisyCount_mean,
+        }
+        offLenGroups = {}
+        for offset,length in self.substringIterator():
+            if offset not in offLenGroups:
+                offLenGroups[offset] = {}
+            if length not in offLenGroups[offset]:
+                offLenGroups[offset][length] = {}
+            # This is the query the attacker makes:
+            sql = f'''
+                SELECT substr(aids,{offset+1},{length}),i1,count(*)
+                FROM orig
+                GROUP BY 1,2
+                HAVING count(*) > 1;
+            '''
+            bkts = self.an.sqlQuery(sql)
+            if len(bkts) == 0:
+                # In the case of the untrusted attack, we quickly get to the point
+                # where each substring has a count of 1, and so will be suppressed
+                # Longer substrings won't help us, so we quit
+                break
+            for bkt in bkts:
+                substr = bkt[0]
+                if substr not in offLenGroups[offset][length]:
+                    offLenGroups[offset][length][substr] = {}
+                    # Here we are really limiting our attack to two values
+                    for i1Val in [0,1]:
+                        # We prebuild the value entries in case they are not included
+                        # in the attacker query (because of the HAVING clause in this case)
+                        offLenGroups[offset][length][substr][i1Val] = defaultSuppresedEntry
+                    # Each offLenGroups[offset][length][substr] group has a set of AIDVs that
+                    # is known to the attacker (because we assume this knowledge). Here we use
+                    # a simple query to the DB to get us that set
+                    sql = f'''
+                        SELECT aids
+                        FROM orig
+                        WHERE substr(aids,{offset+1},{length}) = '{substr}';
+                    '''
+                    bktAids = self.an.sqlQuery(sql)
+                    # bktAids are the long strings, which we want to replace with short
+                    # aXXX identifiers
+                    offLenGroups[offset][length][substr]['aids'] = []
+                    for row in bktAids:
+                        longAID = row[0]
+                        offLenGroups[offset][length][substr]['aids'].append(longAIDtoShortAID[longAID])
+                i1Val = bkt[1]
+                trueCount = bkt[2]
+                # Note here that we are not doing any seeding. The nature of this attack is
+                # such that every AIDV set will be different, so we won't get matching
+                # seeds in any event
+                suppress,trueCount,sd,minPossible,noisyCount_mean = self.an.getDiffixAnswer(trueCount)
+                offLenGroups[offset][length][substr][i1Val] = {
+                    'suppress': suppress,
+                    'trueCount': trueCount,
+                    'sd': sd,
+                    'minPossible': minPossible,
+                    'noisyCount_mean': noisyCount_mean,
+                }
+        # At this point, offLenGroups contains the raw anonymized buckets and
+        # corresponding AIDV sets. I need to further compute cmin,cmax,emin, and emax,
+        # and also make a combined bucket as well
+        for offset,length,substr,blob in self.offLenGroupsIter(offLenGroups):
+            for i1Val in [0,1]:
+                #entry = offLenGroups[offset][length][substr][i1Val]
+                entry = blob[i1Val]
+                cmin,cmax,emin,emax = self.getBoundsFromEntry(entry)
+                entry['cmin'] = cmin
+                entry['cmax'] = cmax
+                entry['emin'] = emin
+                entry['emax'] = emax
+            # Now estimate what the combined bucket looks like if I could have
+            # queried for it
+            combinedCount = blob[0]['noisyCount_mean'] + blob[1]['noisyCount_mean']
+            # The following is not really what Diffix would have returned, since we
+            # can't make the actual query, but it is a reasonable estimate that the
+            # attacker can assume given knowledge of the noisy counts. We do however
+            # increase the standard deviation to what would be expected of two
+            # noise contributions
+            suppress,trueCount,sd,minPossible,noisyCount_mean = self.an.getDiffixAnswer(combinedCount)
+            entry = {
+                'suppress': suppress,
+                'trueCount': trueCount,
+                'sd': sd * 1.41,
+                'minPossible': minPossible,
+                'noisyCount_mean': noisyCount_mean,
+            }
+            cmin,cmax,emin,emax = self.getBoundsFromEntry(entry)
+            entry['cmin'] = round(cmin)
+            entry['cmax'] = round(cmax)
+            entry['emin'] = round(emin)
+            entry['emax'] = round(emax)
+            blob['bkt'] = entry
+        if doprint: pp.pprint(offLenGroups)
+                #zzzz
         
         '''
         At this point, `aids` contains a list of all "users", and bh.df contains
         all possible buckets and associated count ranges.
         '''
+        print(aids)
+        quit()
         # Strip away any rows from bh.df where ALL rows for a given dimension (number of
         # columns) are suppressed.
         # TODO: This is to shrink the number of constraints, but we could also try skipping

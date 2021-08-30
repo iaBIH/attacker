@@ -6,12 +6,12 @@ from tabulate import tabulate
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
-import scores.score
+import tools.score
 import anonymize.anonAlgs
 
 def meanAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
-    s = scores.score.score(probHas)
+    s = tools.score.score(probHas)
     anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,0)
 
     mean = anon.getMean()
@@ -52,7 +52,7 @@ def meanAttack(lowThresh,gap,sdSupp,probHas,
         
 def lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
-    s = scores.score.score(probHas)
+    s = tools.score.score(probHas)
     anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,0)
     N = lowThresh - 1       # definitely suppress if N
 

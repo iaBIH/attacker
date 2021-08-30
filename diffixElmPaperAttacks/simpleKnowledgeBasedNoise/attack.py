@@ -6,14 +6,14 @@ from tabulate import tabulate
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
-import scores.score
+import tools.score
 import anonymize.anonAlgs
 
 def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
     # Here we use midpoint between N and N+1 and see how often we
     # get it right when the answer is N+1 (i.e. victim has
     # the attribute) with 50% probability
-    s = scores.score.score(probHas)
+    s = tools.score.score(probHas)
     anon = anonymize.anonAlgs.anon(0,0,0,sd)
     N = 25          # arbitrary
     # Noisy counts above the threshold, victim probably has attribute

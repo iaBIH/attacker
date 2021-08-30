@@ -8,7 +8,7 @@ import os
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
-import plotting.risk
+import tools.risk
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -33,7 +33,7 @@ params = {
     'alpha':0.03,
     #'alpha':0.5,
 }
-rp = plotting.risk.riskPatches()
+rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
