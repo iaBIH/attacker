@@ -86,6 +86,9 @@ class anonymizer:
         trueCount = self.df.query(query).shape[0]
         return self.getDiffixAnswer(trueCount)
 
+    def getLowThresh(self):
+        return self.anon.lowThresh
+
     def getDiffixAnswer(self,trueCount):
         suppress = self.anon.doSuppress(trueCount)
         minPossible = self.anon.lowThresh
@@ -172,7 +175,10 @@ class anonymizer:
         # We want to know the fraction of rows in df that have these vals
         query = ''
         for col,val in zip(cols,vals):
-            query += f"({col} == {val}) and "
+            if type(val) == str:
+                query += f"({col} == '{val}') and "
+            else:
+                query += f"({col} == {val}) and "
         query = query[:-5]
         dfC = df.query(query)
         numMatchRows = len(dfC.index)
@@ -186,6 +192,8 @@ class anonymizer:
         recon1 = dfRecon.to_dict('split')
         orig = dfOrig.to_dict('split')
         orig1 = dfOrig.to_dict('split')
+        #pp.pprint(recon1)
+        #pp.pprint(orig)
         # (It's a bit embarassing to convert these to dicts rather than man up
         # and manipulate them as dataframes, but....)
         for i in range(len(orig['index'])):
@@ -211,19 +219,24 @@ class anonymizer:
         dfOrigNew = pd.DataFrame.from_dict(origNew)
         return dfOrigNew, dfReconNew 
 
-    def measureGdaScore(self,dfOrig,dfRecon,aidsKnown):
+    def measureGdaScore(self,dfOrig,dfRecon,aidsKnown,statGuess=None):
         dfOrigNew, dfReconNew = self.cleanOutKnown(dfOrig,dfRecon,aidsKnown)
-        s = tools.score.score()
+        incomingStatGuess = statGuess
+        score = tools.score.score(statGuess=incomingStatGuess)
         cols = dfOrigNew.columns.tolist()
         sAggrNew = dfReconNew.groupby(cols).size()
         sAggr = dfRecon.groupby(cols).size()
         # sAggrNew represents unknown individuals. sAggr includes both known
         # and unknown
         for (vals,cnt) in sAggrNew.iteritems():
+            if self.attackType == 'random' and vals[1] == 1:
+                # We only want to measure '0' values (the less frequent)
+                continue
             #print(f"---------------------- {vals},{cnt} --------------------------")
             if cnt == 1:
+                # We get here if this set of vals is unique among the unknown entries.
                 # We can make a singling out claim on this individual if the values
-                # don't also match anything among the known individuals
+                # don't also match anything among the known individuals...
                 match = False
                 for (vals1,cnt1) in sAggr.iteritems():
                     #print("------")
@@ -233,14 +246,19 @@ class anonymizer:
                         #print(f"    match on {vals1} == {vals}!!!")
                         match = True
                 if not match:
+                    # We get here if the set of vals doesn't match any known sets
                     trueCount,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
+                    if incomingStatGuess:
+                        statGuessToUse = incomingStatGuess
+                    else:
+                        statGuessToUse = statGuess
                     makesClaim = True  # We are making a claim
                     claimHas = True    # We are claiming that victim has attributes
                     if trueCount == 1:
                         claimCorrect = True
                     else:
                         claimCorrect = False
-                    s.attempt(makesClaim,claimHas,claimCorrect,statGuess)
+                    score.attempt(makesClaim,claimHas,claimCorrect,statGuess=statGuessToUse)
             else:
                 trueCount,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
                 makesClaim = False
@@ -248,9 +266,9 @@ class anonymizer:
                 claimCorrect = None     # don't care
                 statGuess = None
                 for _ in range(cnt):
-                    s.attempt(makesClaim,claimHas,claimCorrect,statGuess)
-        cr,ci,_ = s.computeScore()
-        return cr,ci
+                    score.attempt(makesClaim,claimHas,claimCorrect,statGuess)
+        cr,ci,c = score.computeScore()
+        return cr,ci,c
 
     def measureMatchDf(self,dfOrig,dfRecon):
         ''' Measures four things:

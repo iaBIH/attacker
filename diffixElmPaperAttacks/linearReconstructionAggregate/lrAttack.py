@@ -145,11 +145,22 @@ class lrAttack:
                 return None
         dfOrig = pd.DataFrame.from_dict(res['originalTable'])
         dfRe = pd.DataFrame.from_dict(res['reconstructedTable'])
-        cr,ci = self.an.measureGdaScore(dfOrig,dfRe,self.aidsKnown)
+        cr,ci,c = self.an.measureGdaScore(dfOrig,dfRe,self.aidsKnown)
+        self.results['solution']['confidence'] = c
+        self._addExplain("confidence: GDA Score, percent correct claims")
         self.results['solution']['confidenceImprovement'] = ci
-        self._addExplain("confidenceImprovement: GDA Score, precent correct claims over statistical guess")
+        self._addExplain("confidenceImprovement: GDA Score, percent correct claims over statistical guess")
         self.results['solution']['claimRate'] = cr
-        self._addExplain("claimRage: GDA Score, percent individuals for which claim is made")
+        self._addExplain("claimRate: GDA Score, percent individuals for which claim is made")
+        # Now we measure CI and CR against a random table!
+        dfRan = self.an.makeRandomTable()
+        cr,ci,c = self.an.measureGdaScore(dfOrig,dfRan,[])
+        self.results['solution']['confidenceRandom'] = c
+        self._addExplain("confidenceRandom: GDA Score, percent correct claims for random network")
+        self.results['solution']['confidenceImprovementRandom'] = ci
+        self._addExplain("confidenceImprovementRandom: GDA Score, percent correct claims over statistical guess for random network")
+        self.results['solution']['claimRateRandom'] = cr
+        self._addExplain("claimRateRandom: GDA Score, percent individuals for which claim is made for random network")
         # First row-level reconstruction
         matchFraction, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac = self.an.measureMatchDf(dfOrig, dfRe)
         res['solution']['matchFraction'] = matchFraction
@@ -160,7 +171,6 @@ class lrAttack:
         self._addExplain("attackableAndRightFrac: Fraction of attackable rows where the attack is correct")
         res['solution']['attackableButWrongFrac'] = attackableButWrongFrac
         self._addExplain("attackableButWrongFrac: Fraction of attackable rows where the attack is not correct")
-        dfRan = self.an.makeRandomTable()
         if len(dfRan.index) != len(dfOrig.index):
             print(f"measureMatch: error: tables not same length")
             print(dfOrig)

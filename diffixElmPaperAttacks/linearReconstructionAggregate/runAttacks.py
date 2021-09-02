@@ -109,7 +109,7 @@ def attackIterator():
         one or more parameter values are set for each parameter. All combinations of
         all parameters for each group are run.
     '''
-    # This group allows us to get some quick results on one network
+    # Just a test run:
     prod = []
     numColumnVals = [[3,3,3]]
     prod.append(numColumnVals)

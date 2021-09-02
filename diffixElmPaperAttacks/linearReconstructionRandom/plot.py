@@ -13,7 +13,7 @@ import tools.results
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-rg = tools.results.resultGatherer()
+rg = tools.results.resultGatherer(attackType='random')
 dfAll,dfAgg = rg.gatherResults()
 
 dfTemp = dfAll.query("a_lab != 'None'")
@@ -28,88 +28,62 @@ dfAggNone = dfTemp.query("a_pri == 'none'")
 dfAggHalf = dfTemp.query("a_pri == 'half'")
 dfAggNear = dfTemp.query("a_pri == 'all-but-one'")
 
-dfNone1 = dfNone.query('a_lab in ["P","XP","XXP"]')
-dfNone1 = dfNone1.rename(columns={'a_lab':'Setting'})
+
+df1 = dfAgg.query('t_atkr == "untrusted" and a_pri != "all" and a_lab != "None"')
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=dfNone1, x="s_cr", y="s_ci",hue='Setting')
+#ax2 = sns.boxplot(x='t_freq',y='s_ci_av',data=df1,hue='a_lab')
+ax2 = sns.boxplot(x='a_pri',y='s_ci_av',data=df1,hue='a_lab',order=['none','half','all-but-one'])
+ax2.set(ylabel = 'Confidence Improvement (CI)', xlabel='Attacker Prior Knowledge')
+ax2.grid(axis='y')
+ax2.legend(title='Strength of Anonymity',ncol=3)
+ax2.set(xticklabels=["No Rows","Half of Rows","All Rows But One"])
+plt.savefig('lr-ran-plot-untrusted',bbox_inches='tight')
+
+df1 = dfAgg.query('t_atkr == "trusted" and a_pri != "all" and a_lab != "None"')
+plt.figure(figsize=(6, 3))
+ax2 = sns.boxplot(x='a_pri',y='s_ci_av',data=df1,hue='a_lab',order=['none','half','all-but-one'])
+params = {
+    'numBoxes':20,
+    'fromLeft':-1,
+    'toLeft':-1,
+    'fromBottom':0.45,
+    'toBottom':0.7,
+    'right':5,
+    'top':1.1,
+    'alpha':0.03,
+    #'alpha':0.5,
+}
+rp = tools.risk.riskPatches()
+shapes = rp.getShapes(params)
+ax2.set(ylabel = 'Confidence Improvement (CI)', xlabel='Attacker Prior Knowledge')
+ax2.grid(axis='y')
+ax2.set(xticklabels=["No Rows","Half of Rows","All Rows But One"])
+#ax2.legend(title='Strength of Anonymity',loc='lower left',ncol=3)
+ax2.legend(title='Strength of Anonymity',loc='lower left', bbox_to_anchor=(0,0), ncol=3)
+for shape in shapes:
+    plt.gca().add_patch(shape)
+plt.savefig('lr-ran-plot-trusted',bbox_inches='tight')
+
+
+df1 = dfAggNone.query('t_atkr == "trusted" and t_aids == 200 and t_sym == 8 and t_freq == 0.5')
+plt.figure(figsize=(6, 3))
+ax1 = sns.lineplot(x='t_alen',y='s_ci_av',data=df1,hue='a_lab')
+rp = tools.risk.riskPatches()
 params = {
     'numBoxes':20,
     'fromLeft':0,
     'toLeft':0,
     'fromBottom':0.45,
     'toBottom':0.7,
-    'right':0.7,
-    'top':1.1,
+    'right':250,
+    'top':1.0,
     'alpha':0.03,
     #'alpha':0.5,
 }
-rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
-plt.xlabel('Claim Rate (CR)',fontsize=12)
-plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-plt.xlim(0,0.7)
-#ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.5), ncol=2)
-plt.grid()
+ax1.set(ylabel = 'Confidence Improvement (CI)', xlabel='Length of Random Value')
+ax1.legend(title='Strength of Anonymity',loc='lower left', bbox_to_anchor=(0.4,0), ncol=3)
+ax1.grid(axis='y')
 for shape in shapes:
     plt.gca().add_patch(shape)
-plt.savefig('lr-agg-plot-no-avg.png',bbox_inches='tight')
-
-
-
-dfAgg1 = dfAggNone.query('a_lab in ["P","XP","XXP"]')
-dfAgg1 = dfAgg1.rename(columns={'a_lab':'Setting'})
-plt.figure(figsize=(6, 3))
-ax1 = sns.scatterplot(data=dfAgg1, x="s_cr_av", y="s_ci_av",hue='Setting')
-params = {
-    'numBoxes':20,
-    'fromLeft':0.18,
-    'toLeft':0.18,
-    'fromBottom':0.45,
-    'toBottom':0.7,
-    'right':0.51,
-    'top':1.1,
-    'alpha':0.03,
-    #'alpha':0.5,
-}
-rp = tools.risk.riskPatches()
-shapes = rp.getShapes(params)
-plt.ylim(0,1)
-plt.xlim(0.18,0.51)
-plt.xlabel('Claim Rate (CR)',fontsize=12)
-plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-plt.grid()
-for shape in shapes:
-    plt.gca().add_patch(shape)
-plt.savefig('lr-agg-plot.png',bbox_inches='tight')
-
-
-
-
-
-dfTemp = dfAgg.query('a_lab in ["P","XP","XXP"]')
-dfTemp = dfTemp.query("a_pri != 'all'")
-dfTemp = dfTemp.rename(columns={'a_lab':'Setting','a_pri':'Prior Knowledge'})
-plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=dfTemp, x="s_cr_av", y="s_ci_av",hue='Prior Knowledge',style='Setting')
-params = {
-    'numBoxes':20,
-    'fromLeft':0.15,
-    'toLeft':0.15,
-    'fromBottom':0.45,
-    'toBottom':0.7,
-    'right':0.65,
-    'top':1.1,
-    'alpha':0.03,
-    #'alpha':0.5,
-}
-rp = tools.risk.riskPatches()
-shapes = rp.getShapes(params)
-plt.ylim(0,1)
-plt.xlim(0.15,0.65)
-plt.xlabel('Claim Rate (CR)',fontsize=12)
-plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.5), ncol=2)
-plt.grid()
-for shape in shapes:
-    plt.gca().add_patch(shape)
-plt.savefig('lr-agg-plot-all-pri.png',bbox_inches='tight')
+plt.savefig('lr-ran-plot-aid-len-trusted',bbox_inches='tight')

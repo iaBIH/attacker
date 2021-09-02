@@ -8,13 +8,19 @@ pp = pprint.PrettyPrinter(indent=4)
 class resultGatherer:
     '''
     '''
-    def __init__(self):
+    def __init__(self,attackType='aggregate'):
         # These dicts show how the parameter names in the results files are mapped to the
         # column names in the notebook. (This is done simply to have more compact column
         # names in the notebook)
+        self.attackType=attackType
         self.tableParams = {
             'tabType': 't_tab',
             'numValsPerColumn': 't_shape',
+            'numSymbols': 't_sym',
+            'numAIDs': 't_aids',
+            'aidLen': 't_alen',
+            'valueFreqs': 't_freq',
+            'attackerType': 't_atkr',
         }
         self.anonymizerParams = {
             'gap': 'a_gap',
@@ -47,16 +53,22 @@ class resultGatherer:
             'solveStatus': 's_sol',
             'claimRate': 's_cr',
             'confidenceImprovement': 's_ci',
+            'confidence': 's_c',
             # These are out of date or should otherwise be ignored
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
         }
-        self.pCols = ['a_lab','a_low','a_gap','a_sds','a_sd','a_pri',
-                      't_shape','t_tab','v_lcf','v_nse']
+        if self.attackType == 'aggregate':
+            self.pCols = ['a_lab','a_low','a_gap','a_sds','a_sd','a_pri',
+                          't_shape','t_tab','v_lcf','v_nse']
+        else:
+            self.pCols = ['a_lab','a_low','a_gap','a_sds','a_sd','a_pri',
+                          't_sym','t_aids','t_alen','t_freq','t_atkr','v_lcf','v_nse']
     
     def makeColumns(self,result):
         columns = ['seed']
-        columns.append('t_aids')
+        if self.attackType == 'aggregate':
+            columns.append('t_aids')
         for k,v in result['solution'].items():
             if self.solutionParams[k] == 'ignore':
                 continue
@@ -90,8 +102,10 @@ class resultGatherer:
 
     def loadRow(self,data,columns,result,path,doprint):
         data['seed'].append(result['params']['seed'])
-        data['t_aids'].append(result['params']['numAids'])
-        numAppend = 2
+        numAppend = 1
+        if self.attackType == 'aggregate':
+            data['t_aids'].append(result['params']['numAids'])
+            numAppend += 1
         numAppend += self.loadRowWork(data,result['solution'],self.solutionParams,columns)
         numAppend += self.loadRowWork(data,result['params']['anonymizerParams'],self.anonymizerParams,columns)
         numAppend += self.loadRowWork(data,result['params']['solveParams'],self.solveParams,columns)

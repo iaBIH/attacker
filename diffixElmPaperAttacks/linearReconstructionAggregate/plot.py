@@ -123,8 +123,8 @@ plt.figure(figsize=(6, 3))
 ax = sns.scatterplot(data=dfTemp, x="s_cr_av", y="s_ci_av",hue='Prior Knowledge',style='Setting')
 params = {
     'numBoxes':20,
-    'fromLeft':0.15,
-    'toLeft':0.15,
+    'fromLeft':0.05,
+    'toLeft':0.05,
     'fromBottom':0.45,
     'toBottom':0.7,
     'right':1.0,
@@ -134,7 +134,8 @@ params = {
 }
 rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
-plt.ylim(0,1)
+plt.ylim(-0.05,1)
+plt.xlim(0.1,0.75)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
 plt.grid()

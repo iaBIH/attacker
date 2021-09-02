@@ -65,12 +65,13 @@ def doAttack(params):
     solveParams['elasticLcf'] = elastic[0]
     solveParams['elasticNoise'] = elastic[1]
 
-    numSDsList = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0]
+    checkSDsList = [1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0]
+    trySDsList = [3.0, 4.0, 5.0, 7.0, 10.0]
     # First we need to decide if we need to run the attack
     for seedNum in range(numSeeds):
         seed = f"{seedNum:03d}"
         skip = False
-        for numSDs in numSDsList:
+        for numSDs in checkSDsList:
             # numSds is the number of noise standard deviations within which the
             # solution is constrained. Smaller number means more accurate solution,
             # but greater chance of not finding a solution. So we start with more
@@ -90,8 +91,10 @@ def doAttack(params):
 
         # Ok, we need to solve it
         solved = False
-        for numSDs in numSDsList:
+        for numSDs in trySDsList:
             solveParams['numSDs'] = numSDs
+            pp.pprint(tableParams)
+            pp.pprint(anonymizerParams)
             lra = lrAttack.lrAttack(seed, anonymizerParams, tableParams, solveParams, force=True)
             if params['passType'] == 'solve':
                 lg.info(f"    Running attack {lra.fileName}")
@@ -102,7 +105,7 @@ def doAttack(params):
                 solveStatus = lra.solve(prob)
                 lg.info(f"    Solve Status: {solveStatus}")
                 if solveStatus == 'Optimal':
-                    lra.solutionToTable(prob)
+                    lra.solutionToTable()
                     lra.measureMatch(force=False)
                     lra.saveResults()
                     solved = True
@@ -115,48 +118,112 @@ def attackIterator():
         one or more parameter values are set for each parameter. All combinations of
         all parameters for each group are run.
     '''
-    # This group tests base set, without large networks
+    # For testing one experiment
+    prod = []
+    numAIDs = [10]
+    prod.append(numAIDs)
+    numSymbols = [8]
+    prod.append(numSymbols)
+    aidLen = [120]
+    prod.append(aidLen)
+    valueFreqs = [0.5]
+    prod.append(valueFreqs)
+    attackerType = ['untrusted']
+    prod.append(attackerType)
+    anonLabels = ['None']
+    prod.append(anonLabels)
+    elastic = [[1.0,1.0]]
+    prod.append(elastic)
+    priorSeeds = [['none',1]]
+    #priorSeeds = [['half',1]]
+    prod.append(priorSeeds)
+    for things in itertools.product(*prod):
+        yield things
+
+    # This group tests no anonymization
     prod = []
     numAIDs = [50]
     prod.append(numAIDs)
     numSymbols = [2]
     prod.append(numSymbols)
-    aidLen = [20]
+    aidLen = [120]
     prod.append(aidLen)
     valueFreqs = [0.5]
     prod.append(valueFreqs)
     attackerType = ['trusted']
     prod.append(attackerType)
-    anonLabels = ['XP']
+    anonLabels = ['None']
     prod.append(anonLabels)
     elastic = [[1.0,1.0]]
     prod.append(elastic)
-    priorSeeds = [['none',1]]
+    priorSeeds = [['none',10]]
     prod.append(priorSeeds)
     for things in itertools.product(*prod):
         yield things
-    return
 
-    # This group tests base set, without large networks
-    prod = []
-    numAIDs = [10,50,100]
-    prod.append(numAIDs)
-    numSymbols = [2,8,32]
-    prod.append(numSymbols)
-    aidLen = [120]
-    prod.append(aidLen)
-    valueFreqs = [0.1,0.5]
-    prod.append(valueFreqs)
-    attackerType = ['trusted','untrusted']
-    prod.append(attackerType)
-    anonLabels = ['None','P','XP','XXP']
-    prod.append(anonLabels)
-    elastic = [[1.0,1.0]]
-    prod.append(elastic)
-    priorSeeds = [['half',30],['none',30],['all-but-one',50],['all',2]]
-    prod.append(priorSeeds)
-    for things in itertools.product(*prod):
-        yield things
+    for numSeeds in [10]:
+        # This is basic set
+        prod = []
+        numAIDs = [10,50,100]
+        prod.append(numAIDs)
+        numSymbols = [2,8,32]
+        prod.append(numSymbols)
+        aidLen = [120]
+        prod.append(aidLen)
+        valueFreqs = [0.1,0.5]
+        prod.append(valueFreqs)
+        attackerType = ['trusted','untrusted']
+        prod.append(attackerType)
+        anonLabels = ['P','XP','XXP']
+        prod.append(anonLabels)
+        elastic = [[1.0,1.0]]
+        prod.append(elastic)
+        priorSeeds = [['half',numSeeds],['none',numSeeds],['all-but-one',numSeeds*2],['all',2]]
+        prod.append(priorSeeds)
+        for things in itertools.product(*prod):
+            yield things
+
+        # This looks at some additional numbers of AIDs
+        prod = []
+        numAIDs = [200,400,800]
+        prod.append(numAIDs)
+        numSymbols = [2,8,32]
+        prod.append(numSymbols)
+        aidLen = [120]
+        prod.append(aidLen)
+        valueFreqs = [0.1,0.5]
+        prod.append(valueFreqs)
+        attackerType = ['trusted','untrusted']
+        prod.append(attackerType)
+        anonLabels = ['P','XP','XXP']
+        prod.append(anonLabels)
+        elastic = [[1.0,1.0]]
+        prod.append(elastic)
+        priorSeeds = [['none',numSeeds]]
+        prod.append(priorSeeds)
+        for things in itertools.product(*prod):
+            yield things
+
+        # This looks at different AID lengths for trusted
+        prod = []
+        numAIDs = [200]
+        prod.append(numAIDs)
+        numSymbols = [8]
+        prod.append(numSymbols)
+        aidLen = [15,30,60,120,240]
+        prod.append(aidLen)
+        valueFreqs = [0.5]
+        prod.append(valueFreqs)
+        attackerType = ['trusted']
+        prod.append(attackerType)
+        anonLabels = ['P','XP','XXP']
+        prod.append(anonLabels)
+        elastic = [[1.0,1.0]]
+        prod.append(elastic)
+        priorSeeds = [['none',numSeeds]]
+        prod.append(priorSeeds)
+        for things in itertools.product(*prod):
+            yield things
 
 # This is used to force experimental measurement based on the reconstructed table. It is
 # used when we want to add a new measure, but don't need to rerun the solutions
