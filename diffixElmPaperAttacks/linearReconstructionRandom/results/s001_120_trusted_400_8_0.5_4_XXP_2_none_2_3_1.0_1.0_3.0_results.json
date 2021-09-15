@@ -36,7 +36,7 @@
         "claimRate": 1.0,
         "confidence": 0.7286432160804021,
         "confidenceImprovement": 0.4572864321608041,
-        "elapsedTime": 1.19,
+        "elapsedTime": 1.02,
         "explain": [
             "numChoices: Total number of variables for the solver",
             "numConstraints: Total number of constraints for the solver",

@@ -33,10 +33,10 @@
         "valueFreqs": 0.5
     },
     "solution": {
-        "claimRate": 0,
-        "confidence": 0,
-        "confidenceImprovement": 0,
-        "elapsedTime": 0.29,
+        "claimRate": 1.0,
+        "confidence": 0.0,
+        "confidenceImprovement": -1.0,
+        "elapsedTime": 0.27,
         "explain": [
             "numChoices: Total number of variables for the solver",
             "numConstraints: Total number of constraints for the solver",

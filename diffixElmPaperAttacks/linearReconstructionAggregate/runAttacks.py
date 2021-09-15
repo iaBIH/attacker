@@ -119,7 +119,7 @@ def attackIterator():
     prod.append(anonLabels)
     elastic = [[1.0,1.0]]
     prod.append(elastic)
-    priorSeeds = [['half',1]]
+    priorSeeds = [['all-but-one',1]]
     prod.append(priorSeeds)
     for things in itertools.product(*prod):
         yield things

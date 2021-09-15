@@ -45,7 +45,7 @@
             "claimRate: GDA Score, percent individuals for which claim is made"
         ],
         "numChoices": 200,
-        "numConstraints": 4407,
+        "numConstraints": 4403,
         "solveStatus": "Optimal"
     }
 }

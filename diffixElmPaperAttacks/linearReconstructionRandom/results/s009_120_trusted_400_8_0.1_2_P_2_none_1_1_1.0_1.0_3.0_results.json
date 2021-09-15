@@ -34,9 +34,9 @@
     },
     "solution": {
         "claimRate": 1.0,
-        "confidence": 0.9024390243902439,
-        "confidenceImprovement": 0.8915989159891601,
-        "elapsedTime": 0.97,
+        "confidence": 0.95,
+        "confidenceImprovement": 0.9444444444444444,
+        "elapsedTime": 1.66,
         "explain": [
             "numChoices: Total number of variables for the solver",
             "numConstraints: Total number of constraints for the solver",

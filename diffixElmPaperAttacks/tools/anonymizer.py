@@ -221,6 +221,10 @@ class anonymizer:
 
     def measureGdaScore(self,dfOrig,dfRecon,aidsKnown,statGuess=None):
         dfOrigNew, dfReconNew = self.cleanOutKnown(dfOrig,dfRecon,aidsKnown)
+        # At this point, dfOrig is the original data, dfRecon is the reconstructed data.
+        # dfOrigNew is the original data minus the known AIDs
+        # dfReconNew is the reconstructed data minus the known AIDs (which are always
+        # present in the reconstructed data because we told that to the solver)
         incomingStatGuess = statGuess
         score = tools.score.score(statGuess=incomingStatGuess)
         cols = dfOrigNew.columns.tolist()
@@ -228,26 +232,62 @@ class anonymizer:
         sAggr = dfRecon.groupby(cols).size()
         # sAggrNew represents unknown individuals. sAggr includes both known
         # and unknown
-        for (vals,cnt) in sAggrNew.iteritems():
-            if self.attackType == 'random' and vals[1] == 1:
-                # We only want to measure '0' values (the less frequent)
-                continue
-            #print(f"---------------------- {vals},{cnt} --------------------------")
-            if cnt == 1:
-                # We get here if this set of vals is unique among the unknown entries.
-                # We can make a singling out claim on this individual if the values
-                # don't also match anything among the known individuals...
-                match = False
-                for (vals1,cnt1) in sAggr.iteritems():
-                    #print("------")
-                    #print(vals1)
-                    #print(vals)
-                    if vals1 == vals and cnt1 > 1:
-                        #print(f"    match on {vals1} == {vals}!!!")
-                        match = True
-                if not match:
-                    # We get here if the set of vals doesn't match any known sets
+        oldWay = False
+        if oldWay:
+            for (vals,cnt) in sAggrNew.iteritems():
+                if self.attackType == 'random' and vals[1] == 1:
+                    # We only want to measure '0' values (the less frequent)
+                    continue
+                #print(f"---------------------- {vals},{cnt} --------------------------")
+                if cnt == 1:
+                    # We get here if this set of vals is unique among the unknown entries.
+                    # We can make a singling out claim on this individual if the values
+                    # don't also match anything among the known individuals...
+                    match = False
+                    for (vals1,cnt1) in sAggr.iteritems():
+                        #print("------")
+                        #print(vals1)
+                        #print(vals)
+                        if vals1 == vals and cnt1 > 1:
+                            #print(f"    match on {vals1} == {vals}!!!")
+                            match = True
+                    if not match:
+                        # We get here if the set of vals doesn't match any known sets
+                        trueCount,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
+                        if incomingStatGuess:
+                            statGuessToUse = incomingStatGuess
+                        else:
+                            statGuessToUse = statGuess
+                        makesClaim = True  # We are making a claim
+                        claimHas = True    # We are claiming that victim has attributes
+                        if trueCount == 1:
+                            claimCorrect = True
+                        else:
+                            claimCorrect = False
+                        score.attempt(makesClaim,claimHas,claimCorrect,statGuess=statGuessToUse)
+                else:
                     trueCount,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
+                    makesClaim = False
+                    claimHas = None      # don't care
+                    claimCorrect = None     # don't care
+                    statGuess = None
+                    for _ in range(cnt):
+                        score.attempt(makesClaim,claimHas,claimCorrect,statGuess)
+        else:
+            for (vals,cnt) in sAggrNew.iteritems():
+                if self.attackType == 'random' and vals[1] == 1:
+                    # We only want to measure '0' values (the less frequent)
+                    continue
+                #print(f"---------------------- {vals},{cnt} --------------------------")
+                if cnt == 1:
+                    # We only care if the individual is unique among unknown individuals.
+                    # Even if the individual has a match among the known individuals, we
+                    # still regard it as singling out because it is singled out among
+                    # the unknown.
+                    # We want to compute statGuess from among all data, but compute
+                    # trueCount only among the unknown original individuals
+                    _,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
+                    trueCount,_,_ = self.getTrueCountStatGuess(cols,vals,dfOrigNew)
                     if incomingStatGuess:
                         statGuessToUse = incomingStatGuess
                     else:
@@ -259,14 +299,14 @@ class anonymizer:
                     else:
                         claimCorrect = False
                     score.attempt(makesClaim,claimHas,claimCorrect,statGuess=statGuessToUse)
-            else:
-                trueCount,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
-                makesClaim = False
-                claimHas = None      # don't care
-                claimCorrect = None     # don't care
-                statGuess = None
-                for _ in range(cnt):
-                    score.attempt(makesClaim,claimHas,claimCorrect,statGuess)
+                else:
+                    _,statGuess,_ = self.getTrueCountStatGuess(cols,vals,dfOrig)
+                    makesClaim = False
+                    claimHas = None      # don't care
+                    claimCorrect = None     # don't care
+                    statGuess = None
+                    for _ in range(cnt):
+                        score.attempt(makesClaim,claimHas,claimCorrect,statGuess)
         cr,ci,c = score.computeScore()
         return cr,ci,c
 

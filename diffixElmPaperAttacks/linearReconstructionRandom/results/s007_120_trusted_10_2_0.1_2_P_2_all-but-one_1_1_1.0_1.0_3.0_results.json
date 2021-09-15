@@ -36,7 +36,7 @@
         "claimRate": 0,
         "confidence": 0,
         "confidenceImprovement": 0,
-        "elapsedTime": 0.05,
+        "elapsedTime": 0.07,
         "explain": [
             "numChoices: Total number of variables for the solver",
             "numConstraints: Total number of constraints for the solver",
@@ -45,7 +45,7 @@
             "claimRate: GDA Score, percent individuals for which claim is made"
         ],
         "numChoices": 20,
-        "numConstraints": 605,
+        "numConstraints": 593,
         "solveStatus": "Optimal"
     }
 }

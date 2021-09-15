@@ -34,9 +34,9 @@
     },
     "solution": {
         "claimRate": 1.0,
-        "confidence": 0.7,
-        "confidenceImprovement": 0.3999999999999999,
-        "elapsedTime": 0.55,
+        "confidence": 0.6597938144329897,
+        "confidenceImprovement": 0.31958762886597936,
+        "elapsedTime": 0.68,
         "explain": [
             "numChoices: Total number of variables for the solver",
             "numConstraints: Total number of constraints for the solver",
@@ -45,7 +45,7 @@
             "claimRate: GDA Score, percent individuals for which claim is made"
         ],
         "numChoices": 400,
-        "numConstraints": 3755,
+        "numConstraints": 3767,
         "solveStatus": "Optimal"
     }
 }

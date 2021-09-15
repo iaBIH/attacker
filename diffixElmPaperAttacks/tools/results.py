@@ -54,6 +54,9 @@ class resultGatherer:
             'claimRate': 's_cr',
             'confidenceImprovement': 's_ci',
             'confidence': 's_c',
+            'claimRateRandom': 's_cr_r',
+            'confidenceImprovementRandom': 's_ci_r',
+            'confidenceRandom': 's_c_r',
             # These are out of date or should otherwise be ignored
             'susceptibleFraction': 'ignore',
             'explain': 'ignore',
