@@ -84,6 +84,8 @@ shapes = rp.getShapes(params)
 ax1.set(ylabel = 'Confidence Improvement (CI)', xlabel='Length of Random Value')
 ax1.legend(title='Strength of Anonymity',loc='lower left', bbox_to_anchor=(0.4,0), ncol=3)
 ax1.grid(axis='y')
+plt.xlim(0,250)
+plt.ylim(0,1)
 for shape in shapes:
     plt.gca().add_patch(shape)
 plt.savefig('lr-ran-plot-aid-len-trusted',bbox_inches='tight')

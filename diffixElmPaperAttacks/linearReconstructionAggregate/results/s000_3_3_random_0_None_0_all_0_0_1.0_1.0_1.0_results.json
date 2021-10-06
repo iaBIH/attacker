@@ -1,173 +1,4 @@
 {
-    "buckets": {
-        "Ci0V0": {
-            "bkt": "Ci0V0",
-            "cmax": 4.0,
-            "cmin": 4.0,
-            "dim": 1,
-            "emax": 4.0,
-            "emin": 4.0,
-            "minPossible": 0,
-            "noisyCountMean": 4,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 4
-        },
-        "Ci0V0.Ci1V10": {
-            "bkt": "Ci0V0.Ci1V10",
-            "cmax": 2.0,
-            "cmin": 2.0,
-            "dim": 2,
-            "emax": 2.0,
-            "emin": 2.0,
-            "minPossible": 0,
-            "noisyCountMean": 2,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 2
-        },
-        "Ci0V0.Ci1V12": {
-            "bkt": "Ci0V0.Ci1V12",
-            "cmax": 2.0,
-            "cmin": 2.0,
-            "dim": 2,
-            "emax": 2.0,
-            "emin": 2.0,
-            "minPossible": 0,
-            "noisyCountMean": 2,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 2
-        },
-        "Ci0V1": {
-            "bkt": "Ci0V1",
-            "cmax": 4.0,
-            "cmin": 4.0,
-            "dim": 1,
-            "emax": 4.0,
-            "emin": 4.0,
-            "minPossible": 0,
-            "noisyCountMean": 4,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 4
-        },
-        "Ci0V1.Ci1V10": {
-            "bkt": "Ci0V1.Ci1V10",
-            "cmax": 2.0,
-            "cmin": 2.0,
-            "dim": 2,
-            "emax": 2.0,
-            "emin": 2.0,
-            "minPossible": 0,
-            "noisyCountMean": 2,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 2
-        },
-        "Ci0V1.Ci1V12": {
-            "bkt": "Ci0V1.Ci1V12",
-            "cmax": 2.0,
-            "cmin": 2.0,
-            "dim": 2,
-            "emax": 2.0,
-            "emin": 2.0,
-            "minPossible": 0,
-            "noisyCountMean": 2,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 2
-        },
-        "Ci0V2": {
-            "bkt": "Ci0V2",
-            "cmax": 1.0,
-            "cmin": 1.0,
-            "dim": 1,
-            "emax": 1.0,
-            "emin": 1.0,
-            "minPossible": 0,
-            "noisyCountMean": 1,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 1
-        },
-        "Ci0V2.Ci1V10": {
-            "bkt": "Ci0V2.Ci1V10",
-            "cmax": 0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 0,
-            "emin": 0,
-            "minPossible": 0,
-            "noisyCountMean": 0,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 0
-        },
-        "Ci0V2.Ci1V12": {
-            "bkt": "Ci0V2.Ci1V12",
-            "cmax": 1.0,
-            "cmin": 1.0,
-            "dim": 2,
-            "emax": 1.0,
-            "emin": 1.0,
-            "minPossible": 0,
-            "noisyCountMean": 1,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 1
-        },
-        "Ci1V10": {
-            "bkt": "Ci1V10",
-            "cmax": 4.0,
-            "cmin": 4.0,
-            "dim": 1,
-            "emax": 4.0,
-            "emin": 4.0,
-            "minPossible": 0,
-            "noisyCountMean": 4,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 4
-        },
-        "Ci1V12": {
-            "bkt": "Ci1V12",
-            "cmax": 5.0,
-            "cmin": 5.0,
-            "dim": 1,
-            "emax": 5.0,
-            "emin": 5.0,
-            "minPossible": 0,
-            "noisyCountMean": 5,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 5
-        }
-    },
-    "originalTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 2
-        },
-        "i1": {
-            "0": 10,
-            "1": 10,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 10,
-            "6": 12,
-            "7": 12,
-            "8": 12
-        }
-    },
     "params": {
         "anonymizerParams": {
             "gap": 0,
@@ -208,42 +39,18 @@
             "tabType": "random"
         }
     },
-    "reconstructedTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 2
-        },
-        "i1": {
-            "0": 10,
-            "1": 10,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 10,
-            "6": 12,
-            "7": 12,
-            "8": 12
-        }
-    },
     "solution": {
         "aggregateErrorAvg": 0,
         "aggregateErrorTargetAvg": 0.0,
         "attackableAndRightFrac": 0.111,
         "attackableButWrongFrac": 0.889,
         "claimRate": 0,
-        "claimRateRandom": 0.5555555555555556,
+        "claimRateRandom": 0.2222222222222222,
         "confidence": 0,
         "confidenceImprovement": 0,
-        "confidenceImprovementRandom": 0.1,
-        "confidenceRandom": 0.2,
-        "elapsedTime": 0.06,
+        "confidenceImprovementRandom": -0.125,
+        "confidenceRandom": 0.0,
+        "elapsedTime": 0.04,
         "explain": [
             "numBuckets: Total number of buckets, all dimensions",
             "numSuppressedBuckets: Buckets suppressed by anonymizer",

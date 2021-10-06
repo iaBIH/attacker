@@ -41,7 +41,7 @@ class anonymizer:
         self.tp = tableParams
         self.ap = anonymizerParams
         self.anon = anonymize.anonAlgs.anon(self.ap['lowThresh'],self.ap['gap'],
-                                            self.ap['sdSupp'],self.ap['standardDeviation'],
+                                            self.ap['sdSupp'],[self.ap['standardDeviation']],
                                             self.loc_random)
         if 'numValsPerColumn' in self.tp:
             self.attackType = 'aggregate'
@@ -386,3 +386,36 @@ class anonymizer:
         attackableAndRightFrac = round((attackableAndRight/totalRows),3)
         attackableButWrongFrac = round((attackableButWrong/totalRows),3)
         return matchFrac, nonAttackableFrac, attackableAndRightFrac, attackableButWrongFrac
+
+def getAnonParamsFromLabel(label):
+    # These are the preset anonymization parameters for Elm
+    if label == 'None':
+        # No anonymization of any kind (used to validate models)
+        return {'label':'None','lowThresh':0, 'gap':0, 'sdSupp':0, 'standardDeviation':0}
+    elif label == 'SP':
+        # Suppression only, private (used to test case where noise has been eliminated)
+        return {'label':'SP','lowThresh':2, 'gap':2, 'sdSupp':1, 'standardDeviation':0}
+    elif label == 'SXP':
+        # Suppression only, extra private (used to test case where noise has been eliminated)
+        return {'label':'SXP','lowThresh':2, 'gap':3, 'sdSupp':1.5, 'standardDeviation':0}
+    elif label == 'SXXP':
+        # Suppression only, extra extra private (used to test case where noise has been eliminated)
+        return {'label':'SXXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':0}
+    elif label == 'P':
+        # Suppression and noise, private
+        return {'label':'P','lowThresh':2, 'gap':2, 'sdSupp':1, 'standardDeviation':1.5}
+    elif label == 'XP':
+        # Suppression and noise, extra private
+        return {'label':'XP','lowThresh':2, 'gap':3, 'sdSupp':1.5, 'standardDeviation':2.25}
+    elif label == 'XXP':
+        # Suppression and noise, extra extra private
+        return {'label':'XXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':3.0}
+    return None
+
+'''
+sdSum = sqrt(sd^2 + sd^2)
+sdSum^2 = sd^2 + sd^2
+sdSum^2 = 2 * sd^2
+sdSum^2 / 2 = sd^2
+sqrt(sdSum^2 / 2) = sd
+'''

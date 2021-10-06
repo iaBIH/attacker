@@ -1,17 +1,17 @@
 import random
-import math
 import pprint
-from tabulate import tabulate
+import json
+import statistics
 
 pp = pprint.PrettyPrinter(indent=4)
 
 '''
 Here we are interested in how many queries it takes to average out the
-noise with high confidence (>95% and >99.5%). We look at different amounts
-of per-layer noise (SD=0.5 and SD=1.0), and different number of layers
-(1, 2, and 3). We ignore the existance of the bkt-dynamic noise layer,
-because we just want to see what it takes to get rid of the other noise
-layers.
+noise with high confidence (>95% and >99.5%). We look at both naive
+averaging (i.e. because the same table was released with minor increments),
+and same-semantics averaging. In the former case, we use different amounts
+of total noise (SD=1.5, 2.25, and 3.0), and in the latter we are only
+trying to eliminate one layer, so we use SD=1.06, 1.59, and 2.12.
 '''
 
 def attackFailed(numSamples,layers,sd):
@@ -33,63 +33,48 @@ def attackFailed(numSamples,layers,sd):
         return True
     return False
 
-cnf = [[2,0.975],[3,0.9985]]
-lyr = [1,2,3]
-nse = [0.5,1.0]
+def dataInit():
+    return {'Accuracy':[],'SD':[],'Samples':[]}
 
-# Ok, first let's do this according to the math
-''' The total sd `sdSum` is
-        sdSum = sdLayer * sqrt(layers * numSamples)
-    The threshold we need to be within is:
-        thresh = numSamples / 2
-    To get 97.5% accuracy, we need (two standard deviations):
-        thresh > sdSum * 2
-        sdSum < thresh / 2
-    And for 99.85% accuracy, we need (three standard deviations):
-        sdSum < thresh / 3
-
-    Which means that we are looking for the smallest numSamples
-    that satisfy the following inequality:
-        sdLayer * sqrt(layers * numSamples) > (numSamples/2)/conf
-'''
-headers = ['Acc','SD','GBs','Samples']
-results = []
-res = {}
-for thing,layers,sdLayer in [(x,y,z) for x in cnf for y in lyr for z in nse]:
+def dataUpdate(data,vals):
+    data['Accuracy'].append(vals[0])
+    data['SD'].append(vals[1])
+    data['Samples'].append(vals[2])
+        
+acc = [0.95,0.99,0.999]
+nse = [1.0,1.5,2.25,3.0]
+data = dataInit()
+neededSuccess = 5
+for acc,sdTotal in [(x,z) for x in acc for z in nse]:
     # We'll just grow numSamples until the inequality is true...
-    conf = thing[0]
-    acc = thing[1]
-    print(f"Try sd = {sdLayer}, num layers = {layers}, try for accuracy {acc} (conf {conf})")
+    print(f"Try sd = {sdTotal}, try for accuracy {acc}")
     numSamples = 1
+    samples = []
     while True:
-        sdEquiv = sdLayer * math.sqrt(layers * numSamples)
-        neededThresh = numSamples/2
-        if sdEquiv < neededThresh/conf:
-            break
-        numSamples += 1
-    print(f"We need {numSamples} samples")
-    results.append([acc,sdLayer,layers,numSamples])
-    if conf not in res:
-        res[conf] = {}
-    if layers not in res[conf]:
-        res[conf][layers] = {}
-    res[conf][layers][sdLayer] = numSamples
-pp.pprint(res)
-print(tabulate(results,headers,tablefmt='latex_booktabs'))
-print(tabulate(results,headers,tablefmt='github'))
+        numFail = 0
+        numPass = 0
+        while True:
+            if attackFailed(numSamples,1,sdTotal):
+                numFail += 1
+            else:
+                numPass += 1
+            if numFail > 100:
+                break
+        atkAcc = numPass / (numPass + numFail)
+        print(f"          {numSamples} samples, pass {numPass}, fail {numFail}")
+        if atkAcc > acc:
+            samples.append(numSamples)
+            if len(samples) >= neededSuccess:
+                break
+        if len(samples) > 0:
+            increment = round(numSamples * 0.01)
+        else:
+            increment = round(numSamples * 0.1)
+        increment = max(increment,1)
+        numSamples += increment
+    avgSamples = round(statistics.mean(samples))
+    dataUpdate(data,[acc,sdTotal,avgSamples])
+    print(f"Got accuracy {atkAcc} with {avgSamples} samples for noise {sdTotal}")
 
-# And now we'll validate the above with simulated attacks
-for thing,layers,sdLayer in [(x,y,z) for x in cnf for y in lyr for z in nse]:
-    # We'll just grow numSamples until the inequality is true...
-    conf = thing[0]
-    acc = thing[1]
-    numSamples = res[conf][layers][sdLayer]
-    print(f"Try sd = {sdLayer}, num layers = {layers}, try for accuracy {acc} (conf {conf})")
-    print(f"    We need {numSamples} samples")
-    numAttacks = 1000000
-    expectFail = round(((1-acc)/1) * numAttacks)
-    numFail = 0
-    for _ in range(numAttacks):
-        if attackFailed(numSamples,layers,sdLayer):
-            numFail += 1
-    print(f"    Got {numFail} failures of expected {expectFail}")
+with open('data.json', 'w') as f:
+    json.dump(data, f, indent=4, sort_keys=True)

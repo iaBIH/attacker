@@ -1,173 +1,4 @@
 {
-    "buckets": {
-        "Ci0V0": {
-            "bkt": "Ci0V0",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 5
-        },
-        "Ci0V0.Ci1V10": {
-            "bkt": "Ci0V0.Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci0V0.Ci1V11": {
-            "bkt": "Ci0V0.Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci0V0.Ci1V12": {
-            "bkt": "Ci0V0.Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 5
-        },
-        "Ci0V1": {
-            "bkt": "Ci0V1",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 4
-        },
-        "Ci0V1.Ci1V10": {
-            "bkt": "Ci0V1.Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V1.Ci1V11": {
-            "bkt": "Ci0V1.Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V1.Ci1V12": {
-            "bkt": "Ci0V1.Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci1V10": {
-            "bkt": "Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci1V11": {
-            "bkt": "Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci1V12": {
-            "bkt": "Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 6
-        }
-    },
-    "originalTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 0,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 1
-        },
-        "i1": {
-            "0": 12,
-            "1": 12,
-            "2": 12,
-            "3": 12,
-            "4": 12,
-            "5": 10,
-            "6": 10,
-            "7": 11,
-            "8": 12
-        }
-    },
     "params": {
         "anonymizerParams": {
             "gap": 4,
@@ -208,42 +39,18 @@
             "tabType": "random"
         }
     },
-    "reconstructedTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 1
-        },
-        "i1": {
-            "0": 10,
-            "1": 11,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 11,
-            "6": 11,
-            "7": 12,
-            "8": 12
-        }
-    },
     "solution": {
-        "aggregateErrorAvg": 1.2727272727272727,
+        "aggregateErrorAvg": 1.6363636363636365,
         "aggregateErrorTargetAvg": 3.5454545454545454,
         "attackableAndRightFrac": 0.0,
-        "attackableButWrongFrac": 1.0,
+        "attackableButWrongFrac": 0.889,
         "claimRate": 1.0,
         "claimRateRandom": 0.3333333333333333,
         "confidence": 0.0,
-        "confidenceImprovement": -0.09756097560975609,
-        "confidenceImprovementRandom": -0.22727272727272732,
+        "confidenceImprovement": -0.2162162162162162,
+        "confidenceImprovementRandom": 0.0,
         "confidenceRandom": 0.0,
-        "elapsedTime": 0.06,
+        "elapsedTime": 0.04,
         "explain": [
             "numBuckets: Total number of buckets, all dimensions",
             "numSuppressedBuckets: Buckets suppressed by anonymizer",
@@ -266,8 +73,8 @@
             "aggregateErrorTargetAvg: Average of absolute errors in elastic target, original versus reconstructed"
         ],
         "matchFraction": 0.556,
-        "matchImprove": 0.4293059125964011,
-        "nonAttackableFrac": 0.0,
+        "matchImprove": 0.0,
+        "nonAttackableFrac": 0.111,
         "numBuckets": 11,
         "numChoices": 99,
         "numConstraints": 128,

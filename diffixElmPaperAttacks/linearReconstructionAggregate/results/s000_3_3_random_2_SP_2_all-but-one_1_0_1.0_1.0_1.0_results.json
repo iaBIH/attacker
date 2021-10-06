@@ -1,173 +1,4 @@
 {
-    "buckets": {
-        "Ci0V0": {
-            "bkt": "Ci0V0",
-            "cmax": 4.0,
-            "cmin": 4.0,
-            "dim": 1,
-            "emax": 4.0,
-            "emin": 4.0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 4
-        },
-        "Ci0V0.Ci1V10": {
-            "bkt": "Ci0V0.Ci1V10",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V0.Ci1V12": {
-            "bkt": "Ci0V0.Ci1V12",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V1": {
-            "bkt": "Ci0V1",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 4
-        },
-        "Ci0V1.Ci1V10": {
-            "bkt": "Ci0V1.Ci1V10",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V1.Ci1V12": {
-            "bkt": "Ci0V1.Ci1V12",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V2": {
-            "bkt": "Ci0V2",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V2.Ci1V10": {
-            "bkt": "Ci0V2.Ci1V10",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci0V2.Ci1V12": {
-            "bkt": "Ci0V2.Ci1V12",
-            "cmax": 5.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 5.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 1,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci1V10": {
-            "bkt": "Ci1V10",
-            "cmax": 4.0,
-            "cmin": 4.0,
-            "dim": 1,
-            "emax": 4.0,
-            "emin": 4.0,
-            "minPossible": 2,
-            "noisyCountMean": 4,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 4
-        },
-        "Ci1V12": {
-            "bkt": "Ci1V12",
-            "cmax": 5.0,
-            "cmin": 5.0,
-            "dim": 1,
-            "emax": 5.0,
-            "emin": 5.0,
-            "minPossible": 2,
-            "noisyCountMean": 5,
-            "sd": 0,
-            "suppress": false,
-            "trueCount": 5
-        }
-    },
-    "originalTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 2
-        },
-        "i1": {
-            "0": 10,
-            "1": 10,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 10,
-            "6": 12,
-            "7": 12,
-            "8": 12
-        }
-    },
     "params": {
         "anonymizerParams": {
             "gap": 2,
@@ -208,42 +39,18 @@
             "tabType": "random"
         }
     },
-    "reconstructedTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 2
-        },
-        "i1": {
-            "0": 10,
-            "1": 10,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 10,
-            "6": 12,
-            "7": 12,
-            "8": 12
-        }
-    },
     "solution": {
         "aggregateErrorAvg": 0,
-        "aggregateErrorTargetAvg": 0.8181818181818182,
+        "aggregateErrorTargetAvg": 0.6818181818181818,
         "attackableAndRightFrac": 0.111,
         "attackableButWrongFrac": 0.889,
         "claimRate": 1.0,
         "claimRateRandom": 0.2222222222222222,
         "confidence": 1.0,
         "confidenceImprovement": 1.0,
-        "confidenceImprovementRandom": 0.4,
-        "confidenceRandom": 0.5,
-        "elapsedTime": 0.06,
+        "confidenceImprovementRandom": -0.125,
+        "confidenceRandom": 0.0,
+        "elapsedTime": 0.04,
         "explain": [
             "numBuckets: Total number of buckets, all dimensions",
             "numSuppressedBuckets: Buckets suppressed by anonymizer",
@@ -270,10 +77,10 @@
         "nonAttackableFrac": 0.0,
         "numBuckets": 11,
         "numChoices": 99,
-        "numConstraints": 169,
+        "numConstraints": 168,
         "numIgnoredBuckets": 0,
         "numStripped": 0,
-        "numSuppressedBuckets": 8,
+        "numSuppressedBuckets": 7,
         "solveStatus": "Optimal"
     }
 }

@@ -257,10 +257,14 @@ class lrAttack:
         path = os.path.join('results',name)
         return path
 
-    def saveResults(self,results=None):
+    def saveResults(self,results=None,cleanOut=False):
         if not results:
             results = self.results
         path = self.getResultsPath()
+        if cleanOut:
+            del results['buckets']
+            del results['originalTable']
+            del results['reconstructedTable']
         with open(path, 'w') as f:
             json.dump(results, f, indent=4, sort_keys=True)
 

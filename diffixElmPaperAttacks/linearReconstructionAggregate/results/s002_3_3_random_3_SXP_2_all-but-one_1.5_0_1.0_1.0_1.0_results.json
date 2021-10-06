@@ -1,173 +1,4 @@
 {
-    "buckets": {
-        "Ci0V0": {
-            "bkt": "Ci0V0",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 5
-        },
-        "Ci0V0.Ci1V10": {
-            "bkt": "Ci0V0.Ci1V10",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V0.Ci1V11": {
-            "bkt": "Ci0V0.Ci1V11",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V0.Ci1V12": {
-            "bkt": "Ci0V0.Ci1V12",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci0V1": {
-            "bkt": "Ci0V1",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 4
-        },
-        "Ci0V1.Ci1V10": {
-            "bkt": "Ci0V1.Ci1V10",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V1.Ci1V11": {
-            "bkt": "Ci0V1.Ci1V11",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V1.Ci1V12": {
-            "bkt": "Ci0V1.Ci1V12",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci1V10": {
-            "bkt": "Ci1V10",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci1V11": {
-            "bkt": "Ci1V11",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci1V12": {
-            "bkt": "Ci1V12",
-            "cmax": 8.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 8.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 6.5,
-            "sd": 1.5,
-            "suppress": true,
-            "trueCount": 3
-        }
-    },
-    "originalTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 0,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 1
-        },
-        "i1": {
-            "0": 10,
-            "1": 11,
-            "2": 12,
-            "3": 12,
-            "4": 12,
-            "5": 10,
-            "6": 10,
-            "7": 11,
-            "8": 11
-        }
-    },
     "params": {
         "anonymizerParams": {
             "gap": 3,
@@ -208,42 +39,18 @@
             "tabType": "random"
         }
     },
-    "reconstructedTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 1,
-            "7": 1,
-            "8": 1
-        },
-        "i1": {
-            "0": 11,
-            "1": 12,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 10,
-            "6": 11,
-            "7": 11,
-            "8": 12
-        }
-    },
     "solution": {
-        "aggregateErrorAvg": 0.5454545454545454,
+        "aggregateErrorAvg": 0,
         "aggregateErrorTargetAvg": 1.7272727272727273,
-        "attackableAndRightFrac": 0.111,
-        "attackableButWrongFrac": 0.778,
+        "attackableAndRightFrac": 0.556,
+        "attackableButWrongFrac": 0.444,
         "claimRate": 1.0,
-        "claimRateRandom": 0.4444444444444444,
-        "confidence": 0.0,
-        "confidenceImprovement": 0.0,
-        "confidenceImprovementRandom": 0.1,
-        "confidenceRandom": 0.25,
-        "elapsedTime": 0.07,
+        "claimRateRandom": 0.2222222222222222,
+        "confidence": 1.0,
+        "confidenceImprovement": 1.0,
+        "confidenceImprovementRandom": -0.125,
+        "confidenceRandom": 0.0,
+        "elapsedTime": 0.04,
         "explain": [
             "numBuckets: Total number of buckets, all dimensions",
             "numSuppressedBuckets: Buckets suppressed by anonymizer",
@@ -265,9 +72,9 @@
             "aggregateErrorAvg: Average of absolute errors in bucket counts, original versus reconstructed",
             "aggregateErrorTargetAvg: Average of absolute errors in elastic target, original versus reconstructed"
         ],
-        "matchFraction": 0.889,
-        "matchImprove": 0.8003597122302157,
-        "nonAttackableFrac": 0.111,
+        "matchFraction": 1.0,
+        "matchImprove": 1.0,
+        "nonAttackableFrac": 0.0,
         "numBuckets": 11,
         "numChoices": 99,
         "numConstraints": 172,

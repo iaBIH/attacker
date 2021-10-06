@@ -2,32 +2,8 @@ import logging as lg
 import pprint
 import itertools
 import lrAttack
+import tools.anonymizer
 pp = pprint.PrettyPrinter(indent=4)
-
-def getAnonParamsFromLabel(label):
-    # These are the preset anonymization parameters
-    if label == 'None':
-        # No anonymization of any kind (used to validate models)
-        return {'label':'None','lowThresh':0, 'gap':0, 'sdSupp':0, 'standardDeviation':0}
-    elif label == 'SP':
-        # Suppression only, private (used to test case where noise has been eliminated)
-        return {'label':'SP','lowThresh':2, 'gap':2, 'sdSupp':1, 'standardDeviation':0}
-    elif label == 'SXP':
-        # Suppression only, extra private (used to test case where noise has been eliminated)
-        return {'label':'SXP','lowThresh':2, 'gap':3, 'sdSupp':1.5, 'standardDeviation':0}
-    elif label == 'SXXP':
-        # Suppression only, extra extra private (used to test case where noise has been eliminated)
-        return {'label':'SXXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':0}
-    elif label == 'P':
-        # Suppression and noise, private
-        return {'label':'P','lowThresh':2, 'gap':2, 'sdSupp':1, 'standardDeviation':1}
-    elif label == 'XP':
-        # Suppression and noise, extra private
-        return {'label':'XP','lowThresh':2, 'gap':3, 'sdSupp':1.5, 'standardDeviation':2}
-    elif label == 'XXP':
-        # Suppression and noise, extra extra private
-        return {'label':'XXP','lowThresh':2, 'gap':4, 'sdSupp':2, 'standardDeviation':3}
-    return None
 
 def doAttack(params):
     tableParams = {
@@ -60,7 +36,7 @@ def doAttack(params):
     tableParams['aidLen'] = aidLen
     tableParams['valueFreqs'] = valueFreqs
     tableParams['attackerType'] = attackerType
-    anonymizerParams = getAnonParamsFromLabel(anonLabel)
+    anonymizerParams = tools.anonymizer.getAnonParamsFromLabel(anonLabel)
     anonymizerParams['priorKnowledge'] = prior
     solveParams['elasticLcf'] = elastic[0]
     solveParams['elasticNoise'] = elastic[1]
@@ -220,7 +196,7 @@ def attackIterator():
         prod.append(anonLabels)
         elastic = [[1.0,1.0]]
         prod.append(elastic)
-        priorSeeds = [['none',numSeeds]]
+        priorSeeds = [['none',numSeeds*3]]
         prod.append(priorSeeds)
         for things in itertools.product(*prod):
             yield things

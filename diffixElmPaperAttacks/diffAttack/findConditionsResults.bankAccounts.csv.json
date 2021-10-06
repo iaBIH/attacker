@@ -1,0 +1,1121 @@
+[
+    {
+        "attackableIndividuals": {
+            "160": 1,
+            "389": 1,
+            "1247": 1,
+            "1420": 1,
+            "2390": 1,
+            "2392": 1,
+            "2393": 1,
+            "3026": 1,
+            "3991": 1,
+            "4450": 1,
+            "4570": 1,
+            "4877": 1,
+            "6001": 1,
+            "6342": 1
+        },
+        "distinctAttackableIndividuals": 14,
+        "distinctValsPerCol": {
+            "account_id": 4500,
+            "acct_date": 1535,
+            "acct_district_id": 77,
+            "birth_number": 5019,
+            "birthdate": 5003,
+            "cli_district_id": 77,
+            "disp_type": 2,
+            "email": 5367,
+            "firstname": 1147,
+            "frequency": 3,
+            "gender": 2,
+            "lastname": 3895,
+            "ssn": 5369,
+            "street": 5369,
+            "zip": 5278
+        },
+        "explain": [
+            "attackableIndividuals: the list of distinct attackable AIDVs",
+            "opportunities: the total number of subset column, isolating column value combinations",
+            "possibles: the total number opportunities that have one victim and at least 8 others",
+            "working: the total number unknownOpportunities that have working attacks",
+            "unknownOpportunities: the total number of possibilities checked against unknown columns",
+            "workingVictims: details of all working attacks",
+            "isolatingColumnProfile: number of distinct AIDVs for each isolating column that worked",
+            "distinctValsPerCol: number of distinct values per column",
+            "numIndividuals: total number of individuals (distinct AIDVs) in the table",
+            "workingByIsolatingCol: the number of working attacks per isolating column",
+            "workingByUnknownBuckets: the number of working attacks per number of unknown buckets",
+            "workingByDistinctSubset: the number of times each subset column was used in a working attack",
+            "workingByDistinctUnknown: the number of times each unknown column was used in a working attack"
+        ],
+        "isolatingColumnProfile": {
+            "disp_type": [
+                [
+                    "DISPONENT",
+                    869
+                ],
+                [
+                    "OWNER",
+                    4500
+                ]
+            ],
+            "frequency": [
+                [
+                    "POPLATEK MESICNE",
+                    4980
+                ],
+                [
+                    "POPLATEK PO OBRATU",
+                    107
+                ],
+                [
+                    "POPLATEK TYDNE",
+                    282
+                ]
+            ],
+            "gender": [
+                [
+                    "Female",
+                    2653
+                ],
+                [
+                    "Male",
+                    2716
+                ]
+            ]
+        },
+        "opportunities": 127922,
+        "possibles": 109,
+        "totalIndividuals": 5369,
+        "unknownOpportunities": 7683,
+        "working": 126,
+        "workingByDistinctSubset": {
+            "acct_date": 5,
+            "acct_district_id": 50,
+            "cli_district_id": 45,
+            "lastname": 26
+        },
+        "workingByDistinctUnknown": {
+            "disp_type": 45,
+            "gender": 81
+        },
+        "workingByIsolatingCol": {
+            "disp_type": 6,
+            "frequency": 120
+        },
+        "workingByUnknownBuckets": {
+            "2": 126
+        },
+        "workingVictims": [
+            {
+                "aid": 1420,
+                "isolateCol": "disp_type",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1420,
+                "isolateCol": "disp_type",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2390,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_date",
+                "subsetVal": "930208",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4450,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "67",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2393,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Anderson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 160,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1247,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Miller",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4570,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Thompson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1420,
+                "isolateCol": "disp_type",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2390,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_date",
+                "subsetVal": "930208",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4450,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "67",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2393,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Anderson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 160,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1247,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Miller",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4570,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Thompson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1420,
+                "isolateCol": "disp_type",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2390,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_date",
+                "subsetVal": "930208",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4450,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "67",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2393,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Anderson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 160,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1247,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Miller",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4570,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Thompson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1420,
+                "isolateCol": "disp_type",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2390,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_date",
+                "subsetVal": "930208",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4450,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "67",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2393,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Anderson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 160,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1247,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Miller",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4570,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Thompson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1420,
+                "isolateCol": "disp_type",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 389,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "47",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6001,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "60",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 6342,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_district_id",
+                "subsetVal": "8",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2390,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "acct_date",
+                "subsetVal": "930208",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3991,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "11",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 3026,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "22",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 2392,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "26",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "disp_type"
+            },
+            {
+                "aid": 4877,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "45",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4450,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "cli_district_id",
+                "subsetVal": "67",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 2393,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Anderson",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 160,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Jones",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 1247,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Miller",
+                "unknownCol": "gender"
+            },
+            {
+                "aid": 4570,
+                "isolateCol": "frequency",
+                "numUnknownVals": 2,
+                "subsetCol": "lastname",
+                "subsetVal": "Thompson",
+                "unknownCol": "gender"
+            }
+        ]
+    }
+]

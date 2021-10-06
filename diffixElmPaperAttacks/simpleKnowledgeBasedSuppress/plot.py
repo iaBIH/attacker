@@ -15,11 +15,12 @@ pp = pprint.PrettyPrinter(indent=4)
 with open('data.json', 'r') as f:
     data = json.load(f)
 dfInit = pd.DataFrame.from_dict(data)
-df = dfInit.query('`Stat Guess` < 0.9')
-df = df.rename(columns={'Stat Guess':'Value Freq.','SDsp':'Setting'})
-df['Setting'] = df['Setting'].replace([1.0,1.5,2.0],['P','XP','XXP'])
+#df = dfInit.query('`Stat Guess` < 0.9')
+df = dfInit.query('`Stat Guess` < 1.0')
+df = df.rename(columns={'Stat Guess':'Value Freq.','SDsp':'Mean Thresh.'})
+df['Mean Thresh.'] = df['Mean Thresh.'].replace([1.0,1.5,2.0],['2 (P)','6.5 (XP)','10 (XXP)'])
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",style='Value Freq.',hue='Setting',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",style='Value Freq.',hue='Mean Thresh.',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -36,7 +37,13 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.5), ncol=2)
+#ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.5), ncol=2)
+
+h,l = ax.get_legend_handles_labels()
+l1 = ax.legend(h[:int(len(h)/2)],l[:int(len(l)/2)], loc='lower left')
+l2 = ax.legend(h[int(len(h)/2):],l[int(len(l)/2):], loc='lower center')
+ax.add_artist(l1)
+
 plt.grid()
 for shape in shapes:
     plt.gca().add_patch(shape)

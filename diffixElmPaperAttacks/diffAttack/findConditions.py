@@ -7,13 +7,16 @@ import json
 pp = pprint.PrettyPrinter(indent=4)
 
 class findDiffConditions():
-    def __init__(self):
+    def __init__(self,aidCol):
         '''
             This code can be used to measures the number of individuals that
-            might be attackable using the GROUP BY difference attack. The
-            table being measured must have one row per individual.
+            might be attackable using the GROUP BY difference attack.
         '''
+        self.aidCol = aidCol
+        self.cex = f"DISTINCT {aidCol}"
         self.explain = []
+        self.attackable = {}
+        self.explain.append('attackableIndividuals: the list of distinct attackable AIDVs')
         self.explain.append('opportunities: the total number of subset column, isolating column value combinations')
         self.opportunities = 0
         self.explain.append('possibles: the total number opportunities that have one victim and at least 8 others')
@@ -25,11 +28,11 @@ class findDiffConditions():
         self.possibleVictims = []
         self.explain.append('workingVictims: details of all working attacks')
         self.workingVictims = []
-        self.explain.append('isolatingColumnProfile: number of rows for each isolating column that worked')
+        self.explain.append('isolatingColumnProfile: number of distinct AIDVs for each isolating column that worked')
         self.isolatingColumnProfile = {}
         self.explain.append('distinctValsPerCol: number of distinct values per column')
         self.distinctValsPerCol = {}
-        self.explain.append('numIndividuals: total number of individuals (rows) in the table')
+        self.explain.append('numIndividuals: total number of individuals (distinct AIDVs) in the table')
         self.numIndividuals = 0
         self.explain.append('workingByIsolatingCol: the number of working attacks per isolating column')
         self.workingByIsolatingCol = {}
@@ -44,7 +47,7 @@ class findDiffConditions():
         '''
             cur is a cursor to an sqlite3 table with name 'test'
         '''
-        sql = "SELECT count(*) FROM test"
+        sql = f"SELECT count({self.cex}) FROM test"
         cur.execute(sql)
         ans = cur.fetchall()
         self.numIndividuals = ans[0][0]
@@ -52,6 +55,8 @@ class findDiffConditions():
         cur.execute(sql)
         ans = cur.fetchall()
         cols = [x[1] for x in ans]
+        #The AID column, if one, is anyway not attackable, so we exclude it:
+        cols.remove(self.aidCol)
         for numDistinct in [2,3,4,5,6,7]:
             isolateCols = []
             print("Here are the number of distinct values per column:")
@@ -67,7 +72,7 @@ class findDiffConditions():
                 if len(ans) == numDistinct:
                     isolateCols.append(col)
                     sql = f'''
-                        SELECT {col}, count(*)
+                        SELECT {col}, count({self.cex})
                         FROM test GROUP BY 1
                     '''
                     cur.execute(sql)
@@ -90,10 +95,11 @@ class findDiffConditions():
                 if sCol == iCol:
                     continue
                 sql = f'''
-                    SELECT col, icol, cnt FROM
+                    SELECT col, icol, cnt, aid FROM
                         (  SELECT cast({sCol} AS text) AS col,
                                 cast({iCol} AS text) AS icol,
-                                count(*) AS cnt
+                                max({self.cex}) AS aid,
+                                count({self.cex}) AS cnt
                         FROM test
                         GROUP BY 1,2 ) t
                 '''
@@ -104,10 +110,11 @@ class findDiffConditions():
                     subsetVal = row[0]
                     isolateVal = row[1]
                     count = row[2]
+                    aid = row[3]
                     if subsetVal in record:
-                        record[subsetVal].append([isolateVal,count])
+                        record[subsetVal].append([isolateVal,count,aid])
                     else:
-                        record[subsetVal] = [[isolateVal,count]]
+                        record[subsetVal] = [[isolateVal,count,aid]]
                 for k,v in record.items():
                     self.opportunities += 1
                     if len(v) != 2:
@@ -126,6 +133,7 @@ class findDiffConditions():
                                     'subsetVal':k,
                                     'isolateCol':iCol,
                                     'victimVal':v[i][0],
+                                    'victimAid':v[i][2],
                                     'otherVal':v[j][0],
                                     'otherCount':v[j][1],
                                 }
@@ -137,16 +145,6 @@ class findDiffConditions():
         print(f"There are {len(self.possibleVictims)} potential victims:")
         pp.pprint(self.possibleVictims)
         self.checkAttackability(cur,allCols)
-
-    def getNumDistinctIndividuals(self):
-        ''' Assumes that each distinct subset column / isolating column
-            val pair represents a distinct user. May not always be true
-        '''
-        distinct = {}
-        for w in self.workingVictims:
-            key = w['isolateCol'] + w['subsetVal']
-            distinct[key] = 1
-        return len(distinct)
 
     def checkAttackability(self,cur,allCols):
         '''
@@ -162,7 +160,7 @@ class findDiffConditions():
                     continue
                 self.unknownOpportunities += 1
                 sql = f'''
-                    SELECT {uCol}, count(*) FROM test
+                    SELECT {uCol}, count({self.cex}) FROM test
                     WHERE cast({vic['subsetCol']} AS text) == '{vic['subsetVal']}'
                     GROUP BY 1
                 '''
@@ -183,9 +181,11 @@ class findDiffConditions():
                             'subsetVal': vic['subsetVal'],
                             'unknownCol':uCol,
                             'isolateCol': vic['isolateCol'],
+                            'aid': vic['victimAid'],
                             'numUnknownVals':numUnknownVals
                         }
                     )
+                    self.attackable[vic['victimAid']] = 1
                     self.working += 1
                     if numUnknownVals in self.workingByUnknownBuckets:
                         self.workingByUnknownBuckets[numUnknownVals] += 1
@@ -212,7 +212,7 @@ class findDiffConditions():
                 'working': self.working,
                 'workingByIsolatingCol': self.workingByIsolatingCol,
                 'workingVictims': self.workingVictims,
-                'distinctAttackableIndividuals': numDistinctIndividuals,
+                'distinctAttackableIndividuals': len(self.attackable),
                 'totalIndividuals': self.numIndividuals,
                 'distinctValsPerCol': self.distinctValsPerCol,
                 'isolatingColumnProfile': self.isolatingColumnProfile,
@@ -220,19 +220,34 @@ class findDiffConditions():
                 'workingByUnknownBuckets': self.workingByUnknownBuckets,
                 'workingByDistinctSubset': self.workingByDistinctSubset,
                 'workingByDistinctUnknown': self.workingByDistinctUnknown,
+                'attackableIndividuals': self.attackable,
             }
         
 if __name__ == "__main__":
-    '''Put your CSV file path here:'''
+    '''Put your CSV file path in csvPath, and AID column in aidCol'''
     #csvPath = os.path.join('c:\\','paul','downloads','usa_00001','census_big.csv')
-    csvPath = 'census_big.csv'
-    print(f"Using file '{csvPath}'")
+
+    #csvPath = 'census_big.csv'
+    #aidCol = None    # Not multi-row
+
+    #csvPath = 'bankAccounts.csv'
+    #aidCol = 'uid'
+
+    csvPath = 'taxi.csv'
+    aidCol = 'med'
+    '''The following used in the output file name, so change if you wish:'''
+    csvName = csvPath
+    '''If multi-row, put AID column name here:'''
+    print(f"Using file '{csvPath}' with AID column {aidCol}")
     df = pd.read_csv(csvPath)
+    if not aidCol:
+        df['index_col'] = df.index
+        aidCol = 'index_col'
     con = sqlite3.connect(':memory:')
     results = []
     df.to_sql('test',con,if_exists='replace',index=False)
     cur = con.cursor()
-    fdc = findDiffConditions()
+    fdc = findDiffConditions(aidCol)
     fdc.runMeasure(cur)
     print('-------------------------------------------------')
     pp.pprint(fdc.possibleVictims)
@@ -241,8 +256,8 @@ if __name__ == "__main__":
     print(f"Possibles: {fdc.possibles}")
     print(f"Unknown Opportunities: {fdc.unknownOpportunities}")
     print(f"Working: {fdc.working}")
-    numDistinctIndividuals = fdc.getNumDistinctIndividuals()
-    print(f"Distinct individuals: {numDistinctIndividuals}")
+    print(f"Distinct individuals: {len(fdc.attackable)}")
     results.append(fdc.results())
-    with open('findConditionsResults.json', 'w') as f:
+    outFileName = 'findConditionsResults.'+csvName+'.json'
+    with open(outFileName, 'w') as f:
         json.dump(results, f, indent=4, sort_keys=True)

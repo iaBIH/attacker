@@ -40,13 +40,15 @@ class score:
             self.claimCorrect += 1
 
     def computeScore(self):
+        self.confImprove = 0.0
+        self.confidence = 0.0
         if self.attempts == 0:
             return 0,0,0
         self.claimRate = self.totalClaims / self.attempts
         if self.totalClaims == 0:
             return 0,0,0
         if self.claimHas == 0:
-            self.confidence = 0
+            self.confidence = 0.0
         else:
             self.confidence = self.claimCorrect / self.claimHas
 

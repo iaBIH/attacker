@@ -1,225 +1,4 @@
 {
-    "buckets": {
-        "Ci0V0": {
-            "bkt": "Ci0V0",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci0V0.Ci1V10": {
-            "bkt": "Ci0V0.Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci0V0.Ci1V11": {
-            "bkt": "Ci0V0.Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V0.Ci1V12": {
-            "bkt": "Ci0V0.Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V1": {
-            "bkt": "Ci0V1",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci0V1.Ci1V10": {
-            "bkt": "Ci0V1.Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V1.Ci1V11": {
-            "bkt": "Ci0V1.Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V1.Ci1V12": {
-            "bkt": "Ci0V1.Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci0V2": {
-            "bkt": "Ci0V2",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci0V2.Ci1V10": {
-            "bkt": "Ci0V2.Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 2
-        },
-        "Ci0V2.Ci1V11": {
-            "bkt": "Ci0V2.Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        },
-        "Ci0V2.Ci1V12": {
-            "bkt": "Ci0V2.Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 2,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 0
-        },
-        "Ci1V10": {
-            "bkt": "Ci1V10",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 3
-        },
-        "Ci1V11": {
-            "bkt": "Ci1V11",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 5
-        },
-        "Ci1V12": {
-            "bkt": "Ci1V12",
-            "cmax": 12.0,
-            "cmin": 0,
-            "dim": 1,
-            "emax": 12.0,
-            "emin": 0,
-            "minPossible": 2,
-            "noisyCountMean": 10,
-            "sd": 2,
-            "suppress": true,
-            "trueCount": 1
-        }
-    },
-    "originalTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 1,
-            "4": 1,
-            "5": 1,
-            "6": 2,
-            "7": 2,
-            "8": 2
-        },
-        "i1": {
-            "0": 11,
-            "1": 11,
-            "2": 12,
-            "3": 10,
-            "4": 11,
-            "5": 11,
-            "6": 10,
-            "7": 10,
-            "8": 11
-        }
-    },
     "params": {
         "anonymizerParams": {
             "gap": 4,
@@ -260,30 +39,6 @@
             "tabType": "random"
         }
     },
-    "reconstructedTable": {
-        "i0": {
-            "0": 0,
-            "1": 0,
-            "2": 0,
-            "3": 0,
-            "4": 1,
-            "5": 1,
-            "6": 2,
-            "7": 2,
-            "8": 2
-        },
-        "i1": {
-            "0": 10,
-            "1": 11,
-            "2": 12,
-            "3": 12,
-            "4": 10,
-            "5": 12,
-            "6": 11,
-            "7": 12,
-            "8": 12
-        }
-    },
     "solution": {
         "aggregateErrorAvg": 1.3333333333333333,
         "aggregateErrorTargetAvg": 4.2,
@@ -295,7 +50,7 @@
         "confidenceImprovement": 0.34146341463414637,
         "confidenceImprovementRandom": 0.25,
         "confidenceRandom": 0.3333333333333333,
-        "elapsedTime": 0.07,
+        "elapsedTime": 0.04,
         "explain": [
             "numBuckets: Total number of buckets, all dimensions",
             "numSuppressedBuckets: Buckets suppressed by anonymizer",
@@ -318,7 +73,7 @@
             "aggregateErrorTargetAvg: Average of absolute errors in elastic target, original versus reconstructed"
         ],
         "matchFraction": 0.444,
-        "matchImprove": -0.2522522522522524,
+        "matchImprove": 0.0,
         "nonAttackableFrac": 0.444,
         "numBuckets": 15,
         "numChoices": 135,

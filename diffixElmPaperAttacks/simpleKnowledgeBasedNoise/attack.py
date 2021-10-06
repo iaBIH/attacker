@@ -14,7 +14,7 @@ def basicAttack(probHas,sd,claimThresh,tries=10000,atLeast=100):
     # get it right when the answer is N+1 (i.e. victim has
     # the attribute) with 50% probability
     s = tools.score.score(probHas)
-    anon = anonymize.anonAlgs.anon(0,0,0,sd)
+    anon = anonymize.anonAlgs.anon(0,0,0,[sd])
     N = 25          # arbitrary
     # Noisy counts above the threshold, victim probably has attribute
     threshold = N + 0.5
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # Following are for plotting
     data = dataInit()
     print("The following are for full claim rate (CR=1.0)")
-    for sd,probHas in [(x,y) for x in [0.5,1.0,2.0,3.0] for y in [0.01,0.1,0.5,0.9]]:
+    for sd,probHas in [(x,y) for x in [1.0,1.5,2.25,3.0] for y in [0.01,0.1,0.5,0.9]]:
         cr,ci,c,pcr,pci,pc = basicAttack(probHas,sd,claimThresh,tries=tries,atLeast=atLeast)
         results.append([probHas,sd,pcr,pci,pc,])
         dataUpdate(data,[probHas,sd,cr,ci,c,])
@@ -92,15 +92,15 @@ if __name__ == "__main__":
     results = []
 
     print("\nThe following attempts to find the Claim Rate when CI is high (> 0.95)")
-    for sd,probHas in [(x,y) for x in [0.5,1.0,2.0,3.0] for y in [0.01,0.1,0.5,0.9]]:
+    for sd,probHas in [(x,y) for x in [1.0,1.5,2.25,3.0] for y in [0.01,0.1,0.5,0.9]]:
         claimThresh = 0.0
         while True:
             claimThresh += 0.5
             cr,ci,c,pcr,pci,pc = basicAttack(probHas,sd,claimThresh,tries=tries,atLeast=atLeast)
             print(f"claimThresh {claimThresh}, cr {pcr}, ci {pci}, c {pc}")
             # We want to achieve a CI of at least 95%, but we won't go
-            # beyond CR of 0.0001 to get it.
-            if ci >= 0.95 or cr < 0.0001:
+            # beyond CR of 0.00001 to get it.
+            if ci >= 0.95 or cr < 0.00001:
                 results.append([probHas,sd,pcr,pci,pc,])
                 dataUpdate(data,[probHas,sd,cr,ci,c,])
                 break

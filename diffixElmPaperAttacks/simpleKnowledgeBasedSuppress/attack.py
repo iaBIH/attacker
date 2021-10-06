@@ -12,7 +12,7 @@ import anonymize.anonAlgs
 def meanAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
     s = tools.score.score(probHas)
-    anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,0)
+    anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,[0])
 
     mean = anon.getMean()
     # N is known number of individuals with the attribute
@@ -53,7 +53,7 @@ def meanAttack(lowThresh,gap,sdSupp,probHas,
 def lowThreshAttack(lowThresh,gap,sdSupp,probHas,
                 tries=10000,atLeast=100):
     s = tools.score.score(probHas)
-    anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,0)
+    anon = anonymize.anonAlgs.anon(lowThresh,gap,sdSupp,[0])
     N = lowThresh - 1       # definitely suppress if N
 
     numTries = 0

@@ -1,0 +1,100 @@
+{
+    "params": {
+        "anonymizerParams": {
+            "gap": 2,
+            "label": "P",
+            "lowThresh": 2,
+            "priorKnowledge": "all-but-one",
+            "sdSupp": 1,
+            "standardDeviation": 1.5
+        },
+        "colVals": {
+            "i0": [
+                0,
+                1,
+                2
+            ],
+            "i1": [
+                10,
+                11,
+                12
+            ],
+            "i2": [
+                20,
+                21,
+                22
+            ],
+            "i3": [
+                30,
+                31,
+                32
+            ]
+        },
+        "columns": [
+            "i0",
+            "i1",
+            "i2",
+            "i3"
+        ],
+        "numAids": 81,
+        "seed": "034",
+        "solveParams": {
+            "elasticLcf": 1.0,
+            "elasticNoise": 1.0,
+            "numSDs": 3.0
+        },
+        "tableParams": {
+            "numValsPerColumn": [
+                3,
+                3,
+                3,
+                3
+            ],
+            "tabType": "random"
+        }
+    },
+    "solution": {
+        "aggregateErrorAvg": 0.09411764705882353,
+        "aggregateErrorTargetAvg": 1.6794117647058824,
+        "attackableAndRightFrac": 0.778,
+        "attackableButWrongFrac": 0.222,
+        "claimRate": 1.0,
+        "claimRateRandom": 0.4074074074074074,
+        "confidence": 0.0,
+        "confidenceImprovement": -0.03846153846153846,
+        "confidenceImprovementRandom": 0.4782114437286851,
+        "confidenceRandom": 0.48484848484848486,
+        "elapsedTime": 1.52,
+        "explain": [
+            "numBuckets: Total number of buckets, all dimensions",
+            "numSuppressedBuckets: Buckets suppressed by anonymizer",
+            "numIgnoredBuckets: Buckets ignored when making constraints",
+            "numStripped: Rows stripped away because all rows for a dimension were suppressed",
+            "numChoices: Total number of variables for the solver",
+            "numConstraints: Total number of constraints for the solver",
+            "confidence: GDA Score, percent correct claims",
+            "confidenceImprovement: GDA Score, percent correct claims over statistical guess",
+            "claimRate: GDA Score, percent individuals for which claim is made",
+            "confidenceRandom: GDA Score, percent correct claims for random network",
+            "confidenceImprovementRandom: GDA Score, percent correct claims over statistical guess for random network",
+            "claimRateRandom: GDA Score, percent individuals for which claim is made for random network",
+            "matchFraction: Fraction of correctly reconstructed rows",
+            "nonAttackableFrac: Fraction of reconstructed rows that could not be singled out or inferred",
+            "attackableAndRightFrac: Fraction of attackable rows where the attack is correct",
+            "attackableButWrongFrac: Fraction of attackable rows where the attack is not correct",
+            "matchImprove: Improvement in reconstructed table over random table",
+            "aggregateErrorAvg: Average of absolute errors in bucket counts, original versus reconstructed",
+            "aggregateErrorTargetAvg: Average of absolute errors in elastic target, original versus reconstructed"
+        ],
+        "matchFraction": 0.988,
+        "matchImprove": 0.9779005524861878,
+        "nonAttackableFrac": 0.0,
+        "numBuckets": 255,
+        "numChoices": 20655,
+        "numConstraints": 42455,
+        "numIgnoredBuckets": 0,
+        "numStripped": 0,
+        "numSuppressedBuckets": 153,
+        "solveStatus": "Optimal"
+    }
+}
