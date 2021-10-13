@@ -5,14 +5,14 @@ if __name__ == "__main__":
     c2 = rpyc.classic.connect("paul02",port=20000)
     c1 = rpyc.classic.connect("paul02",port=20001)
     # try without async
-    rtest2 = c2.modules.tools.rpycTest.test
+    rtest2 = c2.modules.test.test
     test2 = rtest2()
     result2 = test2.getResultWithSleep(1)
     print(f"Result, no async, should be 0: {result2}")
     test2.add(5)
     result = test2.getResultWithSleep(1)
     print(f"Result, no async, should be 5: {result}")
-    rtest1 = c1.modules.tools.rpycTest.test
+    rtest1 = c1.modules.test.test
     test1 = rtest1()
     test1.subtract(5)
     result1 = test1.getResultWithSleep(1)
