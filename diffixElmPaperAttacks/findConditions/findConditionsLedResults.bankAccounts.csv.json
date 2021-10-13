@@ -1,0 +1,17 @@
+{
+    "all": {
+        "opportunities": 107261,
+        "ratio": "1/1577",
+        "victimGroups": 68
+    },
+    "common": {
+        "opportunities": 68153,
+        "ratio": "1/39",
+        "victimGroups": 1757
+    },
+    "friendly": {
+        "opportunities": 40252,
+        "ratio": "1/31",
+        "victimGroups": 1295
+    }
+}

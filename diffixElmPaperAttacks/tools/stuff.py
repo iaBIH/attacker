@@ -44,6 +44,7 @@ class makeOutlierContributions():
         self.lowBase = lowBase
         self.highBase = highBase
         self.increaseFactor = increaseFactor
+        self.mas = makeAidvSets(baseIndividuals=baseIndividuals)
 
     def doSeed(self):
         if self.seed:
@@ -52,6 +53,7 @@ class makeOutlierContributions():
             random.seed()
 
     def makeBase(self):
+        self.mas.makeBase()
         self.doSeed()
         self.contributions = []
         for _ in range(self.baseIndividuals):
@@ -59,7 +61,11 @@ class makeOutlierContributions():
         random.seed()
         random.shuffle(self.contributions)
 
+    def aidvSet(self):
+        return(self.mas.aidvSet)
+
     def addOutliers(self,numOutliers=1):
+        self.mas.addAidv(numAidvs=numOutliers)
         self.doSeed()
         meanBase = statistics.mean(self.contributions)
         maxBase = max(self.contributions)

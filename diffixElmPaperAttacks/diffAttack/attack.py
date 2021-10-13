@@ -46,7 +46,7 @@ def basicAttack(numUnknownVals,sd,claimThresh,attackType,numSamples,
     # Nominally we'll make `tries` attempts, but we need to have at
     # least `atLeast` claims that the victim has the attribute
 
-    if len(numIsolated) < 2 and attackType == 'diffAttackLed':
+    if numIsolated < 2 and attackType == 'diffAttackLed':
         print("Must set numIsolated if diffAttackLed")
         quit()
     numTries = 0
@@ -67,8 +67,10 @@ def basicAttack(numUnknownVals,sd,claimThresh,attackType,numSamples,
         addIndex,rmIndex = random.sample(range(numUnknownVals),k=2)
         if attackType == 'diffAttackLed':
             # These are the buckets the isolated individuals belong to
-            isoBuckets = random.choices(range(unknownVal),k=numIsolated)
+            isoBuckets = random.choices(range(numUnknownVals),k=numIsolated)
             addIndex = isoBuckets[0]
+            #print('--------------------------------------------')
+            #print(f"isoBuckets {isoBuckets}")
         bktCountsLeft = [0 for _ in range(numUnknownVals)]
         bktCountsRight = [0 for _ in range(numUnknownVals)]
         for sample in range(numSamples):
@@ -101,14 +103,20 @@ def basicAttack(numUnknownVals,sd,claimThresh,attackType,numSamples,
                         # the one we add to the right, because hashing AIDV set)
                         trueCountLeft -= 1
                         aidvSetLeft.pop(0)
-                elif len(isoBuckets) != len(set(isoBuckets)):
+                elif len(set(isoBuckets)) != 1:
                     # not all isolated individuals are in the same bucket (if they are,
                     # we do nothing).
                     # So add them to the appropriate buckets
                     for bkt in isoBuckets:
                         if bkt == unknownVal:
+                            #print(aidvSetRight)
                             aidvSetRight.append(random.randint(1000,100000000000))
+                            #print(aidvSetRight)
                             trueCountRight += 1
+                            #print(f"bkt {bkt} add 1 --> {trueCountRight}")
+                else:
+                    #print("   All isolated in same bucket!")
+                    pass
                 # We assume no suppression (so don't bother to specify the parameters)
                 anon = anonymize.anonAlgs.anon(0,0,0,[sd],salt=saltLeft)
                 noiseLeft,noisyCountLeft = anon.getNoise(trueCountLeft,aidvSet=aidvSetLeft,
@@ -179,7 +187,7 @@ def basicAttack(numUnknownVals,sd,claimThresh,attackType,numSamples,
     return claimRate,confImprove,confidence,cr,ci,c
 
 def dataInit():
-    return {'Unknown Vals':[],'Samples':[],'Num Isolated':[],'SD':[],'CR':[],'CI':[]}
+    return {'Unknown Vals':[],'Samples':[],'Num Isolated':[],'SD':[],'CR':[],'CI':[],'highCR':[]}
 
 def dataUpdate(data,vals):
     data['Unknown Vals'].append(vals[0])
@@ -188,21 +196,23 @@ def dataUpdate(data,vals):
     data['SD'].append(vals[3])
     data['CR'].append(vals[4])
     data['CI'].append(vals[5])
+    data['highCR'].append(vals[6])
 
 def alreadyHaveData(data,vals):
     for i in range(len(data['SD'])):
         if ( data['Unknown Vals'][i] == vals[0] and
              data['Samples'][i] == vals[1] and
              data['Num Isolated'][i] == vals[2] and
-             data['SD'][i] == vals[3]):
+             data['SD'][i] == vals[3] and
+             data['highCR'][i] == vals[4]):
              return True
     return False
         
 if __name__ == "__main__":
     tries=100000
-    tries=100
+    #tries=100
     atLeast=100
-    atLeast=10
+    #atLeast=10
     claimThresh = None
     sds = [1.5,2.25,3.0]
     unkn = [2,5,20]
@@ -230,7 +240,7 @@ if __name__ == "__main__":
         # Classic difference attack with LED-lite
         attackType = 'diffAttackLed'
         dataFile = 'dataDiffLed.json'
-        numIsolated = [2,3,4]
+        numIsolated = [3,2,4]
     if os.path.exists(dataFile):
         with open(dataFile, 'r') as f:
             data = json.load(f)
@@ -238,14 +248,15 @@ if __name__ == "__main__":
         # Following are for plotting
         data = dataInit()
     print("The following are for full claim rate (CR=1.0)",flush=True)
+    highCR = 1
     for numIso,sd,numUnknownVals,samples in [(w,x,y,z) for w in numIsolated for x in sds for y in unkn for z in numSamples]:
-        if alreadyHaveData(data,[numUnknownVals,samples,sd]):
-            print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}",flush=True)
+        if alreadyHaveData(data,[numUnknownVals,samples,numIso,sd,highCR]):
+            print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}, high {highCR}",flush=True)
             continue
         cr,ci,c,pcr,pci,pc = basicAttack(numUnknownVals,sd,claimThresh,attackType,
                                          samples,numIso,tries=tries,atLeast=atLeast)
         results.append([numUnknownVals,samples,numIso,sd,pcr,pci,pc,])
-        dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,])
+        dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,highCR])
         print(tabulate(results,headers,tablefmt='latex_booktabs'),flush=True)
         print(tabulate(results,headers,tablefmt='github'),flush=True)
         with open(dataFile, 'w') as f:
@@ -256,6 +267,9 @@ if __name__ == "__main__":
 
     print("\nThe following attempts to find the Claim Rate when CI is high (> 0.95)",flush=True)
     for numIso,sd,numUnknownVals,samples in [(w,x,y,z) for w in numIsolated for x in sds for y in unkn for z in numSamples]:
+        if alreadyHaveData(data,[numUnknownVals,samples,numIso,sd,highCR]):
+            print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}, high {highCR}",flush=True)
+            continue
         print(f"sd {sd}, numUnknown {numUnknownVals}",flush=True)
         claimThresh = -0.5
         while True:
@@ -267,7 +281,7 @@ if __name__ == "__main__":
             # beyond CR of 0.0001 to get it.
             if ci >= 0.95 or cr < 0.0001:
                 results.append([numUnknownVals,samples,numIso,sd,pcr,pci,pc,])
-                dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,])
+                dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,highCR])
                 print(tabulate(results,headers,tablefmt='latex_booktabs'),flush=True)
                 print(tabulate(results,headers,tablefmt='github'),flush=True)
                 with open(dataFile, 'w') as f:

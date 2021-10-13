@@ -13,19 +13,17 @@ import tools.stuff
 import anonymize.anonAlgs
 
 '''
-This code is for the outlier bucket attack. The attacker knows of one or
+This code is for the pessimistic version of the outlier bucket attack.
+There is a pessimal number of outliers, such that often outliers are in
+the out group and one or two in the top group. This causes some flattening,
+but not necessarily enough to really hide the victim when all of the outliers
+are in the same bucket.
+The attacker knows of one or
 more outlier contributors. The attacker simply requests a histogram, and
 then determines that the outliers are in buckets that have high counts.
 For this to work, there needs to be more outliers than the minimum
 out_range. Otherwise, the outliers will all be flattened.
 '''
-
-def makeAidvSet(base):
-    init = base * 1000
-    aidvSet = []
-    for aidv in range(init,init+5):
-        aidvSet.append(aidv)
-    return(aidvSet)
 
 def selectVictimBucket(bktCountsLeft,bktCountsRight):
     maxDiff = -1000
@@ -59,16 +57,13 @@ def basicAttack(numValues,sd,outParams,factor,numOutliers,claimThresh,tries=1000
         # For each attribute value, we make a bucket
         buckets = []
         for bktIndex in range(numValues):
-            mas = tools.stuff.makeAidvSets()
             moc = tools.stuff.makeOutlierContributions(factor)
-            mas.makeBase()
             moc.makeBase()
             for outBkt in outlierBuckets:
                 if outBkt == bktIndex:
-                    mas.addAidv()
                     moc.addOutliers()
             bkt = {
-                'aidvSet': mas.aidvSet,
+                'aidvSet': moc.aidvSet(),
                 'contributions': moc.contributions,
             }
             buckets.append(bkt)
@@ -163,14 +158,16 @@ def dataUpdate(data,vals):
     data['CI'].append(vals[8])
     data['C'].append(vals[9])
         
-def alreadyHaveData(data,vals):
+def alreadyHaveData(data,vals,highCr):
     for i in range(len(data['SD'])):
         if ( data['Unknown Vals'][i] == vals[0] and
              data['SD'][i] == vals[1] and
              data['Out Factor'][i] == vals[2] and
              data['Num Outliers'][i] == vals[3] and
              data['setting'][i] == vals[4]):
-             return True
+             if ((highCr is True and data['CR'][i] == '1.0') or
+                 (highCr is False and data['CR'][i] != '1.0')):
+                 return True
     return False
         
 if __name__ == "__main__":
@@ -190,26 +187,35 @@ if __name__ == "__main__":
     else:
         data = dataInit()
     sds = [1.5,2.25,3.0]
-    #sds = [2.25]
+    sds = [2.25]
     outs = [[[1,2],[2,3]],
             [[2,3],[3,4]],
             [[3,4],[4,5]]
            ]
+    outs = [
+            [[2,3],[3,4]],
+    ]
     factors = [1.2,1.5,2,5,10]
-    #factors = [10]
-    outliers = ['min','max','max+1']
-    #outliers = ['max+1']
+    factors = [1.2,5]
+    outliers = ['min','max','max+1','max+max']
+    outliers = ['max+1','max+max']
     numValues = [2,5,20]
     print("The following are for full claim rate (CR=1.0)",flush=True)
     for numVals,sd,outParams,factor,outType in [(v,w,x,y,z) for v in numValues for w in sds for x in outs for y in factors for z in outliers]:
         if outType == 'min':
+            # No outliers in top group
             numOutliers = outParams[0][0]
         elif outType == 'max':
+            # Sometimes one outlier in top group
             numOutliers = outParams[0][1]
-        else:
+        elif outType == 'max+1':
+            # At least one outlier in top group
             numOutliers = outParams[0][1]+1
-        if alreadyHaveData(data,[numVals,sd,factor,outParams,outType]):
-            print(f"Already have {[numVals,sd,factor,outParams,outType]}",flush=True)
+        else:
+            # Outlier group and top group always full of outliers
+            numOutliers = outParams[0][1]+outParams[1][1]
+        if alreadyHaveData(data,[numVals,sd,factor,outParams,outType],True):
+            print(f"Already have {[numVals,sd,factor,outParams,outType]}, highCr",flush=True)
             continue
         cr,ci,c,pcr,pci,pc,excess,claims = basicAttack(numVals,sd,outParams,factor,numOutliers,claimThresh,
                                                 tries=tries,atLeast=atLeast)
@@ -224,6 +230,9 @@ if __name__ == "__main__":
     results = []
     print("\nThe following attempts to find the Claim Rate when CI is high (> 0.95)",flush=True)
     for numVals,sd,outParams,factor,outType in [(v,w,x,y,z) for v in numValues for w in sds for x in outs for y in factors for z in outliers]:
+        if alreadyHaveData(data,[numVals,sd,factor,outParams,outType],False):
+            print(f"Already have {[numVals,sd,factor,outParams,outType]}, lowCr",flush=True)
+            continue
         claimThresh = 1
         while True:
             if outType == 'min':

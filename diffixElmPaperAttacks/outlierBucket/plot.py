@@ -12,7 +12,7 @@ import tools.risk
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-with open('dataChangeAvg.json', 'r') as f:
+with open('data.json', 'r') as f:
     data = json.load(f)
 df = pd.DataFrame.from_dict(data)
 

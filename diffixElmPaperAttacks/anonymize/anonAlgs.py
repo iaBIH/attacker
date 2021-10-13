@@ -42,7 +42,6 @@ class anon:
             return True
         return False
 
-
     def getBktAidSeedElm(self,aidvSet):
         m = tools.stuff.myHash()
         m.update(self.salt)
