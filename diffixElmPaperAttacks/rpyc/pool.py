@@ -10,14 +10,19 @@ class machineClass():
     def __init__(self,host,port):
         self.host = host
         self.port = port
-        self.conn = rpyc.classic.connect(self.host,self.port)
+        self.conn = None
         self.ref = None
+        if port:
+            self.conn = rpyc.classic.connect(self.host,self.port)
 
 class pool():
     ''' Used to find available rpyc instances. 
         This code assume that this class is only ever called once at a time
     '''
-    def __init__(self):
+    def __init__(self,runLocal=False):
+        if runLocal:
+            self.machines = [{'host':'local','port':0}]
+            return
         if os.path.exists('poolConfig.json'):
             with open('poolConfig.json', 'r') as f:
                 self.machines = json.load(f)
@@ -45,9 +50,15 @@ class pool():
             return None,None
         while True:
             for i in range(len(self.inUse)):
-                if self.inUse[i].res.ready:
+                if self.inUse[i].res:
+                    # not local machine
+                    if self.inUse[i].res.ready:
+                        mc = self.inUse.pop(i)
+                        return mc,mc.res.value
+                else:
+                    # local machine
                     mc = self.inUse.pop(i)
-                    return mc,mc.res.value
+                    return mc,None
 
     def registerJob(self,mc,res):
         mc.res = res
