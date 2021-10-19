@@ -11,7 +11,7 @@ if __name__ == "__main__":
         if not mc:
             mc,result = pm.getNextResult()
             numFinished += 1
-            print(f"finished job {mc['state']} with result {result}, num finished {numFinished}")
+            print(f"finished job {mc.state} with result {result}, num finished {numFinished}")
         if not mc:
             print("All Done!")
         # Do job
@@ -24,7 +24,7 @@ if __name__ == "__main__":
         mc,result = pm.getNextResult()
         numFinished += 1
         if mc:
-            print(f"finished job {mc['state']} with result {result}, num finished {numFinished}")
+            print(f"finished job {mc.state} with result {result}, num finished {numFinished}")
         else:
             print("All Done!")
             break
