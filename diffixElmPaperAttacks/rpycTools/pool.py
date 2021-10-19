@@ -15,6 +15,8 @@ class machineClass():
         self.state = state
         if port:
             self.conn = rpyc.classic.connect(self.host,self.port)
+            self.conn._config['sync_request_timeout'] = 100000
+            #print(self.conn._config)
 
 class pool():
     ''' Used to find available rpyc instances. 

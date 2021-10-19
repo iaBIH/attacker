@@ -124,9 +124,12 @@ if __name__ == "__main__":
                 'round': round,
             }
             if paramsAlreadySatisfied(round,params):
+                print(f"Params already satisfied",flush=True)
+                pp.pprint(params)
                 continue
             if alreadyHaveData(data,params):
-                print(f"Already have {params}",flush=True)
+                print(f"Already have data for this run",flush=True)
+                pp.pprint(params)
                 continue
             # Ok, we still have work to do
             roundComplete = False
@@ -141,6 +144,7 @@ if __name__ == "__main__":
                 mc = pm.getFreeMachine()
                 if not mc:
                     # Block on some job finishing
+                    print("------------------------------- Wait for a job to finish")
                     mc,result = pm.getNextResult()
                     recordResult(data,dataFile,params,result)
                 attackClass = mc.conn.modules.diffAttackClass.diffAttack
@@ -153,13 +157,13 @@ if __name__ == "__main__":
                 pp.pprint(params)
         if roundComplete:
             break
-        # Wait and record all finishing jobs
-        while True:
-            mc,result = pm.getNextResult()
-            if mc:
-                recordResult(data,dataFile,params,result)
-            else:
-                break
+    print("Wait for remaining jobs to complete")
+    while True:
+        mc,result = pm.getNextResult()
+        if mc:
+            recordResult(data,dataFile,params,result)
+        else:
+            break
 
     with open(dataFile, 'w') as f:
         json.dump(data, f, indent=4, sort_keys=True)
