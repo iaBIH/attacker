@@ -18,7 +18,7 @@ attack is run is determined by configuring `attackType`
 
 # If True, execute on the local machine, one attack at a time
 # If False, execute over the cluster using rpyc
-runLocal = True
+runLocal = False
 
 def dataInit():
     return {'Unknown Vals':[],'Samples':[],'Num Isolated':[],'SD':[],'round':[],
