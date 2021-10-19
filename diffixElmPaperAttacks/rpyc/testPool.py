@@ -21,7 +21,7 @@ if __name__ == "__main__":
         asleep = rpyc.async_(mdTest.delay)
         delay = random.randint(5,15)
         res = asleep(delay)
-        pm.registerJob(mc,res,state=i)
+        pm.registerJob(mc,res,state=(i,delay))
         print(f"Start job {i} with delay {delay} ({mc.host}, {mc.port})")
     while True:
         mc,result = pm.getNextResult()
