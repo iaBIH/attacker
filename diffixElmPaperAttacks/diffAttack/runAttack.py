@@ -2,11 +2,12 @@ import sys
 import os
 import json
 import pprint
-from tabulate import tabulate
+import rpyc
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
-import diffAttack.attackClass
+import rpycTools.pool
+import diffAttack.diffAttackClass
 import tools.score
 
 '''
@@ -20,27 +21,50 @@ attack is run is determined by configuring `attackType`
 runLocal = True
 
 def dataInit():
-    return {'Unknown Vals':[],'Samples':[],'Num Isolated':[],'SD':[],'CR':[],'CI':[],'highCR':[]}
+    return {'Unknown Vals':[],'Samples':[],'Num Isolated':[],'SD':[],'round':[],
+            'CR':[],'CI':[],'C':[],'claimThresh':[]}
 
-def dataUpdate(data,vals):
-    data['Unknown Vals'].append(vals[0])
-    data['Samples'].append(vals[1])
-    data['Num Isolated'].append(vals[2])
-    data['SD'].append(vals[3])
-    data['CR'].append(vals[4])
-    data['CI'].append(vals[5])
-    data['C'].append(vals[6])
-    data['highCR'].append(vals[7])
+def dataUpdate(data,params,results):
+    for param,val in params.items():
+        data[param].append(val)
+    for result,val in results.items():
+        data[result].append(val)
 
-def alreadyHaveData(data,vals):
+def alreadyHaveData(data,params):
     for i in range(len(data['SD'])):
-        if ( data['Unknown Vals'][i] == vals[0] and
-             data['Samples'][i] == vals[1] and
-             data['Num Isolated'][i] == vals[2] and
-             data['SD'][i] == vals[3] and
-             data['highCR'][i] == vals[4]):
-             return True
+        match = True
+        for param in params.keys():
+            if data[param][i] != params[param]:
+                match = False
+                break
+        if match == True:
+            return True
     return False
+
+def paramsAlreadySatisfied(round,params):
+    paramsCopy = params.copy()
+    for r in range(round):
+        paramsCopy['round'] = r
+        for i in range(len(data['SD'])):
+            match = True
+            for param,val in paramsCopy.items():
+                if data[param][i] != val:
+                    match = False
+                    break
+            if match == True:
+                cr = data['CR'][i]
+                ci = data['CI'][i]
+                if ci >= 0.95 or cr < 0.0001:
+                    return True
+    return False
+
+def recordResult(data,dataFile,params,result):
+    print(f"Record result:")
+    pp.pprint(params)
+    pp.pprint(result)
+    dataUpdate(data,params,result)
+    with open(dataFile, 'w') as f:
+        json.dump(data, f, indent=4, sort_keys=True)
         
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
@@ -53,9 +77,6 @@ if __name__ == "__main__":
     unkn = [2,5,20]
     numSamples = [1]
     numIsolated = [0]
-    # Following are for tabulate
-    results = []
-    headers = ['vals','samp','isolated','SD','CR','CI','C']
     if False:
         # Classic difference attack
         attackType = 'diffAttack'
@@ -83,74 +104,62 @@ if __name__ == "__main__":
         # Following are for plotting
         data = dataInit()
     if runLocal:
-        att = diffAttack.attackClass.diffAttack()
-    else:
-        import rpyc.pool
-        pm = rpyc.pool.pool()
-    print("The following are for full claim rate (CR=1.0)",flush=True)
-    highCR = 1
-    for numIso,sd,numUnknownVals,samples in [(w,x,y,z) for w in numIsolated for x in sds for y in unkn for z in numSamples]:
-        if alreadyHaveData(data,[numUnknownVals,samples,numIso,sd,highCR]):
-            print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}, high {highCR}",flush=True)
-            continue
-        if runLocal:
-            # We assume that each unknown value happens with equal probaiblity
-            s = tools.score.score(1/numUnknownVals)
+        att = diffAttack.diffAttackClass.diffAttack()
+    pm = rpycTools.pool.pool(runLocal=runLocal)
+    claimThresholds = [None,1.5]
+    for i in range(2,100):
+        claimThresholds.append(claimThresholds[i-1]+1)
+    # We work in rounds, increasing the threshold as we go, starting with
+    # no threshold at all, until we get CI>0.95 or CR>0.0001
+    for round in range(len(claimThresholds)):
+        roundComplete = True
+        for numIso,sd,numUnknownVals,samples in [(w,x,y,z) for w in numIsolated for x in sds for y in unkn for z in numSamples]:
+            claimThresh = claimThresholds[round]
             params = {
                 'numUnknownVals': numUnknownVals,
                 'sd': sd,
                 'attackType': attackType,
                 'numSamples': samples,
                 'numIsolated': numIso,
+                'round': round,
             }
-            print(f"Run attack, claimThresh {claimThresh}:")
-            pp.pprint(params)
-            cr,ci,c,pcr,pci,pc = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
-        results.append([numUnknownVals,samples,numIso,sd,pcr,pci,pc,])
-        dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,highCR])
-        print(tabulate(results,headers,tablefmt='latex_booktabs'),flush=True)
-        print(tabulate(results,headers,tablefmt='github'),flush=True)
-        with open(dataFile, 'w') as f:
-            json.dump(data, f, indent=4, sort_keys=True)
-
-    # Now we compute claim rate given goal of CI=0.95
-    results = []
-
-    print("\nThe following attempts to find the Claim Rate when CI is high (> 0.95)",flush=True)
-    highCR = 0
-    for numIso,sd,numUnknownVals,samples in [(w,x,y,z) for w in numIsolated for x in sds for y in unkn for z in numSamples]:
-        if alreadyHaveData(data,[numUnknownVals,samples,numIso,sd,highCR]):
-            print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}, high {highCR}",flush=True)
-            continue
-        print(f"sd {sd}, numUnknown {numUnknownVals}",flush=True)
-        claimThresh = -0.5
+            if paramsAlreadySatisfied(round,params):
+                continue
+            if alreadyHaveData(data,params):
+                print(f"Already have {params}",flush=True)
+                continue
+            # Ok, we still have work to do
+            roundComplete = False
+            if runLocal:
+                # Each unknown value happens with equal probability
+                s = tools.score.score(1/numUnknownVals)
+                print(f"Run attack, claimThresh {claimThresh}:")
+                pp.pprint(params)
+                result = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
+                recordResult(data,dataFile,params,result)
+            else:
+                mc = pm.getFreeMachine()
+                if not mc:
+                    # Block on some job finishing
+                    mc,result = pm.getNextResult()
+                    recordResult(data,dataFile,params,result)
+                attackClass = mc.conn.modules.diffAttackClass.diffAttack
+                mcAttack = attackClass()
+                basicAttack = rpyc.async_(mcAttack.basicAttack)
+                s = tools.score.score(1/numUnknownVals)
+                res = basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
+                pm.registerJob(mc,res,state=params)
+                print(f"Start job with ({mc.host}, {mc.port})")
+                pp.pprint(params)
+        if roundComplete:
+            break
+        # Wait and record all finishing jobs
         while True:
-            claimThresh += 1.0
-            # We assume that each unknown value happens with equal probaiblity
-            s = tools.score.score(1/numUnknownVals)
-            params = {
-                'numUnknownVals': numUnknownVals,
-                'sd': sd,
-                'attackType': attackType,
-                'numSamples': samples,
-                'numIsolated': numIso,
-            }
-            print(f"Run attack, claimThresh {claimThresh}:")
-            pp.pprint(params)
-            cr,ci,c,pcr,pci,pc = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
-            print(f"claimThresh {claimThresh}, cr {pcr}, ci {pci}, c {pc}",flush=True)
-            # We want to achieve a CI of at least 95%, but we won't go
-            # beyond CR of 0.0001 to get it.
-            if ci >= 0.95 or cr < 0.0001:
-                results.append([numUnknownVals,samples,numIso,sd,pcr,pci,pc,])
-                dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,highCR])
-                print(tabulate(results,headers,tablefmt='latex_booktabs'),flush=True)
-                print(tabulate(results,headers,tablefmt='github'),flush=True)
-                with open(dataFile, 'w') as f:
-                    json.dump(data, f, indent=4, sort_keys=True)
+            mc,result = pm.getNextResult()
+            if mc:
+                recordResult(data,dataFile,params,result)
+            else:
                 break
-    print(tabulate(results,headers,tablefmt='latex_booktabs'),flush=True)
-    print(tabulate(results,headers,tablefmt='github'),flush=True)
 
     with open(dataFile, 'w') as f:
         json.dump(data, f, indent=4, sort_keys=True)

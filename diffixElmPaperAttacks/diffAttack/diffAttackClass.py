@@ -188,4 +188,7 @@ class diffAttack():
             ci = '1.05'
             c = '1.05'
         print(bailOutReason,flush=True)
-        return claimRate,confImprove,confidence,cr,ci,c
+        if claimThresh is None:
+            claimThresh = 0
+        return {'CR':claimRate,'CI':confImprove,'C':confidence,
+                'PCR':cr,'PCI':ci,'PC':c,'claimThresh':claimThresh}
