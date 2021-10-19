@@ -15,7 +15,8 @@ if __name__ == "__main__":
         if not mc:
             print("All Done!")
         # Do job
-        asleep = rpyc.async_(mc.conn.modules.time.sleep)
+        #asleep = rpyc.async_(mc.conn.modules.time.sleep)
+        asleep = rpyc.async_(mc.conn.modules.myDelay.delay)
         delay = random.randint(5,15)
         res = asleep(delay)
         pm.registerJob(mc,res,state=i)
