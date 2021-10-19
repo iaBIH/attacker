@@ -55,8 +55,7 @@ class pool():
                     # not local machine
                     if self.inUse[i].res.ready:
                         mc = self.inUse.pop(i)
-                        #return mc,mc.res.value
-                        return mc,None
+                        return mc,mc.res.value
                 else:
                     # local machine
                     mc = self.inUse.pop(i)

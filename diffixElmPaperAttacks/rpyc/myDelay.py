@@ -5,7 +5,7 @@ class test():
         pass
 
     def delay(self,delay):
-        time.sleep(10)
+        time.sleep(delay)
         return delay+1
 
 if __name__ == "__main__":
