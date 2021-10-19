@@ -1,12 +1,13 @@
-import random
 import sys
 import os
 import json
+import pprint
 from tabulate import tabulate
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
 import diffAttack.attackClass
+import tools.score
 
 '''
 This code is for both the classic difference attack (positive AND), and
@@ -42,6 +43,7 @@ def alreadyHaveData(data,vals):
     return False
         
 if __name__ == "__main__":
+    pp = pprint.PrettyPrinter(indent=4)
     tries=100000
     #tries=100
     atLeast=100
@@ -92,8 +94,18 @@ if __name__ == "__main__":
             print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}, high {highCR}",flush=True)
             continue
         if runLocal:
-            cr,ci,c,pcr,pci,pc = att.basicAttack(numUnknownVals,sd,claimThresh,attackType,
-                                         samples,numIso,tries=tries,atLeast=atLeast)
+            # We assume that each unknown value happens with equal probaiblity
+            s = tools.score.score(1/numUnknownVals)
+            params = {
+                'numUnknownVals': numUnknownVals,
+                'sd': sd,
+                'attackType': attackType,
+                'numSamples': samples,
+                'numIsolated': numIso,
+            }
+            print(f"Run attack, claimThresh {claimThresh}:")
+            pp.pprint(params)
+            cr,ci,c,pcr,pci,pc = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
         results.append([numUnknownVals,samples,numIso,sd,pcr,pci,pc,])
         dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,highCR])
         print(tabulate(results,headers,tablefmt='latex_booktabs'),flush=True)
@@ -114,8 +126,18 @@ if __name__ == "__main__":
         claimThresh = -0.5
         while True:
             claimThresh += 1.0
-            cr,ci,c,pcr,pci,pc = att.basicAttack(numUnknownVals,sd,claimThresh,attackType,
-                                         samples,numIso,tries=tries,atLeast=atLeast)
+            # We assume that each unknown value happens with equal probaiblity
+            s = tools.score.score(1/numUnknownVals)
+            params = {
+                'numUnknownVals': numUnknownVals,
+                'sd': sd,
+                'attackType': attackType,
+                'numSamples': samples,
+                'numIsolated': numIso,
+            }
+            print(f"Run attack, claimThresh {claimThresh}:")
+            pp.pprint(params)
+            cr,ci,c,pcr,pci,pc = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
             print(f"claimThresh {claimThresh}, cr {pcr}, ci {pci}, c {pc}",flush=True)
             # We want to achieve a CI of at least 95%, but we won't go
             # beyond CR of 0.0001 to get it.
