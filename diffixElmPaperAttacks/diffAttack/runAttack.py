@@ -91,7 +91,8 @@ if __name__ == "__main__":
         if alreadyHaveData(data,[numUnknownVals,samples,numIso,sd,highCR]):
             print(f"Already have numUnknown {numUnknownVals}, samples {samples}, sd {sd}, high {highCR}",flush=True)
             continue
-        cr,ci,c,pcr,pci,pc = att.basicAttack(numUnknownVals,sd,claimThresh,attackType,
+        if runLocal:
+            cr,ci,c,pcr,pci,pc = att.basicAttack(numUnknownVals,sd,claimThresh,attackType,
                                          samples,numIso,tries=tries,atLeast=atLeast)
         results.append([numUnknownVals,samples,numIso,sd,pcr,pci,pc,])
         dataUpdate(data,[numUnknownVals,samples,numIso,sd,cr,ci,c,highCR])

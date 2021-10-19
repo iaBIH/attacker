@@ -7,11 +7,12 @@ import random
 class machineClass():
     ''' State of one machine
     '''
-    def __init__(self,host,port):
+    def __init__(self,host,port,state=None):
         self.host = host
         self.port = port
         self.conn = None
         self.ref = None
+        self.state = state
         if port:
             self.conn = rpyc.classic.connect(self.host,self.port)
 
@@ -60,8 +61,9 @@ class pool():
                     mc = self.inUse.pop(i)
                     return mc,None
 
-    def registerJob(self,mc,res):
+    def registerJob(self,mc,res,state=None):
         mc.res = res
+        mc.state = state
         self.inUse.append(mc)
 
 if __name__ == "__main__":
