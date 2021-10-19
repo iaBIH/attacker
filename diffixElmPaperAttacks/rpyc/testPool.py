@@ -11,20 +11,20 @@ if __name__ == "__main__":
         if not mc:
             mc,result = pm.getNextResult()
             numFinished += 1
-            print(f"finished job with result {result}, num finished {numFinished}")
+            print(f"finished job {mc['state']} with result {result}, num finished {numFinished}")
         if not mc:
             print("All Done!")
         # Do job
         asleep = rpyc.async_(mc.conn.modules.time.sleep)
         delay = random.randint(5,15)
         res = asleep(delay)
-        pm.registerJob(mc,res)
+        pm.registerJob(mc,res,state=i)
         print(f"Start job {i} with delay {delay} ({mc.host}, {mc.port})")
     while True:
         mc,result = pm.getNextResult()
         numFinished += 1
         if mc:
-            print(f"finished job with result {result}, num finished {numFinished}")
+            print(f"finished job {mc['state']} with result {result}, num finished {numFinished}")
         else:
             print("All Done!")
             break
