@@ -7,7 +7,7 @@ if __name__ == "__main__":
     pm = pool.pool()
     #print(pm.machines)
     numFinished = 0
-    for i in range(10):
+    for i in range(20):
         mc = pm.getFreeMachine()
         if not mc:
             mc,result = pm.getNextResult()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
         # Do job
         #asleep = rpyc.async_(mc.conn.modules.time.sleep)
         myDelayTestClass = mc.conn.modules.myDelay.test
-        mdTest = myDelayTestClass(doRtnAdd=True)
+        mdTest = myDelayTestClass(doLog=True)
         asleep = rpyc.async_(mdTest.delay)
         delay = random.randint(5,10)
         res = asleep(delay)

@@ -1,13 +1,20 @@
 import time
 
 class test():
-    def __init__(self,doRtnAdd=False):
-        self.doRtnAdd = doRtnAdd
+    def __init__(self,doLog=False):
+        self.doLog = doLog
+        if doLog:
+            self.f = open('/root/paul/logs/out.txt','a')
+            pass
         pass
 
     def delay(self,delay):
+        if self.doLog:
+            self.f.write(f"Received delay request: delay {delay}")
         time.sleep(delay)
-        return {'delay':delay,'doRtnAdd':self.doRtnAdd}
+        if self.doLog:
+            self.f.write(f"    Finished delay: delay {delay}")
+        return {'delay':delay,'doLog':self.doLog}
 
 if __name__ == "__main__":
     pass
