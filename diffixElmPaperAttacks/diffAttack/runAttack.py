@@ -110,7 +110,9 @@ if __name__ == "__main__":
         att = diffAttack.diffAttackClass.diffAttack()
     pm = rpycTools.pool.pool(runLocal=runLocal)
     claimThresholds = [None,1.5]
-    for i in range(2,100):
+    maxRound = 200
+    maxRound = 5
+    for i in range(2,maxRound):
         claimThresholds.append(claimThresholds[i-1]+1)
     # We work in rounds, increasing the threshold as we go, starting with
     # no threshold at all, until we get CI>0.95 or CR>0.0001
