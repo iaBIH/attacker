@@ -40,16 +40,16 @@ class diffAttack():
                 maxIndex = i
         return maxIndex,maxDiff
     
-    def runOne(self,params,seedStuff):
+    def runOne(self,in_params,seedStuff):
         if self.doLog:
             self.f.write(f"{self.id} Enter runOne, {datetime.now().time()}\n")
         if self.doLog: self.f.write(f"    {self.id} 0.002, {datetime.now().time()}\n")
-        numUnknownVals = params['numUnknownVals']
+        numUnknownVals = in_params['numUnknownVals']
         if self.doLog: self.f.write(f"    {self.id} 0.003, {datetime.now().time()}\n")
-        sd = params['SD']
-        attackType = params['attackType']
-        numSamples = params['numSamples']
-        numIsolated = params['numIsolated']
+        sd = in_params['SD']
+        attackType = in_params['attackType']
+        numSamples = in_params['numSamples']
+        numIsolated = in_params['numIsolated']
         if self.doLog: self.f.write(f"    {self.id} 0.004, {datetime.now().time()}\n")
         if numIsolated < 2 and attackType == 'diffAttackLed':
             print("Must set numIsolated 2 or more if diffAttackLed")
@@ -154,7 +154,7 @@ class diffAttack():
             #print("--------------- Wrong!")
         return claimCorrect,difference
 
-    def basicAttack(self,s,in_params,in_claimThresh,tries=10000,atLeast=100):
+    def basicAttack(self,s,in_params,claimThresh,tries=10000,atLeast=100):
         # For the difference attack, the left bucket exludes the victim and the right
         # bucket conditionally includes the victim.
         # For the change attack, the left bucket is before the change, and the right
@@ -163,11 +163,8 @@ class diffAttack():
         # Nominally we'll make `tries` attempts, but we need to have at
         # least `atLeast` claims that the victim has the attribute
 
-        params = in_params.copy()
-        claimThresh = in_claimThresh
-
         if self.doLog:
-            self.f.write(f"Starting basicAttack:\n{params}\n")
+            self.f.write(f"Starting basicAttack:\n{in_params}\n")
             self.id = str(f"{s}")
             self.id = self.id[-4:]
             self.f.write(f"s is {s}\n")
@@ -177,7 +174,7 @@ class diffAttack():
         bailOutReason = ''
         while True:
             numTries += 1
-            claimCorrect,difference = self.runOne(params,numTries)
+            claimCorrect,difference = self.runOne(in_params,numTries)
             if numTries % 1000 == 1 and self.doLog:
                 self.f.write(f"    tries {numTries}\n")
                 self.f.flush()
@@ -239,7 +236,7 @@ class diffAttack():
         result = {'CR':claimRate,'CI':confImprove,'C':confidence,
                    'PCR':cr,'PCI':ci,'PC':c,'claimThresh':claimThresh}
         if self.doLog:
-            self.f.write(f"Finished basicAttack:\n{params}\n{result}\n")
+            self.f.write(f"Finished basicAttack:\n{in_params}\n{result}\n")
             self.f.write(f"Bail: {bailOutReason}")
             self.f.flush()
         return result
