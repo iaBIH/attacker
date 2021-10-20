@@ -66,6 +66,8 @@ class pool():
                     # local machine
                     mc = self.inUse.pop(i)
                     return mc,None
+            time.sleep(1)
+            print("none ready")
 
     def registerJob(self,mc,res,state=None):
         mc.res = res
