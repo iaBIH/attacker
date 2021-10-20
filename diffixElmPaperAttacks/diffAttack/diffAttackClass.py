@@ -182,8 +182,8 @@ class diffAttack():
                 if confImprove < 0.9:
                     bailOutReason = f"Bail out: CI too low ({confImprove})"
                     break
-            if tries % 10000 == 0 and self.doLog:
-                self.f.write(f"    tries {tries}\n")
+            if numTries % 10000 == 0 and self.doLog:
+                self.f.write(f"    tries {numTries}\n")
                 self.f.flush()
 
         claimRate,confImprove,confidence = s.computeScore()
