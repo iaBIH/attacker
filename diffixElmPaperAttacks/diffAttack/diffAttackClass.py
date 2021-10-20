@@ -43,6 +43,7 @@ class diffAttack():
     def runOne(self,in_params,seedStuff):
         if self.doLog:
             self.f.write(f"{self.id} Enter runOne, {datetime.now().time()}\n")
+            self.f.write(f"{self.id} in_params is type {type(in_params)}\n")
         if self.doLog: self.f.write(f"    {self.id} 0.002, {datetime.now().time()}\n")
         numUnknownVals = in_params['numUnknownVals']
         if self.doLog: self.f.write(f"    {self.id} 0.003, {datetime.now().time()}\n")
