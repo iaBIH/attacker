@@ -1,4 +1,5 @@
 import time
+import random
 
 class test():
     def __init__(self,doLog=False):
@@ -10,6 +11,13 @@ class test():
         pass
 
     def delay(self,delay):
+        while True:
+            for _ in range(10000):
+                boo = [random.randint(1000,100000) for i in range(10000)]
+                boo.sort()
+            if self.doLog:
+                self.f.write("x\n")
+                self.f.flush()
         if self.doLog:
             self.f.write(f"Received delay request: delay {delay}\n")
         time.sleep(delay)
