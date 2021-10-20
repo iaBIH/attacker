@@ -151,7 +151,8 @@ class diffAttack():
         while True:
             numTries += 1
             claimCorrect,difference = self.runOne(params,numTries)
-            if numTries % 1000 == 1 and self.doLog:
+            #if numTries % 1000 == 1 and self.doLog:
+            if self.doLog:
                 self.f.write(f"    tries {numTries}\n")
                 self.f.flush()
             #---------------------------------------------------------------------------------
