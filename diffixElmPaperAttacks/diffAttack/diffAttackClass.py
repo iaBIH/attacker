@@ -51,6 +51,7 @@ class diffAttack():
         if numIsolated < 2 and attackType == 'diffAttackLed':
             print("Must set numIsolated 2 or more if diffAttackLed")
             quit()
+        if self.doLog: self.f.write(f"    {self.id} 0.005, {datetime.now().time()}\n")
         N = 25          # arbitrary, big enough to avoid min reportable value lowThresh
         if attackType in ['diffAttack','diffAttackLed']:
             # left query always excludes victim by specifying gender='male'
