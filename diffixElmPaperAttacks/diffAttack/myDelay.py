@@ -13,7 +13,7 @@ class test():
 
     def delay(self,delay):
         x = 0
-        while x < 100:
+        while x < 500:
             # This is just to see what happens when the processes fully utilize the CPU
             # (The answer is that each process is indeed assigned one CPU.)
             for _ in range(100):
