@@ -10,10 +10,10 @@ class test():
 
     def delay(self,delay):
         if self.doLog:
-            self.f.write(f"Received delay request: delay {delay}")
+            self.f.write(f"Received delay request: delay {delay}\n")
         time.sleep(delay)
         if self.doLog:
-            self.f.write(f"    Finished delay: delay {delay}")
+            self.f.write(f"    Finished delay: delay {delay}\n")
         return {'delay':delay,'doLog':self.doLog}
 
 if __name__ == "__main__":

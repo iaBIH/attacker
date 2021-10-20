@@ -14,7 +14,10 @@ class diffAttack():
     attack is run is determined by configuring `attackType`
     '''
 
-    def __init__(self):
+    def __init__(self,doLog=False):
+        self.doLog = doLog
+        if doLog:
+            self.f = open('/root/paul/logs/out.txt','a')
         pass
 
     def makeAidvSet(self,base):
@@ -125,6 +128,8 @@ class diffAttack():
         else:
             claimCorrect = False
             #print("--------------- Wrong!")
+        if self.doLog:
+            self.f.write(f"Finished basicAttack:\n{params}\n{claimCorrect}\n{difference}")
         return claimCorrect,difference
 
     def basicAttack(self,s,params,claimThresh,tries=10000,atLeast=100):
@@ -136,6 +141,8 @@ class diffAttack():
         # Nominally we'll make `tries` attempts, but we need to have at
         # least `atLeast` claims that the victim has the attribute
 
+        if self.doLog:
+            self.f.write(f"Starting basicAttack:\n{params}\n")
         numTries = 0
         numClaimHas = 0
         bailOutReason = ''
