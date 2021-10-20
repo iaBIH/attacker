@@ -24,7 +24,6 @@ if __name__ == "__main__":
         res = asleep(delay)
         pm.registerJob(mc,res,state=(i,delay))
         print(f"Start job {i} with delay {delay} ({mc.host}, {mc.port})")
-    time.sleep(50)
     while True:
         mc,result = pm.getNextResult()
         numFinished += 1

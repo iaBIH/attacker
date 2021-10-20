@@ -7,10 +7,7 @@ class test():
 
     def delay(self,delay):
         time.sleep(delay)
-        if self.doRtnAdd:
-            return delay+10000
-        else:
-            return delay
+        return {'delay':delay,'doRtnAdd':self.doRtnAdd}
 
 if __name__ == "__main__":
     pass
