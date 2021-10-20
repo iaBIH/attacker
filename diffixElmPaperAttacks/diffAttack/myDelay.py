@@ -7,6 +7,7 @@ class test():
         if doLog:
             self.f = open('/root/paul/logs/out.txt','a')
             self.f.write("\n------------------------\nStarting class myDelay/test\n")
+            self.f.flush()
             pass
         pass
 
