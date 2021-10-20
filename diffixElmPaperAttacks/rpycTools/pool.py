@@ -56,6 +56,7 @@ class pool():
             for i in range(len(self.inUse)):
                 if self.inUse[i].res:
                     # not local machine
+                    print(i)
                     if self.inUse[i].res.ready:
                         mc = self.inUse.pop(i)
                         if mc.res.error:
@@ -67,8 +68,7 @@ class pool():
                     # local machine
                     mc = self.inUse.pop(i)
                     return mc,None
-            time.sleep(1)
-            print("none ready")
+            time.sleep(60)
 
     def registerJob(self,mc,res,state=None):
         mc.res = res
