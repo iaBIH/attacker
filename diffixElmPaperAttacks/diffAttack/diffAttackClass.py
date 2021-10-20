@@ -1,7 +1,6 @@
 import random
 import sys
 import os
-import statistics
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
@@ -143,7 +142,7 @@ class diffAttack():
 
         if self.doLog:
             self.f.write(f"Starting basicAttack:\n{params}\n")
-            self.f.write(f"s is {s}")
+            self.f.write(f"s is {s}\n")
             self.f.flush()
         numTries = 0
         numClaimHas = 0
