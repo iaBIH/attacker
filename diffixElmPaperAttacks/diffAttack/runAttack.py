@@ -21,8 +21,8 @@ attack is run is determined by configuring `attackType`
 runLocal = False
 
 def dataInit():
-    return {'Unknown Vals':[],'Samples':[],'Num Isolated':[],'SD':[],'round':[],
-            'CR':[],'CI':[],'C':[],'claimThresh':[]}
+    return {'numUnknownVals':[],'numSamples':[],'numIsolated':[],'SD':[],'attackType':[],'round':[],
+            'CR':[],'CI':[],'C':[],'claimThresh':[], 'PCR':[],'PCI':[],'PC':[]}
 
 def dataUpdate(data,params,results):
     for param,val in params.items():
@@ -59,7 +59,7 @@ def paramsAlreadySatisfied(round,params):
     return False
 
 def recordResult(data,dataFile,params,result):
-    print(f"Record result:")
+    print(f"Record result:",flush=True)
     pp.pprint(params)
     pp.pprint(result)
     dataUpdate(data,params,result)
@@ -117,7 +117,7 @@ if __name__ == "__main__":
             claimThresh = claimThresholds[round]
             params = {
                 'numUnknownVals': numUnknownVals,
-                'sd': sd,
+                'SD': sd,
                 'attackType': attackType,
                 'numSamples': samples,
                 'numIsolated': numIso,
@@ -136,7 +136,7 @@ if __name__ == "__main__":
             if runLocal:
                 # Each unknown value happens with equal probability
                 s = tools.score.score(1/numUnknownVals)
-                print(f"Run attack, claimThresh {claimThresh}:")
+                print(f"Run attack, claimThresh {claimThresh}:",flush=True)
                 pp.pprint(params)
                 result = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
                 recordResult(data,dataFile,params,result)
@@ -144,7 +144,7 @@ if __name__ == "__main__":
                 mc = pm.getFreeMachine()
                 if not mc:
                     # Block on some job finishing
-                    print("------------------------------- Wait for a job to finish")
+                    print("------------------------------- Wait for a job to finish",flush=True)
                     mc,result = pm.getNextResult()
                     recordResult(data,dataFile,params,result)
                 attackClass = mc.conn.modules.diffAttackClass.diffAttack
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                 s = tools.score.score(1/numUnknownVals)
                 res = basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
                 pm.registerJob(mc,res,state=params)
-                print(f"Start job with ({mc.host}, {mc.port})")
+                print(f"Start job with ({mc.host}, {mc.port})",flush=True)
                 pp.pprint(params)
         if roundComplete:
             break

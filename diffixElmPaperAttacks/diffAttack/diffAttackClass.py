@@ -36,7 +36,7 @@ class diffAttack():
     
     def runOne(self,params,seedStuff):
         numUnknownVals = params['numUnknownVals']
-        sd = params['sd']
+        sd = params['SD']
         attackType = params['attackType']
         numSamples = params['numSamples']
         numIsolated = params['numIsolated']

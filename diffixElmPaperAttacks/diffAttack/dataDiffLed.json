@@ -1,0 +1,41 @@
+{
+    "C": [
+        0.52296
+    ],
+    "CI": [
+        0.04591999999999996
+    ],
+    "CR": [
+        1.0
+    ],
+    "PC": [
+        "0.52"
+    ],
+    "PCI": [
+        "0.046"
+    ],
+    "PCR": [
+        "1.0"
+    ],
+    "SD": [
+        1.5
+    ],
+    "attackType": [
+        "diffAttackLed"
+    ],
+    "claimThresh": [
+        0
+    ],
+    "numIsolated": [
+        3
+    ],
+    "numSamples": [
+        1
+    ],
+    "numUnknownVals": [
+        2
+    ],
+    "round": [
+        0
+    ]
+}
