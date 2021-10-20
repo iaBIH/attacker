@@ -150,6 +150,11 @@ class diffAttack():
         while True:
             numTries += 1
             claimCorrect,difference = self.runOne(params,numTries)
+            if self.doLog:
+                self.f.write(f"    tries {numTries}\n")
+                self.f.flush()
+            if self.doLog and numTries > 5:
+                quit()
             #---------------------------------------------------------------------------------
             # We need to decide if we want to make a claim at all.
             # We do so only if the difference exceeds the threshold
@@ -182,7 +187,7 @@ class diffAttack():
                 if confImprove < 0.9:
                     bailOutReason = f"Bail out: CI too low ({confImprove})"
                     break
-            if numTries % 10000 == 0 and self.doLog:
+            if numTries % 10000 == 1 and self.doLog:
                 self.f.write(f"    tries {numTries}\n")
                 self.f.flush()
 
