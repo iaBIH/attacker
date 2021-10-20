@@ -74,7 +74,9 @@ if __name__ == "__main__":
     #atLeast=10
     claimThresh = None
     sds = [1.5,2.25,3.0]
+    sds = [2.25]
     unkn = [2,5,20]
+    unkn = [5]
     numSamples = [1]
     numIsolated = [0]
     if False:
@@ -97,6 +99,7 @@ if __name__ == "__main__":
         attackType = 'diffAttackLed'
         dataFile = 'dataDiffLed.json'
         numIsolated = [3,2,4]
+        numIsolated = [3]
     if os.path.exists(dataFile):
         with open(dataFile, 'r') as f:
             data = json.load(f)
