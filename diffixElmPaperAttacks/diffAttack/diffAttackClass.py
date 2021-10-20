@@ -43,11 +43,14 @@ class diffAttack():
     def runOne(self,params,seedStuff):
         if self.doLog:
             self.f.write(f"{self.id} Enter runOne, {datetime.now().time()}\n")
+        if self.doLog: self.f.write(f"    {self.id} 0.002, {datetime.now().time()}\n")
         numUnknownVals = params['numUnknownVals']
+        if self.doLog: self.f.write(f"    {self.id} 0.003, {datetime.now().time()}\n")
         sd = params['SD']
         attackType = params['attackType']
         numSamples = params['numSamples']
         numIsolated = params['numIsolated']
+        if self.doLog: self.f.write(f"    {self.id} 0.004, {datetime.now().time()}\n")
         if numIsolated < 2 and attackType == 'diffAttackLed':
             print("Must set numIsolated 2 or more if diffAttackLed")
             quit()
