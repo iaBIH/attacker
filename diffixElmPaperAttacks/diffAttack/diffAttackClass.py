@@ -18,6 +18,7 @@ class diffAttack():
         self.doLog = doLog
         if doLog:
             self.f = open('/root/paul/logs/out.txt','a')
+            self.f.write("Starting class diffAttack\n")
         pass
 
     def makeAidvSet(self,base):
@@ -129,7 +130,7 @@ class diffAttack():
             claimCorrect = False
             #print("--------------- Wrong!")
         if self.doLog:
-            self.f.write(f"Finished basicAttack:\n{params}\n{claimCorrect}\n{difference}")
+            self.f.write(f"Finished basicAttack:\n{params}\n{claimCorrect}\n{difference}\n")
         return claimCorrect,difference
 
     def basicAttack(self,s,params,claimThresh,tries=10000,atLeast=100):
