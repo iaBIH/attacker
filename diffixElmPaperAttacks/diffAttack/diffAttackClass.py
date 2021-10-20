@@ -1,6 +1,7 @@
 import random
 import sys
 import os
+from datetime import datetime
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
@@ -39,6 +40,7 @@ class diffAttack():
         return maxIndex,maxDiff
     
     def runOne(self,params,seedStuff):
+        if self.doLog: self.f.write(f"Enter runOne, {datetime.now().time()}")
         numUnknownVals = params['numUnknownVals']
         sd = params['SD']
         attackType = params['attackType']
@@ -64,9 +66,11 @@ class diffAttack():
             addIndex = isoBuckets[0]
             #print('--------------------------------------------')
             #print(f"isoBuckets {isoBuckets}")
+        if self.doLog: self.f.write(f"    1, {datetime.now().time()}")
         bktCountsLeft = [0 for _ in range(numUnknownVals)]
         bktCountsRight = [0 for _ in range(numUnknownVals)]
         for sample in range(numSamples):
+            if self.doLog: self.f.write(f"    2, {datetime.now().time()}")
             saltLeft = (seedStuff+1) * (sample+1) * 123456967
             if attackType in ['diffAttack','diffAttackLed']:
                 saltRight = saltLeft
@@ -74,6 +78,7 @@ class diffAttack():
                 # Salt changes on change attack
                 saltRight = saltLeft * 768595021
             for unknownVal in range(numUnknownVals):
+                if self.doLog: self.f.write(f"    3, {datetime.now().time()}")
                 aidvSetLeft = self.makeAidvSet(seedStuff+(unknownVal*105389))
                 aidvSetRight = self.makeAidvSet(seedStuff+(unknownVal*105389))
                 trueCountLeft = N
@@ -120,6 +125,7 @@ class diffAttack():
                                                 cols=colsRight,vals=valsRight)
                 bktCountsRight[unknownVal] += noisyCountRight
         # Divide the noisy counts by the number of samples
+        if self.doLog: self.f.write(f"    4, {datetime.now().time()}")
         bktCountsLeft = list(map(lambda x:x/numSamples,bktCountsLeft))
         bktCountsRight = list(map(lambda x:x/numSamples,bktCountsRight))
         guessedVal,difference = self.selectVictimBucket(bktCountsLeft,bktCountsRight)

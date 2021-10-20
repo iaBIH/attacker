@@ -153,7 +153,7 @@ if __name__ == "__main__":
                     mc,result = pm.getNextResult()
                     recordResult(data,dataFile,params,result)
                 attackClass = mc.conn.modules.diffAttackClass.diffAttack
-                mcAttack = attackClass(doLog=False)
+                mcAttack = attackClass(doLog=True)
                 basicAttack = rpyc.async_(mcAttack.basicAttack)
                 s = tools.score.score(1/numUnknownVals)
                 res = basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
