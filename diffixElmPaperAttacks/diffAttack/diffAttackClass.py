@@ -16,6 +16,7 @@ class diffAttack():
 
     def __init__(self,doLog=False):
         self.doLog = doLog
+        self.id = None
         if doLog:
             self.f = open('/root/paul/logs/out.txt','a')
             self.f.write("------------ Starting class diffAttack\n")
@@ -41,7 +42,7 @@ class diffAttack():
     
     def runOne(self,params,seedStuff):
         if self.doLog:
-            self.f.write(f"Enter runOne, {datetime.now().time()}\n")
+            self.f.write(f"{self.id} Enter runOne, {datetime.now().time()}\n")
             self.f.flush()
         numUnknownVals = params['numUnknownVals']
         sd = params['SD']
@@ -69,13 +70,13 @@ class diffAttack():
             #print('--------------------------------------------')
             #print(f"isoBuckets {isoBuckets}")
         if self.doLog:
-            self.f.write(f"    1, {datetime.now().time()}\n")
+            self.f.write(f"    {self.id} 1, {datetime.now().time()}\n")
             self.f.flush()
         bktCountsLeft = [0 for _ in range(numUnknownVals)]
         bktCountsRight = [0 for _ in range(numUnknownVals)]
         for sample in range(numSamples):
             if self.doLog:
-                self.f.write(f"    2, {datetime.now().time()}\n")
+                self.f.write(f"    {self.id} 2, {datetime.now().time()}\n")
                 self.f.flush()
             saltLeft = (seedStuff+1) * (sample+1) * 123456967
             if attackType in ['diffAttack','diffAttackLed']:
@@ -85,7 +86,7 @@ class diffAttack():
                 saltRight = saltLeft * 768595021
             for unknownVal in range(numUnknownVals):
                 if self.doLog:
-                    self.f.write(f"    3, {datetime.now().time()}\n")
+                    self.f.write(f"    {self.id} 3, {datetime.now().time()}\n")
                     self.f.flush()
                 aidvSetLeft = self.makeAidvSet(seedStuff+(unknownVal*105389))
                 aidvSetRight = self.makeAidvSet(seedStuff+(unknownVal*105389))
@@ -134,7 +135,7 @@ class diffAttack():
                 bktCountsRight[unknownVal] += noisyCountRight
         # Divide the noisy counts by the number of samples
         if self.doLog:
-            self.f.write(f"    4, {datetime.now().time()}\n")
+            self.f.write(f"    {self.id} 4, {datetime.now().time()}\n")
             self.f.flush()
         bktCountsLeft = list(map(lambda x:x/numSamples,bktCountsLeft))
         bktCountsRight = list(map(lambda x:x/numSamples,bktCountsRight))
@@ -158,6 +159,8 @@ class diffAttack():
 
         if self.doLog:
             self.f.write(f"Starting basicAttack:\n{params}\n")
+            self.id = str(f"{s}")
+            self.id = self.id[-4:]
             self.f.write(f"s is {s}\n")
             self.f.flush()
         numTries = 0
