@@ -57,6 +57,10 @@ class pool():
                     # not local machine
                     if self.inUse[i].res.ready:
                         mc = self.inUse.pop(i)
+                        if mc.res.error:
+                            print("Error from remote machine")
+                            print(mc)
+                            print(mc.res.value)
                         return mc,mc.res.value
                 else:
                     # local machine
