@@ -14,7 +14,7 @@ class test():
     def delay(self,delay):
         while True:
             for _ in range(10000):
-                boo = [random.randint(1000,100000) for i in range(100)]
+                boo = [random.randint(1000,100000) for i in range(10000)]
                 boo.sort()
             if self.doLog:
                 self.f.write("x\n")

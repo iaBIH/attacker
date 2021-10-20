@@ -7,7 +7,7 @@ if __name__ == "__main__":
     pm = pool.pool()
     #print(pm.machines)
     numFinished = 0
-    for i in range(20):
+    for i in range(500):
         mc = pm.getFreeMachine()
         if not mc:
             mc,result = pm.getNextResult()
