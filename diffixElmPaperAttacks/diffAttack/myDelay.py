@@ -12,15 +12,15 @@ class test():
         pass
 
     def delay(self,delay):
-        while True:
+        x = 0
+        while x < 100:
             # This is just to see what happens when the processes fully utilize the CPU
             # (The answer is that each process is indeed assigned one CPU.)
-            x = 0
             for _ in range(100):
                 boo = [random.randint(1000,100000) for i in range(10000)]
                 boo.sort()
             if self.doLog:
-                self.f.write("x {x}\n")
+                self.f.write(f"x {x}\n")
                 x += 1
                 self.f.flush()
         if self.doLog:
