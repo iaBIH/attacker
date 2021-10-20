@@ -170,6 +170,10 @@ class diffAttack():
             self.id = self.id[-4:]
             self.f.write(f"s is {s}\n")
             self.f.flush()
+            self.f.write(f"{self.id} in_params is type {type(in_params)}\n")
+            self.f.write(f"{self.id} claimThresh is type {type(claimThresh)}\n")
+            self.f.write(f"{self.id} s is type {type(s)}\n")
+            self.f.write(f"{self.id} tries is type {type(tries)}\n")
         numTries = 0
         numClaimHas = 0
         bailOutReason = ''
