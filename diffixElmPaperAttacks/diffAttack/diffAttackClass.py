@@ -143,6 +143,7 @@ class diffAttack():
 
         if self.doLog:
             self.f.write(f"Starting basicAttack:\n{params}\n")
+            self.f.write(f"s is {s}")
             self.f.flush()
         numTries = 0
         numClaimHas = 0
@@ -163,6 +164,8 @@ class diffAttack():
                 s.attempt(makesClaim,dontCare,dontCare)
                 if numTries > tries * 100:
                     bailOutReason = f"Bail Out: too many tries (> {tries * 100})"
+                    if self.doLog:
+                        self.f.write(bailOutReason)
                     break
                 continue
             makesClaim = True
@@ -175,6 +178,8 @@ class diffAttack():
                 # then give up. This prevents us from never terminating because we
                 # can't get `atLeast` above threshold samples
                 bailOutReason = f"Bail Out: too many tries (> {tries * 100})"
+                if self.doLog:
+                    self.f.write(bailOutReason)
                 break
             if numTries >= tries and numClaimHas >= atLeast:
                 break
@@ -184,6 +189,8 @@ class diffAttack():
                 claimRate,confImprove,confidence = s.computeScore()
                 if confImprove < 0.9:
                     bailOutReason = f"Bail out: CI too low ({confImprove})"
+                    if self.doLog:
+                        self.f.write(bailOutReason)
                     break
 
         claimRate,confImprove,confidence = s.computeScore()
@@ -206,5 +213,6 @@ class diffAttack():
                    'PCR':cr,'PCI':ci,'PC':c,'claimThresh':claimThresh}
         if self.doLog:
             self.f.write(f"Finished basicAttack:\n{params}\n{result}\n")
+            self.f.write(f"Bail: {bailOutReason}")
             self.f.flush()
         return result
