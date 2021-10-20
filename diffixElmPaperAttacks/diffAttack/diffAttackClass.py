@@ -130,9 +130,6 @@ class diffAttack():
         else:
             claimCorrect = False
             #print("--------------- Wrong!")
-        if self.doLog:
-            self.f.write(f"Finished basicAttack:\n{params}\n{claimCorrect}\n{difference}\n")
-            self.f.flush()
         return claimCorrect,difference
 
     def basicAttack(self,s,params,claimThresh,tries=10000,atLeast=100):
@@ -201,5 +198,9 @@ class diffAttack():
         print(bailOutReason,flush=True)
         if claimThresh is None:
             claimThresh = 0
-        return {'CR':claimRate,'CI':confImprove,'C':confidence,
-                'PCR':cr,'PCI':ci,'PC':c,'claimThresh':claimThresh}
+        result = {'CR':claimRate,'CI':confImprove,'C':confidence,
+                   'PCR':cr,'PCI':ci,'PC':c,'claimThresh':claimThresh}
+        if self.doLog:
+            self.f.write(f"Finished basicAttack:\n{params}\n{result}\n")
+            self.f.flush()
+        return result
