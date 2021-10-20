@@ -24,30 +24,30 @@ def dataInit():
     return {'numUnknownVals':[],'numSamples':[],'numIsolated':[],'SD':[],'attackType':[],'round':[],
             'CR':[],'CI':[],'C':[],'claimThresh':[], 'PCR':[],'PCI':[],'PC':[]}
 
-def dataUpdate(data,params,results):
-    for param,val in params.items():
+def dataUpdate(data,myParams,results):
+    for param,val in myParams.items():
         data[param].append(val)
     for result,val in results.items():
         data[result].append(val)
 
-def alreadyHaveData(data,params):
+def alreadyHaveData(data,myParams):
     for i in range(len(data['SD'])):
         match = True
-        for param in params.keys():
-            if data[param][i] != params[param]:
+        for param in myParams.keys():
+            if data[param][i] != myParams[param]:
                 match = False
                 break
         if match == True:
             return True
     return False
 
-def paramsAlreadySatisfied(round,params):
-    paramsCopy = params.copy()
+def myParamsAlreadySatisfied(round,myParams):
+    myParamsCopy = myParams.copy()
     for r in range(round):
-        paramsCopy['round'] = r
+        myParamsCopy['round'] = r
         for i in range(len(data['SD'])):
             match = True
-            for param,val in paramsCopy.items():
+            for param,val in myParamsCopy.items():
                 if data[param][i] != val:
                     match = False
                     break
@@ -58,11 +58,11 @@ def paramsAlreadySatisfied(round,params):
                     return True
     return False
 
-def recordResult(data,dataFile,params,result):
+def recordResult(data,dataFile,myParams,result):
     print(f"Record result:",flush=True)
-    pp.pprint(params)
+    pp.pprint(myParams)
     pp.pprint(result)
-    dataUpdate(data,params,result)
+    dataUpdate(data,myParams,result)
     with open(dataFile, 'w') as f:
         json.dump(data, f, indent=4, sort_keys=True)
         
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         roundComplete = True
         for numIso,sd,numUnknownVals,samples in [(w,x,y,z) for w in numIsolated for x in sds for y in unkn for z in numSamples]:
             claimThresh = claimThresholds[round]
-            params = {
+            myParams = {
                 'numUnknownVals': numUnknownVals,
                 'SD': sd,
                 'attackType': attackType,
@@ -128,45 +128,45 @@ if __name__ == "__main__":
                 'numIsolated': numIso,
                 'round': round,
             }
-            if paramsAlreadySatisfied(round,params):
+            if myParamsAlreadySatisfied(round,myParams):
                 print(f"Params already satisfied",flush=True)
-                pp.pprint(params)
+                pp.pprint(myParams)
                 continue
             # Ok, we still have work to do
             roundComplete = False
-            if alreadyHaveData(data,params):
+            if alreadyHaveData(data,myParams):
                 print(f"Already have data for this run",flush=True)
-                pp.pprint(params)
+                pp.pprint(myParams)
                 continue
             if runLocal:
                 # Each unknown value happens with equal probability
                 s = tools.score.score(1/numUnknownVals)
                 print(f"Run attack, claimThresh {claimThresh}:",flush=True)
-                pp.pprint(params)
-                result = att.basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
-                recordResult(data,dataFile,params,result)
+                pp.pprint(myParams)
+                result = att.basicAttack(s,myParams,claimThresh,tries=tries,atLeast=atLeast)
+                recordResult(data,dataFile,myParams,result)
             else:
                 mc = pm.getFreeMachine()
                 if not mc:
                     # Block on some job finishing
                     print("------------------------------- Wait for a job to finish",flush=True)
                     mc,result = pm.getNextResult()
-                    recordResult(data,dataFile,params,result)
+                    recordResult(data,dataFile,myParams,result)
                 attackClass = mc.conn.modules.diffAttackClass.diffAttack
                 mcAttack = attackClass(doLog=True)
                 basicAttack = rpyc.async_(mcAttack.basicAttack)
                 s = tools.score.score(1/numUnknownVals)
-                res = basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
-                pm.registerJob(mc,res,state=params)
+                res = basicAttack(s,myParams,claimThresh,tries=tries,atLeast=atLeast)
+                pm.registerJob(mc,res,state=myParams)
                 print(f"Start job with ({mc.host}, {mc.port})",flush=True)
-                pp.pprint(params)
+                pp.pprint(myParams)
         if roundComplete:
             break
     print("Wait for remaining jobs to complete")
     while True:
         mc,result = pm.getNextResult()
         if mc:
-            recordResult(data,dataFile,params,result)
+            recordResult(data,dataFile,myParams,result)
         else:
             break
 
