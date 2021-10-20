@@ -18,7 +18,7 @@ attack is run is determined by configuring `attackType`
 
 # If True, execute on the local machine, one attack at a time
 # If False, execute over the cluster using rpyc
-runLocal = True
+runLocal = False
 
 def dataInit():
     return {'numUnknownVals':[],'numSamples':[],'numIsolated':[],'SD':[],'attackType':[],'round':[],
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                     mc,result = pm.getNextResult()
                     recordResult(data,dataFile,params,result)
                 attackClass = mc.conn.modules.diffAttackClass.diffAttack
-                mcAttack = attackClass(doLog=True)
+                mcAttack = attackClass(doLog=False)
                 basicAttack = rpyc.async_(mcAttack.basicAttack)
                 s = tools.score.score(1/numUnknownVals)
                 res = basicAttack(s,params,claimThresh,tries=tries,atLeast=atLeast)
