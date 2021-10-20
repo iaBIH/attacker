@@ -61,8 +61,11 @@ class diffAttack():
             colsLeft = ['dept','title']
         # right query may include victim
         colsRight = ['dept','title']
+        if self.doLog: self.f.write(f"    {self.id} 0.1, {datetime.now().time()}\n")
         random.seed()
+        if self.doLog: self.f.write(f"    {self.id} 0.2, {datetime.now().time()}\n")
         addIndex,rmIndex = random.sample(range(numUnknownVals),k=2)
+        if self.doLog: self.f.write(f"    {self.id} 0.3, {datetime.now().time()}\n")
         if attackType == 'diffAttackLed':
             # These are the buckets the isolated individuals belong to
             isoBuckets = random.choices(range(numUnknownVals),k=numIsolated)
