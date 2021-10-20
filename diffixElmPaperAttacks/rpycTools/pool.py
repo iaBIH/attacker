@@ -33,7 +33,8 @@ class pool():
             self.machines = []
             for host in ['paul01','paul02','paul03','paul04','paul05','paul06',
                          'paul07','paul08','paul09']:
-                for port in range(20000,20020):
+                #for port in range(20000,20020):
+                for port in range(20000,20001):
                     self.machines.append({'host':host,'port':port})
         random.shuffle(self.machines)
         self.inUse = []
