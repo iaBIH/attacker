@@ -154,7 +154,7 @@ class diffAttack():
             #print("--------------- Wrong!")
         return claimCorrect,difference
 
-    def basicAttack(self,s,in_params,in_claimThresh,in_tries=10000,in_atLeast=100):
+    def basicAttack(self,s,in_params,in_claimThresh,tries=10000,atLeast=100):
         # For the difference attack, the left bucket exludes the victim and the right
         # bucket conditionally includes the victim.
         # For the change attack, the left bucket is before the change, and the right
@@ -165,8 +165,6 @@ class diffAttack():
 
         params = in_params.copy()
         claimThresh = in_claimThresh
-        tries = in_tries
-        atLeast = in_atLeast
 
         if self.doLog:
             self.f.write(f"Starting basicAttack:\n{params}\n")
