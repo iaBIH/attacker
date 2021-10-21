@@ -8,6 +8,7 @@ parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
 import rpycTools.pool
 import diffAttack.diffAttackClass
+import tools.dataHandler
 
 '''
 This code is for both the classic difference attack (positive AND), and
@@ -19,51 +20,12 @@ attack is run is determined by configuring `attackType`
 # If False, execute over the cluster using rpyc
 runLocal = False
 
-def dataInit():
-    return {'numUnknownVals':[],'numSamples':[],'numIsolated':[],'SD':[],'attackType':[],'round':[],
-            'CR':[],'CI':[],'C':[],'claimThresh':[], 'PCR':[],'PCI':[],'PC':[]}
-
-def dataUpdate(data,params,results):
-    for param,val in params.items():
-        data[param].append(val)
-    for result,val in results.items():
-        data[result].append(val)
-
-def alreadyHaveData(data,params):
-    for i in range(len(data['SD'])):
-        match = True
-        for param in params.keys():
-            if data[param][i] != params[param]:
-                match = False
-                break
-        if match == True:
-            return True
-    return False
-
-def paramsAlreadySatisfied(round,params):
-    paramsCopy = params.copy()
-    for r in range(round):
-        paramsCopy['round'] = r
-        for i in range(len(data['SD'])):
-            match = True
-            for param,val in paramsCopy.items():
-                if data[param][i] != val:
-                    match = False
-                    break
-            if match == True:
-                cr = data['CR'][i]
-                ci = data['CI'][i]
-                if ci >= 0.95 or cr < 0.0001:
-                    return True
-    return False
-
-def recordResult(data,dataFile,params,result):
+def recordResult(dh,params,result):
     print(f"Record result:",flush=True)
     pp.pprint(params)
     pp.pprint(result)
-    dataUpdate(data,params,result)
-    with open(dataFile, 'w') as f:
-        json.dump(data, f, indent=4, sort_keys=True)
+    dh.dataUpdate(params,result)
+    dh.saveData()
         
 if __name__ == "__main__":
     pp = pprint.PrettyPrinter(indent=4)
@@ -96,18 +58,18 @@ if __name__ == "__main__":
         attackType = 'diffAttackLed'
         dataFile = 'dataDiffLed.json'
         numIsolated = [3,2,4]
-    if os.path.exists(dataFile):
-        with open(dataFile, 'r') as f:
-            data = json.load(f)
-    else:
-        # Following are for plotting
-        data = dataInit()
+    dataPath = os.path.abspath(os.path.join(filePath, os.pardir, dataFile))
+    print(f"Using data at {dataPath}")
+    params = ['numUnknownVals','numSamples','numIsolated','SD','attackType','round']
+    results = ['CR','CI','C','claimThresh', 'PCR','PCI','PC']
+    dh = tools.dataHandler.dataHandler(params,results,dataFile=dataPath)
+    dh.addSatisfyCriteria('CI',0.95,'gt')
+    dh.addSatisfyCriteria('CR',0.0001,'lt')
     if runLocal:
         att = diffAttack.diffAttackClass.diffAttack()
     pm = rpycTools.pool.pool(runLocal=runLocal)
     claimThresholds = [None,1.5]
     maxRound = 200
-    maxRound = 5
     for i in range(2,maxRound):
         claimThresholds.append(claimThresholds[i-1]+1)
     # We work in rounds, increasing the threshold as we go, starting with
@@ -124,13 +86,13 @@ if __name__ == "__main__":
                 'numIsolated': numIso,
                 'round': round,
             }
-            if paramsAlreadySatisfied(round,params):
+            if dh.paramsAlreadySatisfied(round,params):
                 print(f"Params already satisfied",flush=True)
                 pp.pprint(params)
                 continue
             # Ok, we still have work to do
             roundComplete = False
-            if alreadyHaveData(data,params):
+            if dh.alreadyHaveData(params):
                 print(f"Already have data for this run",flush=True)
                 pp.pprint(params)
                 continue
@@ -140,14 +102,14 @@ if __name__ == "__main__":
                 print(f"Run attack, claimThresh {claimThresh}:",flush=True)
                 pp.pprint(params)
                 result = att.basicAttack(scoreProb,json.dumps(params),claimThresh,tries=tries,atLeast=atLeast)
-                recordResult(data,dataFile,params,result)
+                recordResult(dh,params,result)
             else:
                 mc = pm.getFreeMachine()
                 if not mc:
                     # Block on some job finishing
                     print("------------------------------- Wait for a job to finish",flush=True)
                     mc,result = pm.getNextResult()
-                    recordResult(data,dataFile,params,result)
+                    recordResult(dh,mc.state,result)
                 attackClass = mc.conn.modules.diffAttackClass.diffAttack
                 mcAttack = attackClass(doLog=False)
                 basicAttack = rpyc.async_(mcAttack.basicAttack)
@@ -162,12 +124,11 @@ if __name__ == "__main__":
     while True:
         mc,result = pm.getNextResult()
         if mc:
-            recordResult(data,dataFile,params,result)
+            recordResult(dh,mc.state,result)
         else:
             break
 
-    with open(dataFile, 'w') as f:
-        json.dump(data, f, indent=4, sort_keys=True)
+    dh.saveData()
 
 '''
 Left query has gender, so female excluded from all male buckets

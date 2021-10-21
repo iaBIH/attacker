@@ -13,12 +13,12 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
 # -------------------------------------------------------------------------------------
-with open('dataDiffLed_old.json', 'r') as f:
+with open('dataDiffLed.json', 'r') as f:
     data = json.load(f)
 df = pd.DataFrame.from_dict(data)
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",hue='Unknown Vals',style='Num Isolated',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",hue='numUnknownVals',style='numIsolated',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -35,7 +35,7 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='lower center', bbox_to_anchor=(0.6, 0.0), ncol=1)
+ax.legend(loc='upper center', bbox_to_anchor=(0.6, 1.0), ncol=2)
 plt.grid()
 plt.ylim(0,1.0)
 for shape in shapes:
@@ -43,7 +43,7 @@ for shape in shapes:
 plt.savefig('diff-attack-led.png',bbox_inches='tight')
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",style='Num Isolated',hue='SD',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",style='numIsolated',hue='SD',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -60,7 +60,7 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='lower center', bbox_to_anchor=(0.6, 0.0), ncol=1)
+ax.legend(loc='upper center', bbox_to_anchor=(0.6, 1.0), ncol=2)
 plt.grid()
 plt.ylim(0,1.0)
 for shape in shapes:
