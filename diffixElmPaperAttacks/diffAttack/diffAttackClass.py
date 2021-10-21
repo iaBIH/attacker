@@ -43,21 +43,14 @@ class diffAttack():
         return maxIndex,maxDiff
     
     def runOne(self,params,seedStuff):
-        if self.doLog:
-            self.f.write(f"{self.id} Enter runOne, {datetime.now().time()}\n")
-            self.f.write(f"{self.id} params is type {type(params)}\n")
-        if self.doLog: self.f.write(f"    {self.id} 0.002, {datetime.now().time()}\n")
         numUnknownVals = params['numUnknownVals']
-        if self.doLog: self.f.write(f"    {self.id} 0.003, {datetime.now().time()}\n")
         sd = params['SD']
         attackType = params['attackType']
         numSamples = params['numSamples']
         numIsolated = params['numIsolated']
-        if self.doLog: self.f.write(f"    {self.id} 0.004, {datetime.now().time()}\n")
         if numIsolated < 2 and attackType == 'diffAttackLed':
             print("Must set numIsolated 2 or more if diffAttackLed")
             quit()
-        if self.doLog: self.f.write(f"    {self.id} 0.005, {datetime.now().time()}\n")
         N = 25          # arbitrary, big enough to avoid min reportable value lowThresh
         if attackType in ['diffAttack','diffAttackLed']:
             # left query always excludes victim by specifying gender='male'
@@ -67,26 +60,17 @@ class diffAttack():
             colsLeft = ['dept','title']
         # right query may include victim
         colsRight = ['dept','title']
-        if self.doLog: self.f.write(f"    {self.id} 0.1, {datetime.now().time()}\n")
         random.seed()
-        if self.doLog: self.f.write(f"    {self.id} 0.2, {datetime.now().time()}\n")
         addIndex,rmIndex = random.sample(range(numUnknownVals),k=2)
-        if self.doLog: self.f.write(f"    {self.id} 0.3, {datetime.now().time()}\n")
         if attackType == 'diffAttackLed':
             # These are the buckets the isolated individuals belong to
             isoBuckets = random.choices(range(numUnknownVals),k=numIsolated)
             addIndex = isoBuckets[0]
             #print('--------------------------------------------')
             #print(f"isoBuckets {isoBuckets}")
-        if self.doLog:
-            self.f.write(f"    {self.id} 1, {datetime.now().time()}\n")
-            self.f.flush()
         bktCountsLeft = [0 for _ in range(numUnknownVals)]
         bktCountsRight = [0 for _ in range(numUnknownVals)]
         for sample in range(numSamples):
-            if self.doLog:
-                self.f.write(f"    {self.id} 2, {datetime.now().time()}\n")
-                self.f.flush()
             saltLeft = (seedStuff+1) * (sample+1) * 123456967
             if attackType in ['diffAttack','diffAttackLed']:
                 saltRight = saltLeft
@@ -94,9 +78,6 @@ class diffAttack():
                 # Salt changes on change attack
                 saltRight = saltLeft * 768595021
             for unknownVal in range(numUnknownVals):
-                if self.doLog:
-                    self.f.write(f"    {self.id} 3, {datetime.now().time()}\n")
-                    self.f.flush()
                 aidvSetLeft = self.makeAidvSet(seedStuff+(unknownVal*105389))
                 aidvSetRight = self.makeAidvSet(seedStuff+(unknownVal*105389))
                 trueCountLeft = N
@@ -143,9 +124,6 @@ class diffAttack():
                                                 cols=colsRight,vals=valsRight)
                 bktCountsRight[unknownVal] += noisyCountRight
         # Divide the noisy counts by the number of samples
-        if self.doLog:
-            self.f.write(f"    {self.id} 4, {datetime.now().time()}\n")
-            self.f.flush()
         bktCountsLeft = list(map(lambda x:x/numSamples,bktCountsLeft))
         bktCountsRight = list(map(lambda x:x/numSamples,bktCountsRight))
         guessedVal,difference = self.selectVictimBucket(bktCountsLeft,bktCountsRight)
@@ -171,23 +149,13 @@ class diffAttack():
 
         if self.doLog:
             self.f.write(f"Starting basicAttack:\n{params}\n")
-            self.id = str(f"{s}")
-            self.id = self.id[-4:]
-            self.f.write(f"s is {s}\n")
             self.f.flush()
-            self.f.write(f"{self.id} params is type {type(params)}\n")
-            self.f.write(f"{self.id} claimThresh is type {type(claimThresh)}\n")
-            self.f.write(f"{self.id} s is type {type(s)}\n")
-            self.f.write(f"{self.id} tries is type {type(tries)}\n")
         numTries = 0
         numClaimHas = 0
         bailOutReason = ''
         while True:
             numTries += 1
             claimCorrect,difference = self.runOne(params,numTries)
-            if numTries % 1000 == 1 and self.doLog:
-                self.f.write(f"    tries {numTries}\n")
-                self.f.flush()
             #---------------------------------------------------------------------------------
             # We need to decide if we want to make a claim at all.
             # We do so only if the difference exceeds the threshold
@@ -198,8 +166,6 @@ class diffAttack():
                 s.attempt(makesClaim,dontCare,dontCare)
                 if numTries > tries * 100:
                     bailOutReason = f"Bail Out: too many tries (> {tries * 100})"
-                    if self.doLog:
-                        self.f.write(bailOutReason)
                     break
                 continue
             makesClaim = True
@@ -212,8 +178,6 @@ class diffAttack():
                 # then give up. This prevents us from never terminating because we
                 # can't get `atLeast` above threshold samples
                 bailOutReason = f"Bail Out: too many tries (> {tries * 100})"
-                if self.doLog:
-                    self.f.write(bailOutReason)
                 break
             if numTries >= tries and numClaimHas >= atLeast:
                 break
@@ -223,8 +187,6 @@ class diffAttack():
                 claimRate,confImprove,confidence = s.computeScore()
                 if confImprove < 0.9:
                     bailOutReason = f"Bail out: CI too low ({confImprove})"
-                    if self.doLog:
-                        self.f.write(bailOutReason)
                     break
 
         claimRate,confImprove,confidence = s.computeScore()
