@@ -42,7 +42,7 @@ if __name__ == "__main__":
         # Classic difference attack
         attackType = 'diffAttack'
         dataFile = 'dataDiff.json'
-    elif False:
+    elif True:
         # Difference attack based on table change (salt changes too)
         attackType = 'changeDiffAttack'
         dataFile = 'dataChangeDiff.json'

@@ -18,7 +18,10 @@ with open('dataDiffLed.json', 'r') as f:
 df = pd.DataFrame.from_dict(data)
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",hue='numUnknownVals',style='numIsolated',s=80)
+df['numUnknownVals'] = df['numUnknownVals'].apply(str)
+df = df.rename(columns={'numUnknownVals':'Unknown Vals'})
+df = df.rename(columns={'numIsolated':'Num Isolated'})
+ax = sns.scatterplot(data=df, x="CR", y="CI",hue='Unknown Vals',style='Num Isolated',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -35,15 +38,15 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='upper center', bbox_to_anchor=(0.6, 1.0), ncol=2)
+ax.legend(loc='lower center', bbox_to_anchor=(0.65, 0.7), ncol=2)
 plt.grid()
-plt.ylim(0,1.0)
+#plt.ylim(0,1.1)
 for shape in shapes:
     plt.gca().add_patch(shape)
 plt.savefig('diff-attack-led.png',bbox_inches='tight')
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",style='numIsolated',hue='SD',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",style='Num Isolated',hue='SD',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -60,12 +63,22 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='upper center', bbox_to_anchor=(0.6, 1.0), ncol=2)
+ax.legend(loc='lower center', bbox_to_anchor=(0.65, 0.7), ncol=2)
 plt.grid()
-plt.ylim(0,1.0)
+#plt.ylim(0,1.1)
 for shape in shapes:
     plt.gca().add_patch(shape)
 plt.savefig('diff-attack-led-iso.png',bbox_inches='tight')
+
+plt.figure(figsize=(6, 3))
+ax = sns.scatterplot(data=df, x="CR", y="C",hue='Unknown Vals',style='Num Isolated',s=80)
+ax.set(xscale='log')
+plt.xlabel('Claim Rate (CR)',fontsize=12)
+plt.ylabel('Confidence (C)',fontsize=12)
+ax.legend(loc='upper center', bbox_to_anchor=(0.4, 1.2), ncol=2)
+plt.grid()
+#plt.ylim(0,1.0)
+plt.savefig('diff-attack-led-conf.png',bbox_inches='tight')
 
 # -------------------------------------------------------------------------------------
 with open('dataDiffElm1.json', 'r') as f:
@@ -192,9 +205,14 @@ plt.savefig('diff-attack-adjusted.png',bbox_inches='tight')
 # ---------------------------------------------------------------------------
 with open('dataChangeDiff.json', 'r') as f:
     data = json.load(f)
+for i in range(len(data['CR'])):
+    if data['CR'][i] > 0.0001 and data['CI'][i] > 1.0:
+        print(data['CR'][i], data['CI'][i])
+
 dfInit = pd.DataFrame.from_dict(data)
 df = dfInit.query('SD > 0.5')
 df['SD'] = df['SD'].replace([1.5,2.25,3.0],['1.5 (P)','2.25 (XP)','3.0 (XXP)'])
+df = df.rename(columns={'numUnknownVals':'Unknown Vals'})
 
 plt.figure(figsize=(6, 3))
 ax = sns.scatterplot(data=df, x="CR", y="CI",style='Unknown Vals',hue='SD',s=80)
@@ -214,9 +232,9 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='lower center', bbox_to_anchor=(0.6, 0.0), ncol=1)
+ax.legend(loc='lower center', bbox_to_anchor=(0.65, 0.7), ncol=2)
 plt.grid()
-plt.ylim(0,1.0)
+#plt.ylim(0,1.0)
 for shape in shapes:
     plt.gca().add_patch(shape)
 plt.savefig('change-attack.png',bbox_inches='tight')

@@ -103,7 +103,9 @@ class diffAttack():
                 elif len(set(isoBuckets)) != 1:
                     # not all isolated individuals are in the same bucket (if they are,
                     # we do nothing).
-                    # So add them to the appropriate buckets
+                    # So add them to the appropriate buckets. This represents the case where
+                    # LED does not adjust, because there are different unknown values for
+                    # the different victims
                     for bkt in isoBuckets:
                         if bkt == unknownVal:
                             #print(aidvSetRight)
@@ -112,6 +114,8 @@ class diffAttack():
                             trueCountRight += 1
                             #print(f"bkt {bkt} add 1 --> {trueCountRight}")
                 else:
+                    # This represents the case where LED does adjust, and as a result, the
+                    # left and right buckets are identical. That is why we do nothing.
                     #print("   All isolated in same bucket!")
                     pass
                 # We assume no suppression (so don't bother to specify the parameters)
@@ -194,7 +198,7 @@ class diffAttack():
         if claimRate == 0:
             # We couldn't make even one claim, but don't want 0 rate because
             # that won't plot on a log scale!
-            claimRate = 1/tries*100
+            claimRate = 1/(tries*100)
             cr = str(claimRate)
         if numClaimHas < 10:
             # There just aren't enough samples to get a meaningful CI
