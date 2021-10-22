@@ -205,9 +205,6 @@ plt.savefig('diff-attack-adjusted.png',bbox_inches='tight')
 # ---------------------------------------------------------------------------
 with open('dataChangeDiff.json', 'r') as f:
     data = json.load(f)
-for i in range(len(data['CR'])):
-    if data['CR'][i] > 0.0001 and data['CI'][i] > 1.0:
-        print(data['CR'][i], data['CI'][i])
 
 dfInit = pd.DataFrame.from_dict(data)
 df = dfInit.query('SD > 0.5')
