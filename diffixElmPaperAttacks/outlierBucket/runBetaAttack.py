@@ -75,11 +75,11 @@ if __name__ == "__main__":
     abs = [[2,2],[2,4],[2,8]]
     numValues = [2,5,20]
     params = ['numUnknownVals','SD','outParams','alphbet','round']
-    results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numCLaimHas']
+    results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numClaimHas']
     pathParts = Path(os.path.abspath(__file__)).parts
     dataDir = pathParts[-2]
     dataFile = 'betaData'
-    dh = tools.dataHandler.dataHandler(params,results,dataDir,dataFile)
+    dh = tools.dataHandler.dataHandler(params,results,dataDir,dataFile,printToFile=False)
     print(f"data file at '{dh.dataFile}'")
     print(f"output print at '{dh.printFile}'")
     dh.addSatisfyCriteria('CI',0.95,'gt')
