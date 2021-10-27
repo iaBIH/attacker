@@ -3,8 +3,6 @@ import os
 import json
 import statistics
 import random
-import pprint
-from tabulate import tabulate
 filePath = __file__
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
