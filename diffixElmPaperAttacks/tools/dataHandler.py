@@ -4,15 +4,25 @@ import os
 import sys
 
 class dataHandler():
-    def __init__(self,params,results,dataFile=None):
+    def __init__(self,params,results,dataDir,dataFile,printToFile=True):
         ''' `params` is a list of parameter names
             `results` is a list of result names
+            `dataDir` is the directory under ATTACK_RESULTS_DIR where results go
+            `dataFile` is the name of the file where results go
         '''
-        self.dataFile = dataFile
+        rootDir = os.environ['ATTACK_RESULTS_DIR']
+        homePath = os.path.join(rootDir,dataDir)
+        if not os.path.exists(homePath):
+            os.mkdir(homePath)
+        self.dataFile = os.path.join(homePath,dataFile+'.json')
+        self.printFile = None
+        if printToFile:
+            self.printFile = os.path.join(homePath,dataFile+'.txt')
+            sys.stdout = open(self.printFile, 'a')
         self.params = {}
         self.results = {}
-        if dataFile and os.path.exists(dataFile):
-            with open(dataFile, 'r') as f:
+        if self.dataFile and os.path.exists(self.dataFile):
+            with open(self.dataFile, 'r') as f:
                 self.data = json.load(f)
         else:
             self.data = {}
@@ -35,6 +45,35 @@ class dataHandler():
             self.data[param].append(val)
         for result,val in results.items():
             self.data[result].append(val)
+
+    def getLastRound(self,params):
+        maxRound = -1
+        for i in range(len(self.data[self.aParam])):
+            match = True
+            round = self.data['round'][i]
+            for param in params.keys():
+                if param == 'round':
+                    continue
+                if self.data[param][i] != params[param]:
+                    match = False
+                    break
+            if match == True:
+                # We found the completed round, so go to the next one
+                maxRound = max(round,maxRound)
+        return maxRound
+
+    def getResultsVal(self,resType,params,round):
+        paramsCopy = params.copy()
+        paramsCopy['round'] = round
+        for i in range(len(self.data[self.aParam])):
+            match = True
+            for param in paramsCopy.keys():
+                if self.data[param][i] != params[param]:
+                    match = False
+                    break
+            if match == True:
+                return self.data[resType][i]
+        return None
 
     def alreadyHaveData(self,params):
         for i in range(len(self.data[self.aParam])):

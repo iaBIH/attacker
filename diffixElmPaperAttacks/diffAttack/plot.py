@@ -114,6 +114,7 @@ plt.savefig('diff-elm1-attack.png',bbox_inches='tight')
 with open('dataChangeAvg.json', 'r') as f:
     data = json.load(f)
 df = pd.DataFrame.from_dict(data)
+df = df.rename(columns={'numSamples':'Samples'})
 
 plt.figure(figsize=(6, 3))
 ax = sns.scatterplot(data=df, x="CR", y="CI",hue='Samples',s=80)

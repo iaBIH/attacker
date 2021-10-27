@@ -22,19 +22,27 @@ class pool():
     ''' Used to find available rpyc instances. 
         This code assume that this class is only ever called once at a time
     '''
-    def __init__(self,runLocal=False):
+    def __init__(self,hostsAndPorts=None,runLocal=False):
         if runLocal:
             self.machines = [{'host':'local','port':0}]
             return
-        if os.path.exists('poolConfig.json'):
-            with open('poolConfig.json', 'r') as f:
-                self.machines = json.load(f)
-        else:
-            self.machines = []
-            for host in ['paul01','paul02','paul03','paul04','paul05','paul06',
-                         'paul07','paul08','paul09']:
-                for port in range(20000,20020):
-                    self.machines.append({'host':host,'port':port})
+        if not hostsAndPorts:
+            hostsAndPorts = [
+                {'host':'paul01', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul02', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul03', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul04', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul05', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul06', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul07', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul08', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul09', 'portLow':20000, 'portHigh':20019},
+            ]
+        self.machines = []
+        for thing in hostsAndPorts:
+            host = thing['host']
+            for port in range(thing['portLow'],thing['portHigh']+1):
+                self.machines.append({'host':host,'port':port})
         random.shuffle(self.machines)
         self.inUse = []
 

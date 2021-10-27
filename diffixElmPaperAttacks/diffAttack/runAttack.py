@@ -42,15 +42,15 @@ if __name__ == "__main__":
         # Classic difference attack
         attackType = 'diffAttack'
         dataFile = 'dataDiff.json'
-    elif True:
+    elif False:
         # Difference attack based on table change (salt changes too)
         attackType = 'changeDiffAttack'
         dataFile = 'dataChangeDiff.json'
-    elif False:
+    elif True:
         # Difference attack based on table change and averaging (salt changes too)
         attackType = 'changeAvgAttack'
         dataFile = 'dataChangeAvg.json'
-        numSamples = [2,5,10,20]
+        numSamples = [2,5,10,20,50]
         sds = [2.25]
         unkn = [5]
     else:
@@ -101,7 +101,10 @@ if __name__ == "__main__":
                 scoreProb = 1/numUnknownVals
                 print(f"Run attack, claimThresh {claimThresh}:",flush=True)
                 pp.pprint(params)
-                result = att.basicAttack(scoreProb,json.dumps(params),claimThresh,tries=tries,atLeast=atLeast)
+                # We divide the number of tries by the number of samples so that the
+                # runs don't take so long
+                result = att.basicAttack(scoreProb,json.dumps(params),claimThresh,
+                                         tries=tries/samples,atLeast=atLeast)
                 recordResult(dh,params,result)
             else:
                 mc = pm.getFreeMachine()
