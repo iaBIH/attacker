@@ -77,6 +77,8 @@ if __name__ == "__main__":
     params = ['numUnknownVals','SD','outParams','alphbet','round']
     results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numCLaimHas']
     pathParts = Path(__file__).parts
+    print(pathParts)
+    quit()
     dataDir = pathParts[-2]
     dataFile = 'betaData'
     dh = tools.dataHandler.dataHandler(params,results,dataDir,dataFile)
@@ -87,8 +89,14 @@ if __name__ == "__main__":
     if runLocal:
         att = outlierBucket.betaAttackClass.betaAttack()
     hostsAndPorts = [
-                {'host':'paul01', 'portLow':20000, 'portHigh':20019},
-                {'host':'paul02', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul03', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul04', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul04', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul05', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul06', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul07', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul08', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul09', 'portLow':20000, 'portHigh':20019},
     ]
     pm = rpycTools.pool.pool(hostsAndPorts=hostsAndPorts,runLocal=runLocal)
     ''' The 0th round has no claim threshold (claimThresh=None). The 1st round starts with
