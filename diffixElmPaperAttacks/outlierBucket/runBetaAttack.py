@@ -78,6 +78,7 @@ if __name__ == "__main__":
     results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numCLaimHas']
     pathParts = Path(__file__).parts
     print(pathParts)
+    print(__file__)
     quit()
     dataDir = pathParts[-2]
     dataFile = 'betaData'
