@@ -128,13 +128,9 @@ if __name__ == "__main__":
                 round = params['round']
                 # doJob naturally does nothing if the conditions are satisfied
                 # otherwise it starts a new remote attack job
-                # zzzz we need the last claimthresh!
-                claimThresh = result['claimThresh'] * 1.1
-                doJob(params,claimThresh)
-                if dh.paramsAlreadySatisfied(round,params):
-                    print(f"Params already satisfied",flush=True)
-                    pp.pprint(params)
-                    continue
+                if result['claimThresh']:
+                    claimThresh = result['claimThresh'] * 1.1
+                    doJob(params,claimThresh)
             else:
                 break
     # Probably not necessary, but...
