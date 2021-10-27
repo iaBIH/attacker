@@ -3,7 +3,8 @@ import os
 import json
 import pprint
 import rpyc
-filePath = __file__
+from pathlib import Path
+filePath = os.path.abspath(__file__)
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
 import rpycTools.pool
@@ -41,33 +42,39 @@ if __name__ == "__main__":
     if False:
         # Classic difference attack
         attackType = 'diffAttack'
-        dataFile = 'dataDiff.json'
+        dataFile = 'dataDiff'
     elif False:
         # Difference attack based on table change (salt changes too)
         attackType = 'changeDiffAttack'
-        dataFile = 'dataChangeDiff.json'
+        dataFile = 'dataChangeDiff'
     elif True:
         # Difference attack based on table change and averaging (salt changes too)
         attackType = 'changeAvgAttack'
-        dataFile = 'dataChangeAvg.json'
+        dataFile = 'dataChangeAvg'
         numSamples = [2,5,10,20,50]
         sds = [2.25]
         unkn = [5]
     else:
         # Classic difference attack with LED-lite
         attackType = 'diffAttackLed'
-        dataFile = 'dataDiffLed.json'
+        dataFile = 'dataDiffLed'
         numIsolated = [3,2,4]
     dataPath = os.path.abspath(os.path.join(filePath, os.pardir, dataFile))
     print(f"Using data at {dataPath}")
     params = ['numUnknownVals','numSamples','numIsolated','SD','attackType','round']
     results = ['CR','CI','C','claimThresh', 'PCR','PCI','PC']
-    dh = tools.dataHandler.dataHandler(params,results,dataFile=dataPath)
+    pathParts = Path(os.path.abspath(__file__)).parts
+    dataDir = pathParts[-2]
+    dh = tools.dataHandler.dataHandler(params,results,dataDir,dataFile,printToFile=False)
     dh.addSatisfyCriteria('CI',0.95,'gt')
     dh.addSatisfyCriteria('CR',0.0001,'lt')
     if runLocal:
         att = diffAttack.diffAttackClass.diffAttack()
-    pm = rpycTools.pool.pool(runLocal=runLocal)
+    hostsAndPorts = [
+                {'host':'paul01', 'portLow':20000, 'portHigh':20019},
+                {'host':'paul02', 'portLow':20000, 'portHigh':20019},
+    ]
+    pm = rpycTools.pool.pool(hostsAndPorts=hostsAndPorts,runLocal=runLocal)
     claimThresholds = [None,1.5]
     maxRound = 200
     for i in range(2,maxRound):
