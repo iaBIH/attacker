@@ -4,7 +4,7 @@ import json
 import pprint
 import rpyc
 from pathlib import Path
-filePath = __file__
+filePath = os.path.abspath(__file__)
 parDir = os.path.abspath(os.path.join(filePath, os.pardir, os.pardir))
 sys.path.append(parDir)
 import rpycTools.pool
@@ -77,9 +77,6 @@ if __name__ == "__main__":
     params = ['numUnknownVals','SD','outParams','alphbet','round']
     results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numCLaimHas']
     pathParts = Path(os.path.abspath(__file__)).parts
-    print(pathParts)
-    print(__file__)
-    quit()
     dataDir = pathParts[-2]
     dataFile = 'betaData'
     dh = tools.dataHandler.dataHandler(params,results,dataDir,dataFile)
