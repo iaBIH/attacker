@@ -76,7 +76,7 @@ if __name__ == "__main__":
     numValues = [2,5,20]
     params = ['numUnknownVals','SD','outParams','alphbet','round']
     results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numCLaimHas']
-    pathParts = Path(__file__).parts
+    pathParts = Path(os.path.abspath(__file__)).parts
     print(pathParts)
     print(__file__)
     quit()
