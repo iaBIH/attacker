@@ -12,9 +12,7 @@ import tools.risk
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-rootDir = os.environ['ATTACK_RESULTS_DIR']
-dataFile = os.path.join(rootDir,'outlierBucket','betaData.json')
-with open(dataFile, 'r') as f:
+with open('betaData.json', 'r') as f:
     data = json.load(f)
 df = pd.DataFrame.from_dict(data)
 df['alphbet'] = df['alphbet'].apply(str)
@@ -44,16 +42,17 @@ plt.ylim(0,1.0)
 for shape in shapes:
     plt.gca().add_patch(shape)
 plt.savefig('beta-outlier.png',bbox_inches='tight')
-quit()
 
-with open('dataDiff.json', 'r') as f:
+with open('data.json', 'r') as f:
     data = json.load(f)
-dfInit = pd.DataFrame.from_dict(data)
-df = dfInit.query('SD > 0.5')
-df['SD'] = df['SD'].replace([1.5,2.25,3.0],['1.5 (P)','2.25 (XP)','3.0 (XXP)'])
+df = pd.DataFrame.from_dict(data)
+df['CR'] = pd.to_numeric(df['CR'])
+df['CI'] = pd.to_numeric(df['CI'])
+df['C'] = pd.to_numeric(df['C'])
+df['Num Outliers'] = df['Num Outliers'].apply(str)
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",style='Unknown Vals',hue='SD',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",hue='Out Factor',style='setting',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -70,51 +69,16 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='lower left', bbox_to_anchor=(0.0, 0.0), ncol=2)
+ax.legend(loc='lower left', bbox_to_anchor=(1.0, 0.0), ncol=1)
 plt.grid()
 for shape in shapes:
     plt.gca().add_patch(shape)
-plt.savefig('diff-attack.png',bbox_inches='tight')
-
-# The above plot assumes that the attack conditions exist. The
-# following plot incorporates the probabilty that the attack
-# conditions exist for a given user based on measures of the
-# big_census.csv table (1/50000)
-
-df['CR'] = df['CR'].apply(lambda x: x/50000)
-plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",style='Unknown Vals',hue='SD',s=80)
-ax.set(xscale='log')
-params = {
-    'numBoxes':20,
-    'fromLeft':0.0008,
-    'toLeft':0.008,
-    'fromBottom':0.45,
-    'toBottom':0.7,
-    'right':2.0,
-    'top':1.1,
-    'alpha':0.03,
-    #'alpha':0.5,
-}
-rp = tools.risk.riskPatches()
-shapes = rp.getShapes(params)
-plt.xlabel('Claim Rate (CR) x Vulnerability Probability',fontsize=12)
-plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='upper right', bbox_to_anchor=(1.0, 1.0), ncol=1)
-plt.grid()
-plt.xlim(10e-9,1.0)
-for shape in shapes:
-    plt.gca().add_patch(shape)
-plt.savefig('diff-attack-adjusted.png',bbox_inches='tight')
-
-with open('dataChangeDiff.json', 'r') as f:
-    data = json.load(f)
-dfInit = pd.DataFrame.from_dict(data)
-df = dfInit.query('SD > 0.5')
-df['SD'] = df['SD'].replace([1.5,2.25,3.0],['1.5 (P)','2.25 (XP)','3.0 (XXP)'])
+plt.ylim(0,1.1)
+plt.xlim(0.000001,2.0)
+plt.savefig('worst-outlier.png',bbox_inches='tight')
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",style='Unknown Vals',hue='SD',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",hue='Out Factor',style='setting',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -131,9 +95,10 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(loc='lower center', bbox_to_anchor=(0.6, 0.0), ncol=1)
+ax.legend(loc='lower left', bbox_to_anchor=(1.0, 0.0), ncol=1)
 plt.grid()
-plt.ylim(0,1.0)
 for shape in shapes:
     plt.gca().add_patch(shape)
-plt.savefig('change-attack.png',bbox_inches='tight')
+plt.ylim(0.94,1.02)
+plt.xlim(0.001,1.0)
+plt.savefig('worst-outlier-close.png',bbox_inches='tight')
