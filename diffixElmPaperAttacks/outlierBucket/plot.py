@@ -12,12 +12,16 @@ import tools.risk
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 
-with open('data.json', 'r') as f:
+rootDir = os.environ['ATTACK_RESULTS_DIR']
+dataFile = os.path.join(rootDir,'outlierBucket','betaData.json')
+with open(dataFile, 'r') as f:
     data = json.load(f)
 df = pd.DataFrame.from_dict(data)
+df['alphbet'] = df['alphbet'].apply(str)
+df['outParams'] = df['outParams'].apply(str)
 
 plt.figure(figsize=(6, 3))
-ax = sns.scatterplot(data=df, x="CR", y="CI",hue='Samples',s=80)
+ax = sns.scatterplot(data=df, x="CR", y="CI",hue='numUnknownVals',style='alphbet',s=80)
 ax.set(xscale='log')
 params = {
     'numBoxes':20,
@@ -34,12 +38,13 @@ rp = tools.risk.riskPatches()
 shapes = rp.getShapes(params)
 plt.xlabel('Claim Rate (CR)',fontsize=12)
 plt.ylabel('Confidence Improvement (CI)',fontsize=12)
-ax.legend(title='Samples',loc='lower center', bbox_to_anchor=(0.6, 0.0), ncol=1)
+ax.legend(loc='upper center', bbox_to_anchor=(0.6, 1.0), ncol=2)
 plt.grid()
 plt.ylim(0,1.0)
 for shape in shapes:
     plt.gca().add_patch(shape)
-plt.savefig('change-avg-attack.png',bbox_inches='tight')
+plt.savefig('beta-outlier.png',bbox_inches='tight')
+quit()
 
 with open('dataDiff.json', 'r') as f:
     data = json.load(f)
