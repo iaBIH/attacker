@@ -71,7 +71,7 @@ if __name__ == "__main__":
             [[2,3],[3,4]],
             [[3,4],[4,5]]
            ]
-    abs = [[2,2],[2,4],[2,8]]
+    abs = [[2,4],[2,16],[2,32]]
     numValues = [2,5,20]
     params = ['numUnknownVals','SD','outParams','alphbet','round']
     results = ['CR','CI','C','claimThresh','PCR','PCI','PC','excess','numClaimHas']
